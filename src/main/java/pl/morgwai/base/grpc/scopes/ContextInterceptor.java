@@ -9,8 +9,7 @@ import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 
-import static pl.morgwai.base.grpc.scopes.GrpcScopes.MESSAGE_CONTEXT_TRACKER;
-import static pl.morgwai.base.grpc.scopes.GrpcScopes.RPC_CONTEXT_TRACKER;
+import pl.morgwai.base.guice.scopes.CallContextTracker;
 
 
 
@@ -22,61 +21,73 @@ public class ContextInterceptor implements ServerInterceptor {
 
 
 
+	CallContextTracker<RpcContext> rpcContextTracker;
+	CallContextTracker<MessageContext> messageContextTracker;
+
+
+
 	@Override
 	public <ReqT, RespT> Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
 			Metadata headers, ServerCallHandler<ReqT, RespT> next) {
 		final RpcContext rpcContext = new RpcContext(call);
-		RPC_CONTEXT_TRACKER.setCurrentContext(rpcContext);
+		rpcContextTracker.setCurrentContext(rpcContext);
 		Listener<ReqT> listener = next.startCall(call, headers);
-		RPC_CONTEXT_TRACKER.clearCurrentContext();
+		rpcContextTracker.clearCurrentContext();
 
 		return new Listener<ReqT>() {
 
 			@Override
 			public void onMessage(ReqT message) {
 				rpcContext.setCurrentMessage(message);
-				RPC_CONTEXT_TRACKER.setCurrentContext(rpcContext);
-				MESSAGE_CONTEXT_TRACKER.setCurrentContext(new MessageContext(message));
+				rpcContextTracker.setCurrentContext(rpcContext);
+				messageContextTracker.setCurrentContext(new MessageContext(message));
 				listener.onMessage(message);
-				RPC_CONTEXT_TRACKER.clearCurrentContext();
-				MESSAGE_CONTEXT_TRACKER.clearCurrentContext();
+				rpcContextTracker.clearCurrentContext();
+				messageContextTracker.clearCurrentContext();
 			}
 
 			@Override
 			public void onHalfClose() {
-				RPC_CONTEXT_TRACKER.setCurrentContext(rpcContext);
-				MESSAGE_CONTEXT_TRACKER.setCurrentContext(new MessageContext(null));
+				rpcContextTracker.setCurrentContext(rpcContext);
+				messageContextTracker.setCurrentContext(new MessageContext(null));
 				listener.onHalfClose();
-				RPC_CONTEXT_TRACKER.clearCurrentContext();
-				MESSAGE_CONTEXT_TRACKER.clearCurrentContext();
+				rpcContextTracker.clearCurrentContext();
+				messageContextTracker.clearCurrentContext();
 			}
 
 			@Override
 			public void onCancel() {
-				RPC_CONTEXT_TRACKER.setCurrentContext(rpcContext);
-				MESSAGE_CONTEXT_TRACKER.setCurrentContext(new MessageContext(null));
+				rpcContextTracker.setCurrentContext(rpcContext);
+				messageContextTracker.setCurrentContext(new MessageContext(null));
 				listener.onCancel();
-				RPC_CONTEXT_TRACKER.clearCurrentContext();
-				MESSAGE_CONTEXT_TRACKER.clearCurrentContext();
+				rpcContextTracker.clearCurrentContext();
+				messageContextTracker.clearCurrentContext();
 			}
 
 			@Override
 			public void onComplete() {
-				RPC_CONTEXT_TRACKER.setCurrentContext(rpcContext);
-				MESSAGE_CONTEXT_TRACKER.setCurrentContext(new MessageContext(null));
+				rpcContextTracker.setCurrentContext(rpcContext);
+				messageContextTracker.setCurrentContext(new MessageContext(null));
 				listener.onComplete();
-				RPC_CONTEXT_TRACKER.clearCurrentContext();
-				MESSAGE_CONTEXT_TRACKER.clearCurrentContext();
+				rpcContextTracker.clearCurrentContext();
+				messageContextTracker.clearCurrentContext();
 			}
 
 			@Override
 			public void onReady() {
-				RPC_CONTEXT_TRACKER.setCurrentContext(rpcContext);
-				MESSAGE_CONTEXT_TRACKER.setCurrentContext(new MessageContext(null));
+				rpcContextTracker.setCurrentContext(rpcContext);
+				messageContextTracker.setCurrentContext(new MessageContext(null));
 				listener.onReady();
-				RPC_CONTEXT_TRACKER.clearCurrentContext();
-				MESSAGE_CONTEXT_TRACKER.clearCurrentContext();
+				rpcContextTracker.clearCurrentContext();
+				messageContextTracker.clearCurrentContext();
 			}
 		};
+	}
+
+
+
+	public ContextInterceptor(GrpcModule grpcModule) {
+		this.rpcContextTracker = grpcModule.rpcContextTracker;
+		this.messageContextTracker = grpcModule.messageContextTracker;
 	}
 }
