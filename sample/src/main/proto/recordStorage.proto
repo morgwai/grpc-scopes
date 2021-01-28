@@ -1,0 +1,22 @@
+syntax = "proto3";
+package pl.morgwai.samples.grpc.scopes.grpc;
+
+option java_outer_classname = "RecordStorageProto";
+option java_multiple_files = true;
+
+service RecordStorage {
+	rpc store(Record) returns (NewRecordId) {}
+	rpc storeMultiple(stream Record) returns (stream NewRecordId) {}
+	rpc getAll(Empty) returns (stream Record) {}
+}
+
+message Empty {}
+
+message Record {
+	int64 id = 1;
+	string content = 2;
+}
+
+message NewRecordId {
+	int64 id = 1;
+}
