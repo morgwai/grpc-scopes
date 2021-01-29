@@ -3,16 +3,16 @@
  */
 package pl.morgwai.base.grpc.scopes;
 
-import pl.morgwai.base.guice.scopes.CallContext;
+import pl.morgwai.base.guice.scopes.ServerCallContext;
 
 
 
 /**
- * A <code>CallContext</code> of a given message from a request stream.
- * @see GrpcScopes
+ * A context of a given message from a request stream.
+ * @see GrpcModule
  * @see ContextInterceptor
  */
-public class MessageContext extends CallContext {
+public class MessageContext extends ServerCallContext {
 
 
 

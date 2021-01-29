@@ -5,16 +5,16 @@ package pl.morgwai.base.grpc.scopes;
 
 import io.grpc.ServerCall;
 
-import pl.morgwai.base.guice.scopes.CallContext;
+import pl.morgwai.base.guice.scopes.ServerCallContext;
 
 
 
 /**
- * A <code>CallContext</code> of a given RPC (<code>ServerCall</code>).
- * @see GrpcScopes
+ * A context of a given RPC (<code>ServerCall</code>).
+ * @see GrpcModule
  * @see ContextInterceptor
  */
-public class RpcContext extends CallContext {
+public class RpcContext extends ServerCallContext {
 
 
 
@@ -26,6 +26,7 @@ public class RpcContext extends CallContext {
 
 
 
+	// for internal use only
 	RpcContext(ServerCall<?, ?> rpc) { this.rpc = rpc; }
 	void setCurrentMessage(Object currentMessage) { this.currentMessage = currentMessage; }
 }

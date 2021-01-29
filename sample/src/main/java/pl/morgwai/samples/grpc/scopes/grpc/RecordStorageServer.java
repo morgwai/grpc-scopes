@@ -49,10 +49,8 @@ public class RecordStorageServer {
 		GrpcModule grpcModule = new GrpcModule();
 
 		entityManagerFactory = Persistence.createEntityManagerFactory(persistenceUnitName);
-		jpaExecutor = new ContextTrackingExecutor(
-				jdbcConnectionPoolSize,
-				persistenceUnitName + "JpaExecutor",
-				grpcModule.messageContextTracker);
+		jpaExecutor = grpcModule.newContextTrackingExecutor(
+				persistenceUnitName + "JpaExecutor", jdbcConnectionPoolSize);
 		log.info("entity manager factory " + persistenceUnitName
 				+ " and its JPA executor created successfully");
 

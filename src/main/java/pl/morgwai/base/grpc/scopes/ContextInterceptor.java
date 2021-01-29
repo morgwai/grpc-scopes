@@ -9,20 +9,20 @@ import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 
-import pl.morgwai.base.guice.scopes.CallContextTracker;
+import pl.morgwai.base.guice.scopes.ContextTracker;
 
 
 
 /**
- * Creates and starts tracking of <code>CallContext</code> for each new RPC
+ * Creates and starts tracking a new <code>ServerCallContext</code> for each new RPC
  * (<code>ServerCall</code>) and message.
  */
 public class ContextInterceptor implements ServerInterceptor {
 
 
 
-	CallContextTracker<RpcContext> rpcContextTracker;
-	CallContextTracker<MessageContext> messageContextTracker;
+	ContextTracker<RpcContext> rpcContextTracker;
+	ContextTracker<MessageContext> messageContextTracker;
 
 
 
