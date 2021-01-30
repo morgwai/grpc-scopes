@@ -4,6 +4,8 @@
 package pl.morgwai.base.grpc.scopes;
 
 import io.grpc.ServerCall;
+
+import pl.morgwai.base.guice.scopes.ContextTracker;
 import pl.morgwai.base.guice.scopes.ServerCallContext;
 
 
@@ -23,7 +25,7 @@ import pl.morgwai.base.guice.scopes.ServerCallContext;
  * @see GrpcModule#listenerCallScope
  * @see ContextInterceptor#interceptCall(ServerCall, io.grpc.Metadata, io.grpc.ServerCallHandler)
  */
-public class ListenerCallContext extends ServerCallContext {
+public class ListenerCallContext extends ServerCallContext<ListenerCallContext> {
 
 
 
@@ -32,5 +34,14 @@ public class ListenerCallContext extends ServerCallContext {
 
 
 
-	ListenerCallContext(Object message) { this.message = message; }
+	ListenerCallContext(Object message, ContextTracker<ListenerCallContext> tracker) {
+		super(tracker);
+		this.message = message;
+	}
+
+
+
+	ListenerCallContext(ContextTracker<ListenerCallContext> tracker) {
+		super(tracker);
+	}
 }

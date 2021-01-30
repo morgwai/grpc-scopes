@@ -9,8 +9,6 @@ import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 
-import pl.morgwai.base.guice.scopes.ContextTracker;
-
 
 
 /**
@@ -23,8 +21,7 @@ public class ContextInterceptor implements ServerInterceptor {
 
 
 
-	ContextTracker<RpcContext> rpcContextTracker;
-	ContextTracker<ListenerCallContext> listenerCallContextTracker;
+	GrpcModule grpcModule;
 
 
 
@@ -34,9 +31,8 @@ public class ContextInterceptor implements ServerInterceptor {
 			Metadata headers,
 			ServerCallHandler<Request, Response> handler) {
 		try {
-			final RpcContext rpcContext = new RpcContext(call);
-			final Listener<Request> listener = rpcContextTracker.callWithin(
-				rpcContext,
+			final RpcContext rpcContext = grpcModule.newRpcContext(call);
+			final Listener<Request> listener = rpcContext.callWithin(
 				() -> handler.startCall(call, headers)
 			);
 
@@ -45,9 +41,8 @@ public class ContextInterceptor implements ServerInterceptor {
 				@Override
 				public void onMessage(Request message) {
 					rpcContext.setCurrentMessage(message);
-					rpcContextTracker.runWithin(rpcContext, () -> {
-						listenerCallContextTracker.runWithin(
-							new ListenerCallContext(message),
+					rpcContext.runWithin(() -> {
+						grpcModule.newListenerCallContext(message).runWithin(
 							() -> listener.onMessage(message)
 						);
 					});
@@ -55,9 +50,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onHalfClose() {
-					rpcContextTracker.runWithin(rpcContext, () -> {
-						listenerCallContextTracker.runWithin(
-							new ListenerCallContext(null),
+					rpcContext.runWithin(() -> {
+						grpcModule.newListenerCallContext().runWithin(
 							() -> listener.onHalfClose()
 						);
 					});
@@ -65,9 +59,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onCancel() {
-					rpcContextTracker.runWithin(rpcContext, () -> {
-						listenerCallContextTracker.runWithin(
-							new ListenerCallContext(null),
+					rpcContext.runWithin(() -> {
+						grpcModule.newListenerCallContext().runWithin(
 							() -> listener.onCancel()
 						);
 					});
@@ -75,9 +68,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onComplete() {
-					rpcContextTracker.runWithin(rpcContext, () -> {
-						listenerCallContextTracker.runWithin(
-							new ListenerCallContext(null),
+					rpcContext.runWithin(() -> {
+						grpcModule.newListenerCallContext().runWithin(
 							() -> listener.onComplete()
 						);
 					});
@@ -85,9 +77,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onReady() {
-					rpcContextTracker.runWithin(rpcContext, () -> {
-						listenerCallContextTracker.runWithin(
-							new ListenerCallContext(null),
+					rpcContext.runWithin(() -> {
+						grpcModule.newListenerCallContext().runWithin(
 							() -> listener.onReady()
 						);
 					});
@@ -104,7 +95,6 @@ public class ContextInterceptor implements ServerInterceptor {
 
 
 	public ContextInterceptor(GrpcModule grpcModule) {
-		this.rpcContextTracker = grpcModule.rpcContextTracker;
-		this.listenerCallContextTracker = grpcModule.listenerCallContextTracker;
+		this.grpcModule = grpcModule;
 	}
 }

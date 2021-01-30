@@ -11,6 +11,8 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 
+import io.grpc.ServerCall;
+
 import pl.morgwai.base.guice.scopes.ContextScope;
 import pl.morgwai.base.guice.scopes.ContextTracker;
 import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
@@ -88,8 +90,6 @@ public class GrpcModule implements Module {
 				name, poolSize, rpcContextTracker, listenerCallContextTracker);
 	}
 
-
-
 	/**
 	 * Convenience "constructor" for <code>ContextTrackingExecutor</code>. (I really miss method
 	 * extensions in Java)
@@ -102,5 +102,19 @@ public class GrpcModule implements Module {
 			RejectedExecutionHandler handler) {
 		return new ContextTrackingExecutor(name, poolSize, workQueue, threadFactory, handler,
 				rpcContextTracker, listenerCallContextTracker);
+	}
+
+
+
+	RpcContext newRpcContext(ServerCall<?, ?> rpc) {
+		return new RpcContext(rpc, rpcContextTracker);
+	}
+
+	ListenerCallContext newListenerCallContext(Object message) {
+		return new ListenerCallContext(message, listenerCallContextTracker);
+	}
+
+	ListenerCallContext newListenerCallContext() {
+		return new ListenerCallContext(listenerCallContextTracker);
 	}
 }

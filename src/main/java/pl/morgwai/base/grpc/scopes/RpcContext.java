@@ -5,6 +5,7 @@ package pl.morgwai.base.grpc.scopes;
 
 import io.grpc.ServerCall;
 
+import pl.morgwai.base.guice.scopes.ContextTracker;
 import pl.morgwai.base.guice.scopes.ServerCallContext;
 
 
@@ -19,7 +20,7 @@ import pl.morgwai.base.guice.scopes.ServerCallContext;
  * @see GrpcModule#rpcScope
  * @see ContextInterceptor#interceptCall(ServerCall, io.grpc.Metadata, io.grpc.ServerCallHandler)
  */
-public class RpcContext extends ServerCallContext {
+public class RpcContext extends ServerCallContext<RpcContext> {
 
 
 
@@ -31,7 +32,12 @@ public class RpcContext extends ServerCallContext {
 
 
 
-	// for internal use only
-	RpcContext(ServerCall<?, ?> rpc) { this.rpc = rpc; }
+	RpcContext(ServerCall<?, ?> rpc, ContextTracker<RpcContext> tracker) {
+		super(tracker);
+		this.rpc = rpc;
+	}
+
+
+
 	void setCurrentMessage(Object currentMessage) { this.currentMessage = currentMessage; }
 }
