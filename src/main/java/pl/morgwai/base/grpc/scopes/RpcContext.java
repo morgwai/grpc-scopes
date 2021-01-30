@@ -11,14 +11,15 @@ import pl.morgwai.base.guice.scopes.ServerCallContext;
 
 
 /**
- * A context of a given RPC (<code>ServerCall</code>).
- * Spans over the whole processing of a given RPC from the beginning of invocation of a given
- * remote procedure, across all its messages, until the RPC is closed.
+ * Context of a given RPC (<code>ServerCall</code>).
+ * A single instance spans over the whole processing of a given RPC: from the beginning of the
+ * invocation of a given remote procedure, across all its messages, until the RPC is closed.
  * Specifically <code>ServerCallHandler.startCall(Metadata)</code> and all methods of the returned
- * <code>Listener</code> are run within a given <code>RpcContext</code>.
+ * <code>Listener</code> are executed within a given <code>RpcContext</code>.
  *
- * @see GrpcModule#rpcScope
- * @see ContextInterceptor#interceptCall(ServerCall, io.grpc.Metadata, io.grpc.ServerCallHandler)
+ * @see GrpcModule#rpcScope corresponding <code>Scope</code>
+ * @see io.grpc.stub.ServerCalls <code>io.grpc.stub.ServerCalls</code> for relation between
+ *      method's of <code>Listener</code> and user code
  */
 public class RpcContext extends ServerCallContext<RpcContext> {
 

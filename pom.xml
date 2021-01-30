@@ -15,7 +15,7 @@ Copyright (c) Piotr Morgwai Kotarbinski
 	<version>1.0-SNAPSHOT</version>
 
 	<name>gRPC Guice Scopes</name>
-	<description>RPC and message Guice Scopes for gRPC server</description>
+	<description>RPC and ListenerCall Guice Scopes for gRPC server</description>
 	<url>https://github.com/morgwai/grpc-scopes</url>
 
 	<licenses>

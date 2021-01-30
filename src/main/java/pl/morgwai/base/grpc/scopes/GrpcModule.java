@@ -22,7 +22,7 @@ import pl.morgwai.base.guice.scopes.ThreadLocalContextTracker;
 
 
 /**
- * gRPC injection <code>Scope</code>s and <code>ContextTracker</code>s.<br/>
+ * gRPC Guice <code>Scope</code>s, <code>ContextTracker</code>s and some helper methods.<br/>
  * <br/>
  * <b>NO STATIC:</b> by a common convention, objects such as <code>Scope</code>s are usually stored
  * on <code>static</code> vars. Global context however has a lot of drawbacks. Instead, create just

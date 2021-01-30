@@ -40,7 +40,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 	public void store(Record request, StreamObserver<NewRecordId> responseObserver) {
 		jpaExecutor.execute(() -> {
 			try {
-				pl.morgwai.samples.grpc.scopes.domain.Record entity = toEntity(request);
+				pl.morgwai.samples.grpc.scopes.domain.Record entity = process(request);
 
 				performInTx(() -> {  // EntityManager is message scoped and this is the first time
 						// an instance is requested within this scope: a new instance will be
@@ -91,7 +91,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 					// simultaneously, processing han't been yet dispatched to jpaExecutor
 				jpaExecutor.execute(() -> {
 					try {
-						pl.morgwai.samples.grpc.scopes.domain.Record entity = toEntity(message);
+						pl.morgwai.samples.grpc.scopes.domain.Record entity = process(message);
 						performInTx(() -> { dao.persist(entity); return null; });
 						synchronized (responseObserver) {
 							while( ! responseObserver.isReady()) responseObserver.wait();
@@ -188,7 +188,11 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
-	public static pl.morgwai.samples.grpc.scopes.domain.Record toEntity(Record proto) {
+	public static pl.morgwai.samples.grpc.scopes.domain.Record process(Record proto) {
+		// NOTE:  JPA in this project is used only for demo purposes.
+		// Unless some domain logic needs to be involved before storing the record or before sending
+		// response (unlike here), converting a proto to an entity does not make sense, as it only
+		// adds overhead.
 		return new pl.morgwai.samples.grpc.scopes.domain.Record(proto.getContent());
 	}
 
