@@ -29,61 +29,76 @@ public class ContextInterceptor implements ServerInterceptor {
 
 
 	@Override
-	public <ReqT, RespT> Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
-			Metadata headers, ServerCallHandler<ReqT, RespT> handler) {
-		final RpcContext rpcContext = new RpcContext(call);
-		rpcContextTracker.setCurrentContext(rpcContext);
-		Listener<ReqT> listener = handler.startCall(call, headers);
-		rpcContextTracker.clearCurrentContext();
+	public <Request, Response> Listener<Request> interceptCall(
+			ServerCall<Request, Response> call,
+			Metadata headers,
+			ServerCallHandler<Request, Response> handler) {
+		try {
+			final RpcContext rpcContext = new RpcContext(call);
+			final Listener<Request> listener = rpcContextTracker.callWithin(
+				rpcContext,
+				() -> handler.startCall(call, headers)
+			);
 
-		return new Listener<ReqT>() {
+			return new Listener<Request>() {
 
-			@Override
-			public void onMessage(ReqT message) {
-				rpcContext.setCurrentMessage(message);
-				rpcContextTracker.setCurrentContext(rpcContext);
-				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(message));
-				listener.onMessage(message);
-				rpcContextTracker.clearCurrentContext();
-				listenerCallContextTracker.clearCurrentContext();
-			}
+				@Override
+				public void onMessage(Request message) {
+					rpcContext.setCurrentMessage(message);
+					rpcContextTracker.runWithin(rpcContext, () -> {
+						listenerCallContextTracker.runWithin(
+							new ListenerCallContext(message),
+							() -> listener.onMessage(message)
+						);
+					});
+				}
 
-			@Override
-			public void onHalfClose() {
-				rpcContextTracker.setCurrentContext(rpcContext);
-				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(null));
-				listener.onHalfClose();
-				rpcContextTracker.clearCurrentContext();
-				listenerCallContextTracker.clearCurrentContext();
-			}
+				@Override
+				public void onHalfClose() {
+					rpcContextTracker.runWithin(rpcContext, () -> {
+						listenerCallContextTracker.runWithin(
+							new ListenerCallContext(null),
+							() -> listener.onHalfClose()
+						);
+					});
+				}
 
-			@Override
-			public void onCancel() {
-				rpcContextTracker.setCurrentContext(rpcContext);
-				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(null));
-				listener.onCancel();
-				rpcContextTracker.clearCurrentContext();
-				listenerCallContextTracker.clearCurrentContext();
-			}
+				@Override
+				public void onCancel() {
+					rpcContextTracker.runWithin(rpcContext, () -> {
+						listenerCallContextTracker.runWithin(
+							new ListenerCallContext(null),
+							() -> listener.onCancel()
+						);
+					});
+				}
 
-			@Override
-			public void onComplete() {
-				rpcContextTracker.setCurrentContext(rpcContext);
-				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(null));
-				listener.onComplete();
-				rpcContextTracker.clearCurrentContext();
-				listenerCallContextTracker.clearCurrentContext();
-			}
+				@Override
+				public void onComplete() {
+					rpcContextTracker.runWithin(rpcContext, () -> {
+						listenerCallContextTracker.runWithin(
+							new ListenerCallContext(null),
+							() -> listener.onComplete()
+						);
+					});
+				}
 
-			@Override
-			public void onReady() {
-				rpcContextTracker.setCurrentContext(rpcContext);
-				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(null));
-				listener.onReady();
-				rpcContextTracker.clearCurrentContext();
-				listenerCallContextTracker.clearCurrentContext();
-			}
-		};
+				@Override
+				public void onReady() {
+					rpcContextTracker.runWithin(rpcContext, () -> {
+						listenerCallContextTracker.runWithin(
+							new ListenerCallContext(null),
+							() -> listener.onReady()
+						);
+					});
+				}
+			};
+		} catch (RuntimeException e) {
+			throw e;
+		} catch (Exception e) {
+			// unreachable code: result of wrapping handler.startCall(call, headers) in a Callable
+			return null;
+		}
 	}
 
 
