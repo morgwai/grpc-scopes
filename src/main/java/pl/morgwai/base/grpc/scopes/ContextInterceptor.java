@@ -14,15 +14,17 @@ import pl.morgwai.base.guice.scopes.ContextTracker;
 
 
 /**
- * Creates and starts tracking a new <code>ServerCallContext</code> for each new RPC
- * (<code>ServerCall</code>) and message.
+ * Creates and starts tracking a new {@link RpcContext} for each new RPC (<code>ServerCall</code>)
+ * and a new {@link ListenerCallContext} for each <code>ServerCall.Listener</code> call.
+ *
+ * @see GrpcModule
  */
 public class ContextInterceptor implements ServerInterceptor {
 
 
 
 	ContextTracker<RpcContext> rpcContextTracker;
-	ContextTracker<MessageContext> messageContextTracker;
+	ContextTracker<ListenerCallContext> listenerCallContextTracker;
 
 
 
@@ -40,46 +42,46 @@ public class ContextInterceptor implements ServerInterceptor {
 			public void onMessage(ReqT message) {
 				rpcContext.setCurrentMessage(message);
 				rpcContextTracker.setCurrentContext(rpcContext);
-				messageContextTracker.setCurrentContext(new MessageContext(message));
+				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(message));
 				listener.onMessage(message);
 				rpcContextTracker.clearCurrentContext();
-				messageContextTracker.clearCurrentContext();
+				listenerCallContextTracker.clearCurrentContext();
 			}
 
 			@Override
 			public void onHalfClose() {
 				rpcContextTracker.setCurrentContext(rpcContext);
-				messageContextTracker.setCurrentContext(new MessageContext(null));
+				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(null));
 				listener.onHalfClose();
 				rpcContextTracker.clearCurrentContext();
-				messageContextTracker.clearCurrentContext();
+				listenerCallContextTracker.clearCurrentContext();
 			}
 
 			@Override
 			public void onCancel() {
 				rpcContextTracker.setCurrentContext(rpcContext);
-				messageContextTracker.setCurrentContext(new MessageContext(null));
+				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(null));
 				listener.onCancel();
 				rpcContextTracker.clearCurrentContext();
-				messageContextTracker.clearCurrentContext();
+				listenerCallContextTracker.clearCurrentContext();
 			}
 
 			@Override
 			public void onComplete() {
 				rpcContextTracker.setCurrentContext(rpcContext);
-				messageContextTracker.setCurrentContext(new MessageContext(null));
+				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(null));
 				listener.onComplete();
 				rpcContextTracker.clearCurrentContext();
-				messageContextTracker.clearCurrentContext();
+				listenerCallContextTracker.clearCurrentContext();
 			}
 
 			@Override
 			public void onReady() {
 				rpcContextTracker.setCurrentContext(rpcContext);
-				messageContextTracker.setCurrentContext(new MessageContext(null));
+				listenerCallContextTracker.setCurrentContext(new ListenerCallContext(null));
 				listener.onReady();
 				rpcContextTracker.clearCurrentContext();
-				messageContextTracker.clearCurrentContext();
+				listenerCallContextTracker.clearCurrentContext();
 			}
 		};
 	}
@@ -88,6 +90,6 @@ public class ContextInterceptor implements ServerInterceptor {
 
 	public ContextInterceptor(GrpcModule grpcModule) {
 		this.rpcContextTracker = grpcModule.rpcContextTracker;
-		this.messageContextTracker = grpcModule.messageContextTracker;
+		this.listenerCallContextTracker = grpcModule.listenerCallContextTracker;
 	}
 }

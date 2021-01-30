@@ -39,10 +39,11 @@ public class GrpcModule implements Module {
 			new ThreadLocalContextTracker<>();
 
 	/**
-	 * Allows tracking of the {@link MessageContext context of a given message} from a given request
-	 * stream.
+	 * Allows tracking of the {@link ListenerCallContext context of a single
+	 * <code>ServerCall.Listener</code> call} and as a consequence also of a corresponding request
+	 * observer's call.
 	 */
-	public final ContextTracker<MessageContext> messageContextTracker =
+	public final ContextTracker<ListenerCallContext> listenerCallContextTracker =
 			new ThreadLocalContextTracker<>();
 
 
@@ -54,16 +55,16 @@ public class GrpcModule implements Module {
 			new ContextScope<>("RPC_SCOPE", rpcContextTracker);
 
 	/**
-	 * Scopes objects to the {@link MessageContext context of a given message} from a given request
-	 * stream.
+	 * Scopes objects to the {@link ListenerCallContext context of a given <code>Listener</code>
+	 * call} and as a consequence also of a corresponding request observer's call.
 	 */
-	public final Scope messageScope =
-			new ContextScope<>("MESSAGE_SCOPE", messageContextTracker);
+	public final Scope listenerCallScope =
+			new ContextScope<>("LISTENER_CALL_SCOPE", listenerCallContextTracker);
 
 
 
 	/**
-	 * Binds {@link #rpcContextTracker} and {@link #messageContextTracker} for injection.
+	 * Binds {@link #rpcContextTracker} and {@link #listenerCallContextTracker} for injection.
 	 */
 	@Override
 	public void configure(Binder binder) {
@@ -71,9 +72,9 @@ public class GrpcModule implements Module {
 				new TypeLiteral<>() {};
 		binder.bind(rpcContextTrackerType).toInstance(rpcContextTracker);
 
-		TypeLiteral<ContextTracker<MessageContext>> messageContextTrackerType =
+		TypeLiteral<ContextTracker<ListenerCallContext>> messageContextTrackerType =
 				new TypeLiteral<>() {};
-		binder.bind(messageContextTrackerType).toInstance(messageContextTracker);
+		binder.bind(messageContextTrackerType).toInstance(listenerCallContextTracker);
 	}
 
 
@@ -83,8 +84,8 @@ public class GrpcModule implements Module {
 	 * extensions in Java)
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(String name, int poolSize) {
-		return
-			new ContextTrackingExecutor(name, poolSize, rpcContextTracker, messageContextTracker);
+		return new ContextTrackingExecutor(
+				name, poolSize, rpcContextTracker, listenerCallContextTracker);
 	}
 
 
@@ -100,6 +101,6 @@ public class GrpcModule implements Module {
 			ThreadFactory threadFactory,
 			RejectedExecutionHandler handler) {
 		return new ContextTrackingExecutor(name, poolSize, workQueue, threadFactory, handler,
-				rpcContextTracker, messageContextTracker);
+				rpcContextTracker, listenerCallContextTracker);
 	}
 }
