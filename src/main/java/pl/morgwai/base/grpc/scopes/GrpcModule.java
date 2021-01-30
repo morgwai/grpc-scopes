@@ -33,14 +33,14 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Allows tracking of the context of a given RPC (<code>ServerCall</code>).
+	 * Allows tracking of the {@link RpcContext context of a given RPC (<code>ServerCall</code>)}.
 	 */
 	public final ContextTracker<RpcContext> rpcContextTracker =
 			new ThreadLocalContextTracker<>();
 
 	/**
-	 * Allows tracking of the context of a given message from a request stream.
-	 * Useful mostly for client streaming or bidirectional streaming calls.
+	 * Allows tracking of the {@link MessageContext context of a given message} from a given request
+	 * stream.
 	 */
 	public final ContextTracker<MessageContext> messageContextTracker =
 			new ThreadLocalContextTracker<>();
@@ -48,14 +48,14 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Scopes objects to the context of a given RPC (<code>ServerCall</code>).
+	 * Scopes objects to the {@link RpcContext context of a given RPC (<code>ServerCall</code>)}.
 	 */
 	public final Scope rpcScope =
 			new ContextScope<>("RPC_SCOPE", rpcContextTracker);
 
 	/**
-	 * Scopes objects to the context of a given message from a given request stream.
-	 * Useful mostly for client streaming or bidirectional streaming calls.
+	 * Scopes objects to the {@link MessageContext context of a given message} from a given request
+	 * stream.
 	 */
 	public final Scope messageScope =
 			new ContextScope<>("MESSAGE_SCOPE", messageContextTracker);

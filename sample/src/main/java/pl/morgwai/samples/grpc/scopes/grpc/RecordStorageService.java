@@ -41,7 +41,19 @@ public class RecordStorageService extends RecordStorageImplBase {
 		jpaExecutor.execute(() -> {
 			try {
 				pl.morgwai.samples.grpc.scopes.domain.Record entity = toEntity(request);
-				performInTx(() -> { dao.persist(entity); return null; });
+
+				performInTx(() -> {  // EntityManager is message scoped and this is the first time
+						// an instance is requested within this scope: a new instance will be
+						// provided by entityManagerProvider to create a transaction and stored for
+						// a later use within this scope.
+
+					dao.persist(entity); // this method will run within the same scope, so dao's
+						// entityManagerProvider will provide the same instance of EntityManager
+						// that was stored above during transaction starting. Therefore this method
+						// will run within transaction started above.
+
+					return null;
+				});
 				responseObserver.onNext(NewRecordId.newBuilder().setId(entity.getId()).build());
 				responseObserver.onCompleted();
 			} catch (Exception e) {

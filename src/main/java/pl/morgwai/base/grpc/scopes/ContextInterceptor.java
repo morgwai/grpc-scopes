@@ -28,10 +28,10 @@ public class ContextInterceptor implements ServerInterceptor {
 
 	@Override
 	public <ReqT, RespT> Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
-			Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+			Metadata headers, ServerCallHandler<ReqT, RespT> handler) {
 		final RpcContext rpcContext = new RpcContext(call);
 		rpcContextTracker.setCurrentContext(rpcContext);
-		Listener<ReqT> listener = next.startCall(call, headers);
+		Listener<ReqT> listener = handler.startCall(call, headers);
 		rpcContextTracker.clearCurrentContext();
 
 		return new Listener<ReqT>() {
