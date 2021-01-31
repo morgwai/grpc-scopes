@@ -12,6 +12,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 
 import io.grpc.Status;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
@@ -56,8 +58,15 @@ public class RecordStorageService extends RecordStorageImplBase {
 				});
 				responseObserver.onNext(NewRecordId.newBuilder().setId(entity.getId()).build());
 				responseObserver.onCompleted();
+			} catch (StatusRuntimeException e) {
+				if (e.getStatus().getCode() == Code.CANCELLED) {
+					log.info("client cancelled the call");
+				} else {
+					log.severe("server error: " + e);
+					e.printStackTrace();
+				}
 			} catch (Exception e) {
-				log.warning("server error: " + e);
+				log.severe("server error: " + e);
 				e.printStackTrace();
 				responseObserver.onError(Status.INTERNAL.withCause(e).asException());
 			} finally {
@@ -106,8 +115,15 @@ public class RecordStorageService extends RecordStorageImplBase {
 								responseObserver.request(1);
 							}
 						}
+					} catch (StatusRuntimeException e) {
+						if (e.getStatus().getCode() == Code.CANCELLED) {
+							log.info("client cancelled the call");
+						} else {
+							log.severe("server error: " + e);
+							e.printStackTrace();
+						}
 					} catch (Exception e) {
-						log.warning("server error: " + e);
+						log.severe("server error: " + e);
 						e.printStackTrace();
 						responseObserver.onError(Status.INTERNAL.withCause(e).asException());
 					} finally {
@@ -150,8 +166,15 @@ public class RecordStorageService extends RecordStorageImplBase {
 					responseObserver.onNext(toProto(record));
 				}
 				responseObserver.onCompleted();
+			} catch (StatusRuntimeException e) {
+				if (e.getStatus().getCode() == Code.CANCELLED) {
+					log.info("client cancelled the call");
+				} else {
+					log.severe("server error: " + e);
+					e.printStackTrace();
+				}
 			} catch (Exception e) {
-				log.warning("server error: " + e);
+				log.severe("server error: " + e);
 				e.printStackTrace();
 				responseObserver.onError(Status.INTERNAL.withCause(e).asException());
 			} finally {
