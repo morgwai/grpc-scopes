@@ -21,7 +21,6 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptors;
 
-import pl.morgwai.base.grpc.scopes.ContextInterceptor;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
 import pl.morgwai.samples.grpc.scopes.data_access.JpaRecordDao;
@@ -68,7 +67,7 @@ public class RecordStorageServer {
 		recordStorageServer = ServerBuilder
 			.forPort(port)
 			.directExecutor()
-			.addService(ServerInterceptors.intercept(service, new ContextInterceptor(grpcModule)))
+			.addService(ServerInterceptors.intercept(service, grpcModule.contextInterceptor))
 			.build();
 
 		Runtime.getRuntime().addShutdownHook(shutdownHook);

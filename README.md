@@ -30,13 +30,12 @@ public class MyServer {
         // more modules here that can now use grpcModule.rpcScope and grpcModule.listenerCallScope
         Injector injector = Guice.createInjector(grpcModule  /* more modules here... */);
 
-        ContextInterceptor contextInterceptor = new ContextInterceptor(grpcModule);
         MyService myService = injector.getInstance(MyService.class);
         // more services here...
         myServer = ServerBuilder
             .forPort(port)
             .directExecutor()
-            .addService(ServerInterceptors.intercept(myService, contextInterceptor /* more interceptors */))
+            .addService(ServerInterceptors.intercept(myService, grpcModule.contextInterceptor /* more interceptors */))
             // more services here...
             .build();
 

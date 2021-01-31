@@ -65,6 +65,10 @@ public class GrpcModule implements Module {
 
 
 
+	public final ContextInterceptor contextInterceptor = new ContextInterceptor(this);
+
+
+
 	/**
 	 * Binds {@link #rpcContextTracker} and {@link #listenerCallContextTracker} for injection.
 	 */
