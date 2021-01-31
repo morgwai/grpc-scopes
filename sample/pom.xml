@@ -67,11 +67,6 @@ Copyright (c) Piotr Morgwai Kotarbinski
 			<version>6.0.53</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>com.google.errorprone</groupId>
-			<artifactId>error_prone_annotations</artifactId>
-			<version>2.3.4</version>
-		</dependency>
 
 		<dependency>
 			<groupId>io.grpc</groupId>
@@ -83,24 +78,6 @@ Copyright (c) Piotr Morgwai Kotarbinski
 			<artifactId>h2</artifactId>
 			<version>1.4.200</version>
 			<scope>runtime</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>io.grpc</groupId>
-			<artifactId>grpc-testing</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.13.1</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.easymock</groupId>
-			<artifactId>easymock</artifactId>
-			<version>4.2</version>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
