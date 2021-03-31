@@ -9,6 +9,7 @@ import java.util.concurrent.ThreadFactory;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Scope;
 import com.google.inject.TypeLiteral;
 
 import io.grpc.ServerCall;
@@ -16,7 +17,6 @@ import io.grpc.ServerCall;
 import pl.morgwai.base.guice.scopes.ContextScope;
 import pl.morgwai.base.guice.scopes.ContextTracker;
 import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
-import pl.morgwai.base.guice.scopes.Scope;
 import pl.morgwai.base.guice.scopes.ThreadLocalContextTracker;
 
 
