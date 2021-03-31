@@ -19,8 +19,9 @@ import pl.morgwai.base.guice.scopes.ServerSideContext;
  * not <code>onMessage(...)</code>.
  *
  * @see GrpcModule#listenerCallScope corresponding <code>Scope</code>
- * @see io.grpc.stub.ServerCalls <code>io.grpc.stub.ServerCalls</code> for relation between
- *      method's of <code>Listener</code> and user code
+ * @see <a href="https://grpc.github.io/grpc-java/javadoc/io/grpc/stub/ServerCalls.html">
+ *      <code>ServerCalls</code> for relation between method's of <code>Listener</code> and user
+ *      code</a>
  */
 public class ListenerCallContext extends ServerSideContext<ListenerCallContext> {
 

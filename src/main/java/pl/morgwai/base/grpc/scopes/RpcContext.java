@@ -18,8 +18,9 @@ import pl.morgwai.base.guice.scopes.ServerSideContext;
  * <code>Listener</code> are executed within a given <code>RpcContext</code>.
  *
  * @see GrpcModule#rpcScope corresponding <code>Scope</code>
- * @see io.grpc.stub.ServerCalls <code>io.grpc.stub.ServerCalls</code> for relation between
- *      method's of <code>Listener</code> and user code
+ * @see <a href="https://grpc.github.io/grpc-java/javadoc/io/grpc/stub/ServerCalls.html">
+ *      <code>ServerCalls</code> for relation between method's of <code>Listener</code> and user
+ *      code</a>
  */
 public class RpcContext extends ServerSideContext<RpcContext> {
 
