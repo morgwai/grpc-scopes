@@ -77,10 +77,14 @@ public class GrpcModule implements Module {
 		TypeLiteral<ContextTracker<RpcContext>> rpcContextTrackerType =
 				new TypeLiteral<>() {};
 		binder.bind(rpcContextTrackerType).toInstance(rpcContextTracker);
+		binder.bind(RpcContext.class).toProvider(
+				() -> rpcContextTracker.getCurrentContext());
 
 		TypeLiteral<ContextTracker<ListenerCallContext>> messageContextTrackerType =
 				new TypeLiteral<>() {};
 		binder.bind(messageContextTrackerType).toInstance(listenerCallContextTracker);
+		binder.bind(ListenerCallContext.class).toProvider(
+				() -> listenerCallContextTracker.getCurrentContext());
 	}
 
 
