@@ -40,7 +40,8 @@ public class Record implements Serializable {
 	@Override
 	public boolean equals(Object other) {
 		if (this == other) return true;
-		if (!(other.getClass() == Record.class)) return false;
+		if (other == null) return false;
+		if (other.getClass() != Record.class) return false;
 		Record otherRecord = (Record) other;
 		return (id == null ? otherRecord.getId() == null : id.equals(otherRecord.getId()))
 			&& (content == null ?
