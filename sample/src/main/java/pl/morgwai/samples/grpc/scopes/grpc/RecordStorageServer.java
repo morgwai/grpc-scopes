@@ -4,7 +4,6 @@
 package pl.morgwai.samples.grpc.scopes.grpc;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -82,20 +81,9 @@ public class RecordStorageServer {
 	Thread shutdownHook = new Thread(() -> {
 		try {
 			recordStorageServer.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+			System.out.println("gRPC server shutdown completed");
 		} catch (InterruptedException e) {}
-		System.out.println("gRPC server shutdown completed");
-
-		jpaExecutor.shutdown();
-		try {
-			jpaExecutor.awaitTermination(5, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {}
-		if ( ! jpaExecutor.isTerminated()) {
-			List<Runnable> remianingTasks = jpaExecutor.shutdownNow();
-			System.out.println(remianingTasks.size() + " tasks still remaining in jpaExecutor");
-		} else {
-			System.out.println("jpaExecutor shutdown completed");
-		}
-
+		jpaExecutor.tryShutdownGracefully(5);
 		entityManagerFactory.close();
 		System.out.println("entity manager factory shutdown completed");
 	});
