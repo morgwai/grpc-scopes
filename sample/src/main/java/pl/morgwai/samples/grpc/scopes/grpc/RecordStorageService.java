@@ -10,6 +10,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
+import javax.persistence.RollbackException;
 
 import io.grpc.Status;
 import io.grpc.Status.Code;
@@ -194,17 +195,14 @@ public class RecordStorageService extends RecordStorageImplBase {
 	public static <T> T performInTx(
 			Provider<EntityManager> entityManagerProvider, Callable<T> operation) throws Exception {
 		EntityTransaction tx = entityManagerProvider.get().getTransaction();
-		tx.begin();
+		if ( ! tx.isActive()) tx.begin();
 		try {
 			T result = operation.call();
-			if (tx.getRollbackOnly()) {
-				tx.rollback();
-			} else {
-				tx.commit();
-			}
+			if (tx.getRollbackOnly()) throw new RollbackException("tx marked rollbackOnly");
+			tx.commit();
 			return result;
 		} catch (Exception e) {
-			tx.rollback();
+			if (tx.isActive()) tx.rollback();
 			throw e;
 		}
 	}
