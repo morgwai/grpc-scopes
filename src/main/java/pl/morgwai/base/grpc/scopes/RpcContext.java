@@ -6,7 +6,7 @@ package pl.morgwai.base.grpc.scopes;
 import io.grpc.ServerCall;
 
 import pl.morgwai.base.guice.scopes.ContextTracker;
-import pl.morgwai.base.guice.scopes.TrackableContext;
+import pl.morgwai.base.guice.scopes.ServerSideContext;
 
 
 
@@ -22,7 +22,7 @@ import pl.morgwai.base.guice.scopes.TrackableContext;
  *      <code>ServerCalls</code> for relation between method's of <code>Listener</code> and user
  *      code</a>
  */
-public class RpcContext extends TrackableContext<RpcContext> {
+public class RpcContext extends ServerSideContext<RpcContext> {
 
 
 
