@@ -40,9 +40,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onMessage(Request message) {
-					rpcContext.setCurrentMessage(message);
 					rpcContext.runWithinSelf(() -> {
-						grpcModule.newListenerCallContext(message).runWithinSelf(
+						grpcModule.newListenerCallContext().runWithinSelf(
 							() -> listener.onMessage(message)
 						);
 					});

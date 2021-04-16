@@ -118,10 +118,6 @@ public class GrpcModule implements Module {
 		return new RpcContext(rpc, rpcContextTracker);
 	}
 
-	ListenerCallContext newListenerCallContext(Object message) {
-		return new ListenerCallContext(message, listenerCallContextTracker);
-	}
-
 	ListenerCallContext newListenerCallContext() {
 		return new ListenerCallContext(listenerCallContextTracker);
 	}

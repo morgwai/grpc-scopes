@@ -29,17 +29,10 @@ public class RpcContext extends ServerSideContext<RpcContext> {
 	ServerCall<?, ?> rpc;
 	public ServerCall<?, ?> getRpc() { return rpc; }
 
-	Object currentMessage;
-	public Object getCurrentMessage() { return currentMessage; }
-
 
 
 	RpcContext(ServerCall<?, ?> rpc, ContextTracker<RpcContext> tracker) {
 		super(tracker);
 		this.rpc = rpc;
 	}
-
-
-
-	void setCurrentMessage(Object currentMessage) { this.currentMessage = currentMessage; }
 }
