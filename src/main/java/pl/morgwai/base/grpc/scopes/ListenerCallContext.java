@@ -13,9 +13,10 @@ import pl.morgwai.base.guice.scopes.ServerSideContext;
  * Each method of a <code>Listener</code> is executed with a new <code>ListenerCallContext</code>.
  *
  * @see GrpcModule#listenerCallScope corresponding <code>Scope</code>
- * @see <a href="https://grpc.github.io/grpc-java/javadoc/io/grpc/stub/ServerCalls.html">
- *      <code>ServerCalls</code> for relation between method's of <code>Listener</code> and user
- *      code</a>
+ * @see <a href="https://gist.github.com/morgwai/6967bcf51b8ba586847c7f1922c99b88">a simplified
+ *      overview of relation between methods of <code>Listener</code> and user code</a>
+ * @see <a href="https://github.com/grpc/grpc-java/blob/master/stub/src/main/java/io/grpc/stub/
+ServerCalls.java">ServerCalls source for detailed info</a>
  */
 public class ListenerCallContext extends ServerSideContext<ListenerCallContext> {
 

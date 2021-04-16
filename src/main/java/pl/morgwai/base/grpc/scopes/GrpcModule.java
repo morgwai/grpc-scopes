@@ -41,20 +41,20 @@ public class GrpcModule implements Module {
 			new ThreadLocalContextTracker<>();
 
 	/**
+	 * Scopes objects to the {@link RpcContext context of a given RPC (<code>ServerCall</code>)}.
+	 */
+	public final Scope rpcScope =
+			new ContextScope<>("RPC_SCOPE", rpcContextTracker);
+
+
+
+	/**
 	 * Allows tracking of the {@link ListenerCallContext context of a single
 	 * <code>ServerCall.Listener</code> call} and as a consequence also of a corresponding request
 	 * observer's call.
 	 */
 	public final ContextTracker<ListenerCallContext> listenerCallContextTracker =
 			new ThreadLocalContextTracker<>();
-
-
-
-	/**
-	 * Scopes objects to the {@link RpcContext context of a given RPC (<code>ServerCall</code>)}.
-	 */
-	public final Scope rpcScope =
-			new ContextScope<>("RPC_SCOPE", rpcContextTracker);
 
 	/**
 	 * Scopes objects to the {@link ListenerCallContext context of a given <code>Listener</code>
@@ -65,12 +65,17 @@ public class GrpcModule implements Module {
 
 
 
+	/**
+	 * <code>ServerInterceptor</code> that must be installed for all gRPC services that use
+	 * {@link #rpcScope} and {@link #listenerCallScope}.
+	 */
 	public final ContextInterceptor contextInterceptor = new ContextInterceptor(this);
 
 
 
 	/**
-	 * Binds {@link #rpcContextTracker} and {@link #listenerCallContextTracker} for injection.
+	 * Binds {@link #rpcContextTracker} and {@link #listenerCallContextTracker} and corresponding
+	 * contexts for injection.
 	 */
 	@Override
 	public void configure(Binder binder) {
