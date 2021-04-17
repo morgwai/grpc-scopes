@@ -82,6 +82,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 	@Override
 	public StreamObserver<Record> storeMultiple(StreamObserver<NewRecordId> basicResponseObserver) {
+//*
 		ServerCallStreamObserver<NewRecordId> responseObserver =
 				(ServerCallStreamObserver<NewRecordId>) basicResponseObserver;
 
@@ -155,8 +156,48 @@ public class RecordStorageService extends RecordStorageImplBase {
 			requestObserver.requestAtMost1IfNotProcessing();
 		});
 		requestObserver.requestAtMost1IfNotProcessing();
-
 		return requestObserver;
+/*/
+		// The above method is quite complicated as it needs to take care of thread synchronization,
+		// event handling (client half-closing, response buffer becoming full/ready) and manual flow
+		// control.
+		// Below is a much simpler version using AsyncOneToOneRequestObserver utility class from
+		// https://github.com/morgwai/grpc-utils lib created specifically for async 1-1 streaming
+		// methods. It is not used yet, as it's not yet available in maven-central.
+		return new AsyncOneToOneRequestObserver<Record, NewRecordId>(basicResponseObserver) {
+
+			@Override
+			public void onError(Throwable t) {
+				log.info("client error: " + t);
+			}
+
+			@Override
+			protected void onNext(
+					Record message, OneToOneResponseObserver<NewRecordId> responseObserver) {
+				jpaExecutor.execute(() -> {
+					try {
+						pl.morgwai.samples.grpc.scopes.domain.Record entity = process(message);
+						performInTx(() -> { dao.persist(entity); return null; });
+						responseObserver.onNext(
+								NewRecordId.newBuilder().setId(entity.getId()).build());
+					} catch (StatusRuntimeException e) {
+						if (e.getStatus().getCode() == Code.CANCELLED) {
+							log.info("client cancelled the call");
+						} else {
+							log.severe("server error: " + e);
+							e.printStackTrace();
+						}
+					} catch (Exception e) {
+						log.severe("server error: " + e);
+						e.printStackTrace();
+						responseObserver.onError(Status.INTERNAL.withCause(e).asException());
+					} finally {
+						entityManagerProvider.get().close();
+					}
+				});
+			}
+		};
+//*/
 	}
 
 
