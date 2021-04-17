@@ -13,7 +13,7 @@ import javax.persistence.Id;
 
 
 @Entity
-public class Record implements Serializable {
+public class RecordEntity implements Serializable {
 
 
 
@@ -41,8 +41,8 @@ public class Record implements Serializable {
 	public boolean equals(Object other) {
 		if (this == other) return true;
 		if (other == null) return false;
-		if (other.getClass() != Record.class) return false;
-		Record otherRecord = (Record) other;
+		if (other.getClass() != RecordEntity.class) return false;
+		RecordEntity otherRecord = (RecordEntity) other;
 		return (id == null ? otherRecord.getId() == null : id.equals(otherRecord.getId()))
 			&& (content == null ?
 					otherRecord.getContent() == null : content.equals(otherRecord.getContent()));
@@ -52,13 +52,13 @@ public class Record implements Serializable {
 
 	// boilerplate only below
 
-	public Record() {}
+	public RecordEntity() {}
 
-	public Record(String content) {
+	public RecordEntity(String content) {
 		this.content = content;
 	}
 
-	public Record(long id, String content) {
+	public RecordEntity(long id, String content) {
 		this.id = id;
 		this.content = content;
 	}
@@ -66,8 +66,8 @@ public class Record implements Serializable {
 	static {
 		// unit-test/deploy time check if there are not typos in field names
 		try {
-			Record.class.getDeclaredField(ID);
-			Record.class.getDeclaredField(CONTENT);
+			RecordEntity.class.getDeclaredField(ID);
+			RecordEntity.class.getDeclaredField(CONTENT);
 		} catch (NoSuchFieldException | SecurityException e) {
 			throw new RuntimeException(e);
 		}

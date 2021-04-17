@@ -11,8 +11,8 @@ import javax.annotation.Nonnull;
 
 public interface RecordDao {
 
-	List<Record> findAll() throws DaoException;
-	void persist(@Nonnull Record record) throws DaoException;
+	List<RecordEntity> findAll() throws DaoException;
+	void persist(@Nonnull RecordEntity record) throws DaoException;
 
 
 

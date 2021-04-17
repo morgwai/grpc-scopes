@@ -20,6 +20,7 @@ import io.grpc.stub.StreamObserver;
 
 import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
+import pl.morgwai.samples.grpc.scopes.domain.RecordEntity;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageImplBase;
 
 
@@ -40,10 +41,10 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 	@Override
-	public void store(Record request, StreamObserver<NewRecordId> responseObserver) {
+	public void store(Record message, StreamObserver<NewRecordId> responseObserver) {
 		jpaExecutor.execute(() -> {
 			try {
-				pl.morgwai.samples.grpc.scopes.domain.Record entity = process(request);
+				RecordEntity entity = process(message);
 
 				performInTx(() -> {  // EntityManager is message scoped and this is the first time
 						// an instance is requested within this scope: a new instance will be
@@ -98,7 +99,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 				}
 				jpaExecutor.execute(() -> {
 					try {
-						pl.morgwai.samples.grpc.scopes.domain.Record entity = process(message);
+						RecordEntity entity = process(message);
 						performInTx(() -> { dao.persist(entity); return null; });
 						responseObserver.onNext(
 								NewRecordId.newBuilder().setId(entity.getId()).build());
@@ -176,7 +177,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 					Record message, OneToOneResponseObserver<NewRecordId> responseObserver) {
 				jpaExecutor.execute(() -> {
 					try {
-						pl.morgwai.samples.grpc.scopes.domain.Record entity = process(message);
+						RecordEntity entity = process(message);
 						performInTx(() -> { dao.persist(entity); return null; });
 						responseObserver.onNext(
 								NewRecordId.newBuilder().setId(entity.getId()).build());
@@ -214,7 +215,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 		jpaExecutor.execute(() -> {
 			try {
-				for (pl.morgwai.samples.grpc.scopes.domain.Record record: dao.findAll()) {
+				for (pl.morgwai.samples.grpc.scopes.domain.RecordEntity record: dao.findAll()) {
 					synchronized (responseObserver) {
 						while( ! responseObserver.isReady()) responseObserver.wait();
 					}
@@ -263,17 +264,17 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
-	public static pl.morgwai.samples.grpc.scopes.domain.Record process(Record proto) {
+	public static pl.morgwai.samples.grpc.scopes.domain.RecordEntity process(Record proto) {
 		// NOTE:  JPA in this project is used only for demo purposes.
 		// Unless some domain logic needs to be involved before storing the record or before sending
 		// response (unlike here), converting a proto to an entity does not make sense, as it only
 		// adds overhead.
-		return new pl.morgwai.samples.grpc.scopes.domain.Record(proto.getContent());
+		return new pl.morgwai.samples.grpc.scopes.domain.RecordEntity(proto.getContent());
 	}
 
 
 
-	public static Record toProto(pl.morgwai.samples.grpc.scopes.domain.Record entity) {
+	public static Record toProto(pl.morgwai.samples.grpc.scopes.domain.RecordEntity entity) {
 		return Record.newBuilder().setId(entity.getId()).setContent(entity.getContent()).build();
 	}
 

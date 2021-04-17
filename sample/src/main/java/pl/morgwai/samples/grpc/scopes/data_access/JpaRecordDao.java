@@ -10,7 +10,7 @@ import javax.inject.Provider;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
-import pl.morgwai.samples.grpc.scopes.domain.Record;
+import pl.morgwai.samples.grpc.scopes.domain.RecordEntity;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 
 
@@ -41,13 +41,13 @@ public class JpaRecordDao implements RecordDao {
 
 	static final String FIND_ALL_QUERY_NAME = JpaRecordDao.class.getName() + ".findAll";
 	static final String FIND_ALL_QUERY = "select r from "
-			+ Record.class.getSimpleName() + " r";
+			+ RecordEntity.class.getSimpleName() + " r";
 
 	@Override
-	public List<Record> findAll() throws DaoException {
+	public List<RecordEntity> findAll() throws DaoException {
 		try {
 			return entityManagerProvider.get()
-					.createNamedQuery(FIND_ALL_QUERY_NAME, Record.class).getResultList();
+					.createNamedQuery(FIND_ALL_QUERY_NAME, RecordEntity.class).getResultList();
 		} catch (Exception e) {
 			throw new DaoException(e);
 		}
@@ -56,7 +56,7 @@ public class JpaRecordDao implements RecordDao {
 
 
 	@Override
-	public void persist(Record record) throws DaoException {
+	public void persist(RecordEntity record) throws DaoException {
 		try {
 			entityManagerProvider.get().persist(record);
 		} catch (Exception e) {
