@@ -78,44 +78,29 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
+	enum State { PROCESSING, AWAITING, BUFFER_FULL }
+
 	@Override
 	public StreamObserver<Record> storeMultiple(StreamObserver<NewRecordId> basicResponseObserver) {
 		ServerCallStreamObserver<NewRecordId> responseObserver =
 				(ServerCallStreamObserver<NewRecordId>) basicResponseObserver;
-		responseObserver.setOnReadyHandler(() -> {
-			synchronized (responseObserver) {
-				responseObserver.notifyAll();
-			}
-		});
-		responseObserver.disableAutoRequest();
-		responseObserver.request(1);
 
-		return new StreamObserver<>() {
+		var requestObserver = new StreamObserver<Record>() {
 
 			boolean halfClosed = false;
-			volatile boolean inProgress = false;
+			State state = State.BUFFER_FULL;
 
 			@Override
 			public void onNext(Record message) {
-				inProgress = true;  // synchronized unnecessary: max 1 thread can call observer
-					// simultaneously, processing han't been yet dispatched to jpaExecutor
+				synchronized (this) {
+					state = State.PROCESSING;
+				}
 				jpaExecutor.execute(() -> {
 					try {
 						pl.morgwai.samples.grpc.scopes.domain.Record entity = process(message);
 						performInTx(() -> { dao.persist(entity); return null; });
-						synchronized (responseObserver) {
-							while( ! responseObserver.isReady()) responseObserver.wait();
-						}
 						responseObserver.onNext(
 								NewRecordId.newBuilder().setId(entity.getId()).build());
-						synchronized (this) {
-							inProgress = false;
-							if (halfClosed) {
-								responseObserver.onCompleted();
-							} else {
-								responseObserver.request(1);
-							}
-						}
 					} catch (StatusRuntimeException e) {
 						if (e.getStatus().getCode() == Code.CANCELLED) {
 							log.info("client cancelled the call");
@@ -130,13 +115,33 @@ public class RecordStorageService extends RecordStorageImplBase {
 					} finally {
 						entityManagerProvider.get().close();
 					}
+
+					synchronized (this) {
+						if (halfClosed) {
+							responseObserver.onCompleted();
+							return;
+						}
+						if (responseObserver.isReady()) {
+							state = State.AWAITING;
+							responseObserver.request(1);
+						} else {
+							state = State.BUFFER_FULL;
+						}
+					}
 				});
 			}
 
 			@Override
 			public synchronized void onCompleted() {
 				halfClosed = true;
-				if ( ! inProgress) responseObserver.onCompleted();
+				if (state != State.PROCESSING) responseObserver.onCompleted();
+			}
+
+			public synchronized void requestAtMost1IfNotProcessing () {
+				if (state == State.BUFFER_FULL) {
+					state = State.AWAITING;
+					responseObserver.request(1);
+				}
 			}
 
 			@Override
@@ -144,6 +149,14 @@ public class RecordStorageService extends RecordStorageImplBase {
 				log.info("client error: " + t);
 			}
 		};
+
+		responseObserver.disableAutoRequest();
+		responseObserver.setOnReadyHandler(() -> {
+			requestObserver.requestAtMost1IfNotProcessing();
+		});
+		requestObserver.requestAtMost1IfNotProcessing();
+
+		return requestObserver;
 	}
 
 
