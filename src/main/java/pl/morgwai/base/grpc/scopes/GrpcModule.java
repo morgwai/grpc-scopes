@@ -17,7 +17,6 @@ import io.grpc.ServerCall;
 import pl.morgwai.base.guice.scopes.ContextScope;
 import pl.morgwai.base.guice.scopes.ContextTracker;
 import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
-import pl.morgwai.base.guice.scopes.ThreadLocalContextTracker;
 
 
 
@@ -37,14 +36,12 @@ public class GrpcModule implements Module {
 	/**
 	 * Allows tracking of the {@link RpcContext context of a given RPC (<code>ServerCall</code>)}.
 	 */
-	public final ContextTracker<RpcContext> rpcContextTracker =
-			new ThreadLocalContextTracker<>();
+	public final ContextTracker<RpcContext> rpcContextTracker = new ContextTracker<>();
 
 	/**
 	 * Scopes objects to the {@link RpcContext context of a given RPC (<code>ServerCall</code>)}.
 	 */
-	public final Scope rpcScope =
-			new ContextScope<>("RPC_SCOPE", rpcContextTracker);
+	public final Scope rpcScope = new ContextScope<>("RPC_SCOPE", rpcContextTracker);
 
 
 
@@ -54,7 +51,7 @@ public class GrpcModule implements Module {
 	 * observer's call.
 	 */
 	public final ContextTracker<ListenerCallContext> listenerCallContextTracker =
-			new ThreadLocalContextTracker<>();
+			new ContextTracker<>();
 
 	/**
 	 * Scopes objects to the {@link ListenerCallContext context of a given <code>Listener</code>
