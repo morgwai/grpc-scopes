@@ -18,6 +18,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
+import pl.morgwai.base.grpc.utils.ConcurrentRequestObserver;
 import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordEntity;
@@ -79,30 +80,30 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
-	enum State { PROCESSING, AWAITING, BUFFER_FULL }
-
 	@Override
-	public StreamObserver<Record> storeMultiple(StreamObserver<NewRecordId> basicResponseObserver) {
-//*
-		ServerCallStreamObserver<NewRecordId> responseObserver =
-				(ServerCallStreamObserver<NewRecordId>) basicResponseObserver;
+	public StreamObserver<StoreRecordRequest> storeMultiple(
+			StreamObserver<StoreRecordResponse> basicResponseObserver) {
 
-		var requestObserver = new StreamObserver<Record>() {
+		ServerCallStreamObserver<StoreRecordResponse> responseObserver =
+				(ServerCallStreamObserver<StoreRecordResponse>) basicResponseObserver;
 
-			boolean halfClosed = false;
-			State state = State.BUFFER_FULL;
+		ConcurrentRequestObserver<StoreRecordRequest, StoreRecordResponse> requestObserver =
+				new ConcurrentRequestObserver<>(responseObserver) {
 
 			@Override
-			public void onNext(Record message) {
-				synchronized (this) {
-					state = State.PROCESSING;
-				}
+			protected void onRequest(
+					StoreRecordRequest request, StreamObserver<StoreRecordResponse> responseObserver
+			) {
 				jpaExecutor.execute(() -> {
 					try {
-						RecordEntity entity = process(message);
+						RecordEntity entity = process(request);
 						performInTx(() -> { dao.persist(entity); return null; });
 						responseObserver.onNext(
-								NewRecordId.newBuilder().setId(entity.getId()).build());
+								StoreRecordResponse.newBuilder()
+									.setRecordId(entity.getId())
+									.setRequestId(request.getRequestId())
+									.build());
+						responseObserver.onCompleted();
 					} catch (StatusRuntimeException e) {
 						if (e.getStatus().getCode() == Code.CANCELLED) {
 							log.info("client cancelled the call");
@@ -117,33 +118,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 					} finally {
 						entityManagerProvider.get().close();
 					}
-
-					synchronized (this) {
-						if (halfClosed) {
-							responseObserver.onCompleted();
-							return;
-						}
-						if (responseObserver.isReady()) {
-							state = State.AWAITING;
-							responseObserver.request(1);
-						} else {
-							state = State.BUFFER_FULL;
-						}
-					}
 				});
-			}
-
-			@Override
-			public synchronized void onCompleted() {
-				halfClosed = true;
-				if (state != State.PROCESSING) responseObserver.onCompleted();
-			}
-
-			public synchronized void requestAtMost1IfNotProcessing () {
-				if (state == State.BUFFER_FULL) {
-					state = State.AWAITING;
-					responseObserver.request(1);
-				}
 			}
 
 			@Override
@@ -152,53 +127,8 @@ public class RecordStorageService extends RecordStorageImplBase {
 			}
 		};
 
-		responseObserver.disableAutoRequest();
-		responseObserver.setOnReadyHandler(() -> {
-			requestObserver.requestAtMost1IfNotProcessing();
-		});
-		requestObserver.requestAtMost1IfNotProcessing();
+		responseObserver.request(5);
 		return requestObserver;
-/*/
-		// The above method is quite complicated as it needs to take care of thread synchronization,
-		// event handling (client half-closing, response buffer becoming full/ready) and manual flow
-		// control.
-		// Below is a much simpler version using AsyncOneToOneRequestObserver utility class from
-		// https://github.com/morgwai/grpc-utils lib created specifically for async 1-1 streaming
-		// methods. It is not used yet, as it's not yet available in maven-central.
-		return new AsyncOneToOneRequestObserver<Record, NewRecordId>(basicResponseObserver) {
-
-			@Override
-			public void onError(Throwable t) {
-				log.info("client error: " + t);
-			}
-
-			@Override
-			protected void onNext(
-					Record message, OneToOneResponseObserver<NewRecordId> responseObserver) {
-				jpaExecutor.execute(() -> {
-					try {
-						RecordEntity entity = process(message);
-						performInTx(() -> { dao.persist(entity); return null; });
-						responseObserver.onNext(
-								NewRecordId.newBuilder().setId(entity.getId()).build());
-					} catch (StatusRuntimeException e) {
-						if (e.getStatus().getCode() == Code.CANCELLED) {
-							log.info("client cancelled the call");
-						} else {
-							log.severe("server error: " + e);
-							e.printStackTrace();
-						}
-					} catch (Exception e) {
-						log.severe("server error: " + e);
-						e.printStackTrace();
-						responseObserver.onError(Status.INTERNAL.withCause(e).asException());
-					} finally {
-						entityManagerProvider.get().close();
-					}
-				});
-			}
-		};
-//*/
 	}
 
 
@@ -245,8 +175,6 @@ public class RecordStorageService extends RecordStorageImplBase {
 		return performInTx(entityManagerProvider, operation);
 	}
 
-
-
 	public static <T> T performInTx(
 			Provider<EntityManager> entityManagerProvider, Callable<T> operation) throws Exception {
 		EntityTransaction tx = entityManagerProvider.get().getTransaction();
@@ -264,17 +192,19 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
-	public static pl.morgwai.samples.grpc.scopes.domain.RecordEntity process(Record proto) {
+	public static RecordEntity process(Record proto) {
 		// NOTE:  JPA in this project is used only for demo purposes.
 		// Unless some domain logic needs to be involved before storing the record or before sending
 		// response (unlike here), converting a proto to an entity does not make sense, as it only
 		// adds overhead.
-		return new pl.morgwai.samples.grpc.scopes.domain.RecordEntity(proto.getContent());
+		return new RecordEntity(proto.getContent());
 	}
 
+	public static RecordEntity process(StoreRecordRequest proto) {
+		return new RecordEntity(proto.getContent());
+	}
 
-
-	public static Record toProto(pl.morgwai.samples.grpc.scopes.domain.RecordEntity entity) {
+	public static Record toProto(RecordEntity entity) {
 		return Record.newBuilder().setId(entity.getId()).setContent(entity.getContent()).build();
 	}
 

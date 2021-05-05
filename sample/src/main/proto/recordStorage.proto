@@ -6,7 +6,7 @@ option java_multiple_files = true;
 
 service RecordStorage {
 	rpc store(Record) returns (NewRecordId) {}
-	rpc storeMultiple(stream Record) returns (stream NewRecordId) {}
+	rpc storeMultiple(stream StoreRecordRequest) returns (stream StoreRecordResponse) {}
 	rpc getAll(Empty) returns (stream Record) {}
 }
 
@@ -19,4 +19,14 @@ message Record {
 
 message NewRecordId {
 	int64 id = 1;
+}
+
+message StoreRecordRequest {
+	int64 requestId = 1;
+	string content = 2;
+}
+
+message StoreRecordResponse {
+	int64 requestId = 1;
+	int64 recordId = 2;
 }

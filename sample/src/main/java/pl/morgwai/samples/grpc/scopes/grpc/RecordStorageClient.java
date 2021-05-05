@@ -21,6 +21,7 @@ public class RecordStorageClient {
 		).usePlaintext().build();
 		RecordStorageStub connector = RecordStorageGrpc.newStub(channel);
 
+
 		System.out.println("store single");
 		BlockingResponseObserver<NewRecordId> idResponseObserver =
 				new BlockingResponseObserver<>() {
@@ -34,16 +35,33 @@ public class RecordStorageClient {
 		connector.store(request, idResponseObserver);
 		idResponseObserver.awaitCompletion();
 
-		System.out.println("");
+
+
+		System.out.println();
 		System.out.println("store multiple");
-		StreamObserver<Record> requestObserver = connector.storeMultiple(idResponseObserver);
+		BlockingResponseObserver<StoreRecordResponse> storeRecordResponseObserver =
+				new BlockingResponseObserver<>() {
+
+			@Override
+			public void onNext(StoreRecordResponse response) {
+				System.out.println(response.getRequestId() + " -> " + response.getRecordId());
+			}
+		};
+		StreamObserver<StoreRecordRequest> requestObserver =
+				connector.storeMultiple(storeRecordResponseObserver);
 		for (int i = 2; i <= 5; i++) {
-			requestObserver.onNext(Record.newBuilder().setContent("record-" + i).build());
+			requestObserver.onNext(
+					StoreRecordRequest.newBuilder()
+							.setRequestId(i)
+							.setContent("record-" + i)
+							.build());
 		}
 		requestObserver.onCompleted();
-		idResponseObserver.awaitCompletion();
+		storeRecordResponseObserver.awaitCompletion();
 
-		System.out.println("");
+
+
+		System.out.println();
 		System.out.println("get all");
 		BlockingResponseObserver<Record> recordResponseObserver = new BlockingResponseObserver<>() {
 
