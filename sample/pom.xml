@@ -81,11 +81,6 @@ Copyright (c) Piotr Morgwai Kotarbinski
 			<artifactId>grpc-stub</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.google.protobuf</groupId>
-			<artifactId>protobuf-java-util</artifactId>
-			<version>${protobuf.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.tomcat</groupId>
 			<artifactId>annotations-api</artifactId>
 			<version>6.0.53</version>
