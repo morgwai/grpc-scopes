@@ -7,6 +7,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
+import pl.morgwai.base.grpc.utils.BlockingResponseObserver;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageStub;
 
 
@@ -15,7 +16,7 @@ public class RecordStorageClient {
 
 
 
-	public static void main(String args[]) throws InterruptedException {
+	public static void main(String args[]) throws Exception {
 		ManagedChannel channel = ManagedChannelBuilder
 				.forTarget("localhost:" + RecordStorageServer.PORT)
 				.defaultLoadBalancingPolicy("grpclb")
@@ -24,15 +25,11 @@ public class RecordStorageClient {
 		RecordStorageStub connector = RecordStorageGrpc.newStub(channel);
 
 
-		System.out.println("store single");
-		BlockingResponseObserver<NewRecordId> idResponseObserver =
-				new BlockingResponseObserver<>() {
 
-			@Override
-			public void onNext(NewRecordId response) {
-				System.out.println("id: " + response.getId());
-			}
-		};
+		System.out.println("store single");
+		var idResponseObserver = new BlockingResponseObserver<NewRecordId>(
+			response -> System.out.println("id: " + response.getId())
+		);
 		Record request = Record.newBuilder().setContent("first").build();
 		connector.store(request, idResponseObserver);
 		idResponseObserver.awaitCompletion();
@@ -41,14 +38,9 @@ public class RecordStorageClient {
 
 		System.out.println();
 		System.out.println("store multiple");
-		BlockingResponseObserver<StoreRecordResponse> storeRecordResponseObserver =
-				new BlockingResponseObserver<>() {
-
-			@Override
-			public void onNext(StoreRecordResponse response) {
-				System.out.println(response.getRequestId() + " -> " + response.getRecordId());
-			}
-		};
+		var storeRecordResponseObserver = new BlockingResponseObserver<StoreRecordResponse>(
+			response -> System.out.println(response.getRequestId()+ " -> " + response.getRecordId())
+		);
 		StreamObserver<StoreRecordRequest> requestObserver =
 				connector.storeMultiple(storeRecordResponseObserver);
 		for (int i = 2; i <= 5; i++) {
@@ -65,46 +57,10 @@ public class RecordStorageClient {
 
 		System.out.println();
 		System.out.println("get all");
-		BlockingResponseObserver<Record> recordResponseObserver = new BlockingResponseObserver<>() {
-
-			@Override
-			public void onNext(Record record) {
-				System.out.println("* " + record.getId() + " -> " + record.getContent());
-			}
-		};
+		var recordResponseObserver = new BlockingResponseObserver<Record>(
+			record -> System.out.println("* " + record.getId() + " -> " + record.getContent())
+		);
 		connector.getAll(Empty.newBuilder().build(), recordResponseObserver);
 		recordResponseObserver.awaitCompletion();
-	}
-}
-
-
-
-abstract class BlockingResponseObserver<T> implements StreamObserver<T> {
-
-
-
-	boolean completed = false;
-
-
-
-	public synchronized void awaitCompletion() throws InterruptedException {
-		while ( ! completed) wait();
-		completed = false;
-	}
-
-
-
-	@Override
-	public void onError(Throwable t) {
-		System.err.println("error: " + t);
-		onCompleted();
-	}
-
-
-
-	@Override
-	public synchronized void onCompleted() {
-		completed = true;
-		notifyAll();
 	}
 }
