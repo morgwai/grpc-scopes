@@ -16,9 +16,11 @@ public class RecordStorageClient {
 
 
 	public static void main(String args[]) throws InterruptedException {
-		ManagedChannel channel = ManagedChannelBuilder.forTarget(
-			"localhost:" + RecordStorageServer.PORT
-		).usePlaintext().build();
+		ManagedChannel channel = ManagedChannelBuilder
+				.forTarget("localhost:" + RecordStorageServer.PORT)
+				.defaultLoadBalancingPolicy("grpclb")
+				.usePlaintext()
+				.build();
 		RecordStorageStub connector = RecordStorageGrpc.newStub(channel);
 
 
