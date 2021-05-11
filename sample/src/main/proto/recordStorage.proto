@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) Piotr Morgwai Kotarbinski
+ */
 syntax = "proto3";
 package pl.morgwai.samples.grpc.scopes.grpc;
 
