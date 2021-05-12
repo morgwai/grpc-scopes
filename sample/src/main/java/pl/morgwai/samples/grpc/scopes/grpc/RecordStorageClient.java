@@ -6,6 +6,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
 import pl.morgwai.base.grpc.utils.BlockingResponseObserver;
+import pl.morgwai.base.grpc.utils.BlockingResponseObserver.ErrorReportedException;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageStub;
 
 
@@ -14,7 +15,7 @@ public class RecordStorageClient {
 
 
 
-	public static void main(String args[]) throws Exception {
+	public static void main(String args[]) throws ErrorReportedException, InterruptedException {
 		ManagedChannel channel = ManagedChannelBuilder
 				.forTarget("localhost:" + RecordStorageServer.PORT)
 				.defaultLoadBalancingPolicy("grpclb")
