@@ -15,8 +15,8 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptors;
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
@@ -61,9 +61,12 @@ public class RecordStorageServer {
 		Injector injector = Guice.createInjector(grpcModule, jpaModule);
 
 		RecordStorageService service = injector.getInstance(RecordStorageService.class);
-		recordStorageServer = ServerBuilder
+		recordStorageServer = NettyServerBuilder
 			.forPort(port)
 			.directExecutor()
+			.maxConnectionIdle(60, TimeUnit.SECONDS)
+			.maxConnectionAge(5, TimeUnit.MINUTES)
+			.maxConnectionAgeGrace(24, TimeUnit.HOURS)
 			.addService(ServerInterceptors.intercept(service, grpcModule.contextInterceptor))
 			.build();
 
