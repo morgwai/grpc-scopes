@@ -1,6 +1,8 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.samples.grpc.scopes.grpc;
 
+import java.util.concurrent.TimeUnit;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
@@ -63,5 +65,10 @@ public class RecordStorageClient {
 		);
 		connector.getAll(Empty.newBuilder().build(), recordResponseObserver);
 		recordResponseObserver.awaitCompletion();
+
+
+
+		channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+		if ( ! channel.isTerminated()) System.out.println("channel has NOT shutdown cleanly");
 	}
 }

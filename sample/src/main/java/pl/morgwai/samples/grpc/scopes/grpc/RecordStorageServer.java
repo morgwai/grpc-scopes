@@ -87,16 +87,22 @@ public class RecordStorageServer {
 		recordStorageServer.start();
 		log.info("server started");
 		recordStorageServer.awaitTermination();
-		System.out.println("\nserver shutdown...");
+		System.out.println();
+		System.out.println("server shutdown...");
 	}
 
 
 
 	Thread shutdownHook = new Thread(() -> {
+		System.out.println();
 		try {
 			recordStorageServer.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-			System.out.println("gRPC server shutdown completed");
 		} catch (InterruptedException e) {}
+		if (recordStorageServer.isTerminated()) {
+			System.out.println("gRPC server shutdown completed");
+		} else {
+			System.out.println("gRPC server has NOT shutdown cleanly");
+		}
 		jpaExecutor.tryShutdownGracefully(5);
 		entityManagerFactory.close();
 		System.out.println("entity manager factory shutdown completed");
