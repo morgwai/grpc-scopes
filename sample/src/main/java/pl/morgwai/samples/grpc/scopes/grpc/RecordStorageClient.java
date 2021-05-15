@@ -16,8 +16,10 @@ public class RecordStorageClient {
 
 
 	public static void main(String args[]) throws ErrorReportedException, InterruptedException {
+		String target = "localhost:" + RecordStorageServer.DEFAULT_PORT;
+		if (args.length > 0) target = args[0];
 		ManagedChannel channel = ManagedChannelBuilder
-				.forTarget("localhost:" + RecordStorageServer.PORT)
+				.forTarget(target)
 				.defaultLoadBalancingPolicy("grpclb")
 				.usePlaintext()
 				.build();

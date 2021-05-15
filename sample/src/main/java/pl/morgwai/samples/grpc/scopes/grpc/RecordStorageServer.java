@@ -29,25 +29,38 @@ public class RecordStorageServer {
 
 
 
-	static final String PERSISTENCE_UNIT_NAME = "RecordDb";
-	static final int JDBC_CONNECTION_POOL_SIZE = 5;  // same as in persistence.xml
 	EntityManagerFactory entityManagerFactory;
 	ContextTrackingExecutor jpaExecutor;
+	static final String PERSISTENCE_UNIT_NAME = "RecordDb";
+	static final int JDBC_CONNECTION_POOL_SIZE = 5;  // same as in persistence.xml
 
-	public static final int PORT = 6666;
+	int port;
+	static final String PORT_ENV_NAME = "PORT";
+	public static final int DEFAULT_PORT = 6666;
+
+	int maxConnectionIdleSeconds;
+	static final String MAX_CONNECTION_IDLE_ENV_NAME = "MAX_CONNECTION_IDLE_SECONDS";
+	static final int DEFAULT_MAX_CONNECTION_IDLE = 60;
+
+	int maxConnectionAgeMinutes;
+	static final String MAX_CONNECTION_AGE_ENV_NAME = "MAX_CONNECTION_AGE_MINUTES";
+	static final int DEFAULT_MAX_CONNECTION_AGE = 5;
+
+	int maxConnectionAgeGraceHours;
+	static final String MAX_CONNECTION_AGE_GRACE_ENV_NAME = "MAX_CONNECTION_AGE_GRACE_HOURS";
+	static final int DEFAULT_MAX_CONNECTION_AGE_GRACE = 24;
+
 	Server recordStorageServer;
 
 
 
-	public void startAndAwaitTermination(
-			int port, int jdbcConnectionPoolSize, String persistenceUnitName)
-			throws IOException, InterruptedException {
+	void startAndAwaitTermination() throws IOException, InterruptedException {
 		GrpcModule grpcModule = new GrpcModule();
 
-		entityManagerFactory = Persistence.createEntityManagerFactory(persistenceUnitName);
+		entityManagerFactory = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
 		jpaExecutor = grpcModule.newContextTrackingExecutor(
-				persistenceUnitName + "JpaExecutor", jdbcConnectionPoolSize);
-		log.info("entity manager factory " + persistenceUnitName
+				PERSISTENCE_UNIT_NAME + "JpaExecutor", JDBC_CONNECTION_POOL_SIZE);
+		log.info("entity manager factory " + PERSISTENCE_UNIT_NAME
 				+ " and its JPA executor created successfully");
 
 		Module jpaModule = (binder) -> {
@@ -64,9 +77,9 @@ public class RecordStorageServer {
 		recordStorageServer = NettyServerBuilder
 			.forPort(port)
 			.directExecutor()
-			.maxConnectionIdle(60, TimeUnit.SECONDS)
-			.maxConnectionAge(5, TimeUnit.MINUTES)
-			.maxConnectionAgeGrace(24, TimeUnit.HOURS)
+			.maxConnectionIdle(maxConnectionIdleSeconds, TimeUnit.SECONDS)
+			.maxConnectionAge(maxConnectionAgeMinutes, TimeUnit.MINUTES)
+			.maxConnectionAgeGrace(maxConnectionAgeGraceHours, TimeUnit.HOURS)
 			.addService(ServerInterceptors.intercept(service, grpcModule.contextInterceptor))
 			.build();
 
@@ -92,8 +105,42 @@ public class RecordStorageServer {
 
 
 	public static void main(String args[]) throws Exception {
-		new RecordStorageServer()
-			.startAndAwaitTermination(PORT, JDBC_CONNECTION_POOL_SIZE, PERSISTENCE_UNIT_NAME);
+		int port = getIntFromEnv(PORT_ENV_NAME, DEFAULT_PORT);
+		int maxConnectionIdleSeconds =
+				getIntFromEnv(MAX_CONNECTION_IDLE_ENV_NAME, DEFAULT_MAX_CONNECTION_IDLE);
+		int maxConnectionAgeMinutes =
+				getIntFromEnv(MAX_CONNECTION_AGE_ENV_NAME, DEFAULT_MAX_CONNECTION_AGE);
+		int maxConnectionAgeGraceHours =
+				getIntFromEnv(MAX_CONNECTION_AGE_GRACE_ENV_NAME, DEFAULT_MAX_CONNECTION_AGE_GRACE);
+
+		new RecordStorageServer(
+			port,
+			maxConnectionIdleSeconds,
+			maxConnectionAgeMinutes,
+			maxConnectionAgeGraceHours
+		).startAndAwaitTermination();
+	}
+
+	static int getIntFromEnv(String envVarName, int defaultValue) {
+		int value = defaultValue;
+		try {
+			value = Integer.parseInt(System.getenv(envVarName));
+			log.info(envVarName + '=' + value);
+		} catch (Exception e) {
+			log.info(envVarName + " unset or invalid, using default " + defaultValue);
+		}
+		return value;
+	}
+
+	RecordStorageServer(
+			int port,
+			int maxConnectionIdleSeconds,
+			int maxConnectionAgeMinutes,
+			int maxConnectionAgeGraceHours) {
+		this.port = port;
+		this.maxConnectionIdleSeconds = maxConnectionIdleSeconds;
+		this.maxConnectionAgeMinutes = maxConnectionAgeMinutes;
+		this.maxConnectionAgeGraceHours = maxConnectionAgeGraceHours;
 	}
 
 
