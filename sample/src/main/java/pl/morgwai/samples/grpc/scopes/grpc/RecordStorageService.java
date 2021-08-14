@@ -2,6 +2,7 @@
 package pl.morgwai.samples.grpc.scopes.grpc;
 
 import java.util.concurrent.Callable;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -11,9 +12,7 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.RollbackException;
 
 import io.grpc.Status;
-import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.CallStreamObserver;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
@@ -44,7 +43,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 	public void store(Record message, StreamObserver<NewRecordId> responseObserver) {
 		jpaExecutor.execute(() -> {
 			try {
-				RecordEntity entity = process(message);
+				final RecordEntity entity = process(message);
 
 				performInTx(() -> {  // EntityManager is message scoped and this is the first time
 						// an instance is requested within this scope: a new instance will be
@@ -61,16 +60,11 @@ public class RecordStorageService extends RecordStorageImplBase {
 				responseObserver.onNext(NewRecordId.newBuilder().setId(entity.getId()).build());
 				responseObserver.onCompleted();
 			} catch (StatusRuntimeException e) {
-				if (e.getStatus().getCode() == Code.CANCELLED) {
-					log.info("client cancelled the call");
-				} else {
-					log.severe("server error: " + e);
-					e.printStackTrace();
-				}
-			} catch (Exception e) {
-				log.severe("server error: " + e);
-				e.printStackTrace();
-				responseObserver.onError(Status.INTERNAL.withCause(e).asException());
+				log.fine("StatusRuntimeException" + e);
+			} catch (Throwable t) {
+				log.log(Level.SEVERE, "server error", t);
+				responseObserver.onError(Status.INTERNAL.withCause(t).asException());
+				if (t instanceof Error) throw (Error) t;
 			} finally {
 				entityManagerProvider.get().close();
 			}
@@ -78,24 +72,20 @@ public class RecordStorageService extends RecordStorageImplBase {
 	}
 
 
+
 	@Override
 	public StreamObserver<StoreRecordRequest> storeMultiple(
 			StreamObserver<StoreRecordResponse> basicResponseObserver) {
-
-		ServerCallStreamObserver<StoreRecordResponse> responseObserver =
+		final var responseObserver =
 				(ServerCallStreamObserver<StoreRecordResponse>) basicResponseObserver;
+		final var requestObserver =
+				new ConcurrentRequestObserver<StoreRecordRequest, StoreRecordResponse>(
+			responseObserver,
 
-		ConcurrentRequestObserver<StoreRecordRequest, StoreRecordResponse> requestObserver =
-				new ConcurrentRequestObserver<>(responseObserver) {
-
-			@Override
-			protected void onRequest(
-					StoreRecordRequest request,
-					CallStreamObserver<StoreRecordResponse> individualObserver
-			) {
+			(request, individualObserver) -> {
 				jpaExecutor.execute(() -> {
 					try {
-						RecordEntity entity = process(request);
+						final RecordEntity entity = process(request);
 						performInTx(() -> { dao.persist(entity); return null; });
 						individualObserver.onNext(
 								StoreRecordResponse.newBuilder()
@@ -104,28 +94,20 @@ public class RecordStorageService extends RecordStorageImplBase {
 									.build());
 						individualObserver.onCompleted();
 					} catch (StatusRuntimeException e) {
-						if (e.getStatus().getCode() == Code.CANCELLED) {
-							log.info("client cancelled the call");
-						} else {
-							log.severe("server error: " + e);
-							e.printStackTrace();
-						}
-					} catch (Exception e) {
-						log.severe("server error: " + e);
-						e.printStackTrace();
-						individualObserver.onError(Status.INTERNAL.withCause(e).asException());
+						log.fine("StatusRuntimeException" + e);
+					} catch (Throwable t) {
+						log.log(Level.SEVERE, "server error", t);
+						individualObserver.onError(Status.INTERNAL.withCause(t).asException());
+						if (t instanceof Error) throw (Error) t;
 					} finally {
 						entityManagerProvider.get().close();
 					}
 				});
-			}
+			},
 
-			@Override
-			public void onError(Throwable t) {
-				log.info("client error: " + t);
-			}
-		};
-
+			(error) -> log.fine("client error: " + error)
+		);
+		responseObserver.disableAutoRequest();
 		responseObserver.request(jpaExecutor.getMaximumPoolSize());
 		return requestObserver;
 	}
@@ -134,8 +116,8 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 	@Override
 	public void getAll(Empty request, StreamObserver<Record> basicResponseObserver) {
-		ServerCallStreamObserver<Record> responseObserver =
-				(ServerCallStreamObserver<Record>) basicResponseObserver;
+		final var responseObserver = (ServerCallStreamObserver<Record>) basicResponseObserver;
+
 		responseObserver.setOnReadyHandler(() -> {
 			synchronized (responseObserver) {
 				responseObserver.notifyAll();
@@ -144,7 +126,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 		jpaExecutor.execute(() -> {
 			try {
-				for (pl.morgwai.samples.grpc.scopes.domain.RecordEntity record: dao.findAll()) {
+				for (var record: dao.findAll()) {
 					synchronized (responseObserver) {
 						while( ! responseObserver.isReady()) responseObserver.wait();
 					}
@@ -152,16 +134,11 @@ public class RecordStorageService extends RecordStorageImplBase {
 				}
 				responseObserver.onCompleted();
 			} catch (StatusRuntimeException e) {
-				if (e.getStatus().getCode() == Code.CANCELLED) {
-					log.info("client cancelled the call");
-				} else {
-					log.severe("server error: " + e);
-					e.printStackTrace();
-				}
-			} catch (Exception e) {
-				log.severe("server error: " + e);
-				e.printStackTrace();
-				responseObserver.onError(Status.INTERNAL.withCause(e).asException());
+				log.fine("StatusRuntimeException" + e);
+			} catch (Throwable t) {
+				log.log(Level.SEVERE, "server error", t);
+				responseObserver.onError(Status.INTERNAL.withCause(t).asException());
+				if (t instanceof Error) throw (Error) t;
 			} finally {
 				entityManagerProvider.get().close();
 			}
@@ -183,9 +160,9 @@ public class RecordStorageService extends RecordStorageImplBase {
 			if (tx.getRollbackOnly()) throw new RollbackException("tx marked rollbackOnly");
 			tx.commit();
 			return result;
-		} catch (Exception e) {
+		} catch (Throwable t) {
 			if (tx.isActive()) tx.rollback();
-			throw e;
+			throw t;
 		}
 	}
 
