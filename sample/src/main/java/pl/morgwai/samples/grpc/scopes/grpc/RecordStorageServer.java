@@ -10,7 +10,6 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 
@@ -55,7 +54,7 @@ public class RecordStorageServer {
 
 
 	void startAndAwaitTermination() throws IOException, InterruptedException {
-		GrpcModule grpcModule = new GrpcModule();
+		final var grpcModule = new GrpcModule();
 
 		entityManagerFactory = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
 		jpaExecutor = grpcModule.newContextTrackingExecutor(
@@ -63,7 +62,7 @@ public class RecordStorageServer {
 		log.info("entity manager factory " + PERSISTENCE_UNIT_NAME
 				+ " and its JPA executor created successfully");
 
-		Module jpaModule = (binder) -> {
+		final Module jpaModule = (binder) -> {
 			binder.bind(EntityManager.class)
 				.toProvider(() -> entityManagerFactory.createEntityManager())
 				.in(grpcModule.listenerCallScope);
@@ -71,9 +70,9 @@ public class RecordStorageServer {
 			binder.bind(ContextTrackingExecutor.class).toInstance(jpaExecutor);
 			binder.bind(RecordDao.class).to(JpaRecordDao.class).in(Scopes.SINGLETON);
 		};
-		Injector injector = Guice.createInjector(grpcModule, jpaModule);
+		final var injector = Guice.createInjector(grpcModule, jpaModule);
 
-		RecordStorageService service = injector.getInstance(RecordStorageService.class);
+		final var service = injector.getInstance(RecordStorageService.class);
 		recordStorageServer = NettyServerBuilder
 			.forPort(port)
 			.directExecutor()
@@ -85,7 +84,7 @@ public class RecordStorageServer {
 
 		Runtime.getRuntime().addShutdownHook(shutdownHook);
 		recordStorageServer.start();
-		log.info("server started");
+		log.info("server started on port " + port);
 		recordStorageServer.awaitTermination();
 		System.out.println();
 		System.out.println("server shutdown...");

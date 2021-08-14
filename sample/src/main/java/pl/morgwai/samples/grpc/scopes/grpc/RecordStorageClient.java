@@ -64,7 +64,7 @@ public class RecordStorageClient {
 			record -> System.out.println("* " + record.getId() + " -> " + record.getContent())
 		);
 		connector.getAll(Empty.newBuilder().build(), recordResponseObserver);
-		recordResponseObserver.awaitCompletion();
+		recordResponseObserver.awaitCompletion(10_000l);
 
 
 
