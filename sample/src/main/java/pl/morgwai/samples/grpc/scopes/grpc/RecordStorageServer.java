@@ -32,7 +32,7 @@ public class RecordStorageServer {
 	EntityManagerFactory entityManagerFactory;
 	ContextTrackingExecutor jpaExecutor;
 	static final String PERSISTENCE_UNIT_NAME = "RecordDb";
-	static final int JDBC_CONNECTION_POOL_SIZE = 5;  // same as in persistence.xml
+	static final int JDBC_CONNECTION_POOL_SIZE = 3;  // same as in persistence.xml
 
 	int port;
 	static final String PORT_ENV_NAME = "PORT";
