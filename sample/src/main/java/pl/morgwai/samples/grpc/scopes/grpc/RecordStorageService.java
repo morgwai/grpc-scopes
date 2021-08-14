@@ -13,6 +13,7 @@ import javax.persistence.RollbackException;
 import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.CallStreamObserver;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
@@ -77,7 +78,6 @@ public class RecordStorageService extends RecordStorageImplBase {
 	}
 
 
-
 	@Override
 	public StreamObserver<StoreRecordRequest> storeMultiple(
 			StreamObserver<StoreRecordResponse> basicResponseObserver) {
@@ -90,18 +90,19 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 			@Override
 			protected void onRequest(
-					StoreRecordRequest request, StreamObserver<StoreRecordResponse> responseObserver
+					StoreRecordRequest request,
+					CallStreamObserver<StoreRecordResponse> individualObserver
 			) {
 				jpaExecutor.execute(() -> {
 					try {
 						RecordEntity entity = process(request);
 						performInTx(() -> { dao.persist(entity); return null; });
-						responseObserver.onNext(
+						individualObserver.onNext(
 								StoreRecordResponse.newBuilder()
-									.setRecordId(entity.getId())
 									.setRequestId(request.getRequestId())
+									.setRecordId(entity.getId())
 									.build());
-						responseObserver.onCompleted();
+						individualObserver.onCompleted();
 					} catch (StatusRuntimeException e) {
 						if (e.getStatus().getCode() == Code.CANCELLED) {
 							log.info("client cancelled the call");
@@ -112,7 +113,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 					} catch (Exception e) {
 						log.severe("server error: " + e);
 						e.printStackTrace();
-						responseObserver.onError(Status.INTERNAL.withCause(e).asException());
+						individualObserver.onError(Status.INTERNAL.withCause(e).asException());
 					} finally {
 						entityManagerProvider.get().close();
 					}
@@ -125,7 +126,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 			}
 		};
 
-		responseObserver.request(5);
+		responseObserver.request(jpaExecutor.getMaximumPoolSize());
 		return requestObserver;
 	}
 
