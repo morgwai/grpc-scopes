@@ -2,7 +2,7 @@
 
 RPC and ListenerCall Guice Scopes for gRPC server, that are automatically transferred when dispatching work to other threads.<br/>
 <br/>
-**latest release: [1.0-alpha1](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/1.0-alpha1/jar)**
+**latest release: [1.0-alpha2](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/1.0-alpha2/jar)**
 
 
 ## OVERVIEW
