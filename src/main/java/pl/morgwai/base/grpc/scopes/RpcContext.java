@@ -25,7 +25,7 @@ public class RpcContext extends ServerSideContext<RpcContext> {
 
 
 
-	ServerCall<?, ?> rpc;
+	final ServerCall<?, ?> rpc;
 	public ServerCall<?, ?> getRpc() { return rpc; }
 
 

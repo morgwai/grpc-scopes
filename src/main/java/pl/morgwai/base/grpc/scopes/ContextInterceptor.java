@@ -19,7 +19,7 @@ public class ContextInterceptor implements ServerInterceptor {
 
 
 
-	GrpcModule grpcModule;
+	final GrpcModule grpcModule;
 
 
 

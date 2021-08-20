@@ -33,19 +33,19 @@ public class RecordStorageServer {
 	static final String PERSISTENCE_UNIT_NAME = "RecordDb";
 	static final int JDBC_CONNECTION_POOL_SIZE = 3;  // same as in persistence.xml
 
-	int port;
+	final int port;
 	static final String PORT_ENV_NAME = "PORT";
 	public static final int DEFAULT_PORT = 6666;
 
-	int maxConnectionIdleSeconds;
+	final int maxConnectionIdleSeconds;
 	static final String MAX_CONNECTION_IDLE_ENV_NAME = "MAX_CONNECTION_IDLE_SECONDS";
 	static final int DEFAULT_MAX_CONNECTION_IDLE = 60;
 
-	int maxConnectionAgeMinutes;
+	final int maxConnectionAgeMinutes;
 	static final String MAX_CONNECTION_AGE_ENV_NAME = "MAX_CONNECTION_AGE_MINUTES";
 	static final int DEFAULT_MAX_CONNECTION_AGE = 5;
 
-	int maxConnectionAgeGraceHours;
+	final int maxConnectionAgeGraceHours;
 	static final String MAX_CONNECTION_AGE_GRACE_ENV_NAME = "MAX_CONNECTION_AGE_GRACE_HOURS";
 	static final int DEFAULT_MAX_CONNECTION_AGE_GRACE = 24;
 
@@ -136,6 +136,8 @@ public class RecordStorageServer {
 		}
 		return value;
 	}
+
+
 
 	RecordStorageServer(
 			int port,

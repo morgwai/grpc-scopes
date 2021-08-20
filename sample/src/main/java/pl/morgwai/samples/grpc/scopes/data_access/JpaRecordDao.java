@@ -17,7 +17,7 @@ public class JpaRecordDao implements RecordDao {
 
 
 
-	Provider<EntityManager> entityManagerProvider;
+	final Provider<EntityManager> entityManagerProvider;
 
 
 
@@ -29,7 +29,7 @@ public class JpaRecordDao implements RecordDao {
 		this.entityManagerProvider = entityManagerProvider;
 
 		// create named queries
-		EntityManager initialEntityManager = persistenceUnit.createEntityManager();
+		final var initialEntityManager = persistenceUnit.createEntityManager();
 		persistenceUnit.addNamedQuery(
 				FIND_ALL_QUERY_NAME, initialEntityManager.createQuery(FIND_ALL_QUERY));
 		initialEntityManager.close();
