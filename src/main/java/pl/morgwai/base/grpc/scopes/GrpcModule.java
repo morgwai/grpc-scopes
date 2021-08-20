@@ -4,12 +4,12 @@ package pl.morgwai.base.grpc.scopes;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scope;
 import com.google.inject.TypeLiteral;
-
 import io.grpc.ServerCall;
 
 import pl.morgwai.base.guice.scopes.ContextScope;
@@ -98,17 +98,43 @@ public class GrpcModule implements Module {
 				name, poolSize, rpcContextTracker, listenerCallContextTracker);
 	}
 
+
+
 	/**
-	 * Convenience "constructor" for <code>ContextTrackingExecutor</code>. (I really miss method
-	 * extensions in Java)
+	 * Convenience "constructor" for <code>ContextTrackingExecutor</code>.
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
 			int poolSize,
+			BlockingQueue<Runnable> workQueue) {
+		return new ContextTrackingExecutor(
+				name, poolSize, workQueue, rpcContextTracker, listenerCallContextTracker);
+	}
+
+
+
+	/**
+	 * Convenience "constructor" for <code>ContextTrackingExecutor</code>.
+	 */
+	public ContextTrackingExecutor newContextTrackingExecutor(
+			String name,
+			int corePoolSize,
+			int maximumPoolSize,
+			long keepAliveTime,
+			TimeUnit unit,
 			BlockingQueue<Runnable> workQueue,
 			ThreadFactory threadFactory,
-			RejectedExecutionHandler handler) {
-		return new ContextTrackingExecutor(name, poolSize, workQueue, threadFactory, handler,
+			RejectedExecutionHandler handler,
+			ContextTracker<?>... trackers) {
+		return new ContextTrackingExecutor(
+				name,
+				corePoolSize,
+				maximumPoolSize,
+				keepAliveTime,
+				unit,
+				workQueue,
+				threadFactory,
+				handler,
 				rpcContextTracker, listenerCallContextTracker);
 	}
 
