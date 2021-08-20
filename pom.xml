@@ -41,6 +41,7 @@
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<grpc.version>1.40.0</grpc.version>
 	</properties>
 
 	<dependencies>
@@ -58,7 +59,7 @@
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-api</artifactId>
-			<version>1.37.0</version>
+			<version>${grpc.version}</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
