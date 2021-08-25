@@ -86,25 +86,23 @@ public class RecordStorageServer {
 		recordStorageServer.start();
 		log.info("server started on port " + port);
 		recordStorageServer.awaitTermination();
-		System.out.println();
-		System.out.println("server shutdown...");
 	}
 
 
 
 	Thread shutdownHook = new Thread(() -> {
-		System.out.println();
 		try {
 			recordStorageServer.shutdown().awaitTermination(5, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {}
 		if (recordStorageServer.isTerminated()) {
-			System.out.println("gRPC server shutdown completed");
+			log.info("gRPC server shutdown completed");
 		} else {
-			System.out.println("gRPC server has NOT shutdown cleanly");
+			log.info("gRPC server has NOT shutdown cleanly");
 		}
 		jpaExecutor.tryShutdownGracefully(5);
 		entityManagerFactory.close();
-		System.out.println("entity manager factory shutdown completed");
+		log.info("entity manager factory shutdown completed");
+		((LogManager) LogManager.getLogManager()).manualReset();
 	});
 
 
@@ -152,5 +150,18 @@ public class RecordStorageServer {
 
 
 
+	static {
+		System.setProperty("java.util.logging.manager", LogManager.class.getName());
+	}
+
 	static final Logger log = Logger.getLogger(RecordStorageServer.class.getName());
+
+	public static class LogManager extends java.util.logging.LogManager {
+
+		@Override public void reset() throws SecurityException {}
+
+		public void manualReset() throws SecurityException {
+			super.reset();
+		}
+	}
 }
