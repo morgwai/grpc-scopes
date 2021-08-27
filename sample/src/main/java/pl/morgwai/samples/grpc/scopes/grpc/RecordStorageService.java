@@ -75,41 +75,34 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 	@Override
 	public StreamObserver<StoreRecordRequest> storeMultiple(
-			StreamObserver<StoreRecordResponse> basicResponseObserver) {
-		final var responseObserver =
-				(ServerCallStreamObserver<StoreRecordResponse>) basicResponseObserver;
-		final var requestObserver =
-				new ConcurrentRequestObserver<StoreRecordRequest, StoreRecordResponse>(
-			responseObserver,
+			StreamObserver<StoreRecordResponse> responseObserver) {
+		return new ConcurrentRequestObserver<>(
+			(ServerCallStreamObserver<StoreRecordResponse>) responseObserver,
+			jpaExecutor.getMaximumPoolSize(),
 
-			(request, individualObserver) -> {
-				jpaExecutor.execute(() -> {
-					try {
-						final RecordEntity entity = process(request);
-						performInTx(() -> { dao.persist(entity); return null; });
-						individualObserver.onNext(
-								StoreRecordResponse.newBuilder()
-									.setRequestId(request.getRequestId())
-									.setRecordId(entity.getId())
-									.build());
-						individualObserver.onCompleted();
-					} catch (StatusRuntimeException e) {
-						log.fine("StatusRuntimeException" + e);
-					} catch (Throwable t) {
-						log.log(Level.SEVERE, "server error", t);
-						individualObserver.onError(Status.INTERNAL.withCause(t).asException());
-						if (t instanceof Error) throw (Error) t;
-					} finally {
-						entityManagerProvider.get().close();
-					}
-				});
-			},
+			(request, individualObserver) -> jpaExecutor.execute(() -> {
+				try {
+					final RecordEntity entity = process(request);
+					performInTx(() -> { dao.persist(entity); return null; });
+					individualObserver.onNext(
+							StoreRecordResponse.newBuilder()
+								.setRequestId(request.getRequestId())
+								.setRecordId(entity.getId())
+								.build());
+					individualObserver.onCompleted();
+				} catch (StatusRuntimeException e) {
+					log.fine("StatusRuntimeException" + e);
+				} catch (Throwable t) {
+					log.log(Level.SEVERE, "server error", t);
+					individualObserver.onError(Status.INTERNAL.withCause(t).asException());
+					if (t instanceof Error) throw (Error) t;
+				} finally {
+					entityManagerProvider.get().close();
+				}
+			}),
 
 			(error) -> log.fine("client error: " + error)
 		);
-		responseObserver.disableAutoRequest();
-		responseObserver.request(jpaExecutor.getMaximumPoolSize());
-		return requestObserver;
 	}
 
 
