@@ -30,7 +30,7 @@ public class ContextInterceptor implements ServerInterceptor {
 			ServerCallHandler<Request, Response> handler) {
 		try {
 			final RpcContext rpcContext = grpcModule.newRpcContext(call);
-			final Listener<Request> listener = rpcContext.callWithinSelf(
+			final Listener<Request> listener = rpcContext.executeWithinSelf(
 				() -> handler.startCall(call, headers)
 			);
 
@@ -38,8 +38,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onMessage(Request message) {
-					rpcContext.runWithinSelf(() -> {
-						grpcModule.newListenerCallContext().runWithinSelf(
+					rpcContext.executeWithinSelf(() -> {
+						grpcModule.newListenerCallContext().executeWithinSelf(
 							() -> listener.onMessage(message)
 						);
 					});
@@ -47,8 +47,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onHalfClose() {
-					rpcContext.runWithinSelf(() -> {
-						grpcModule.newListenerCallContext().runWithinSelf(
+					rpcContext.executeWithinSelf(() -> {
+						grpcModule.newListenerCallContext().executeWithinSelf(
 							() -> listener.onHalfClose()
 						);
 					});
@@ -56,8 +56,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onCancel() {
-					rpcContext.runWithinSelf(() -> {
-						grpcModule.newListenerCallContext().runWithinSelf(
+					rpcContext.executeWithinSelf(() -> {
+						grpcModule.newListenerCallContext().executeWithinSelf(
 							() -> listener.onCancel()
 						);
 					});
@@ -65,8 +65,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onComplete() {
-					rpcContext.runWithinSelf(() -> {
-						grpcModule.newListenerCallContext().runWithinSelf(
+					rpcContext.executeWithinSelf(() -> {
+						grpcModule.newListenerCallContext().executeWithinSelf(
 							() -> listener.onComplete()
 						);
 					});
@@ -74,8 +74,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 				@Override
 				public void onReady() {
-					rpcContext.runWithinSelf(() -> {
-						grpcModule.newListenerCallContext().runWithinSelf(
+					rpcContext.executeWithinSelf(() -> {
+						grpcModule.newListenerCallContext().executeWithinSelf(
 							() -> listener.onReady()
 						);
 					});
