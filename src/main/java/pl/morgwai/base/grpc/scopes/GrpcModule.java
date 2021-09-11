@@ -19,13 +19,14 @@ import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
 
 
 /**
- * gRPC Guice <code>Scope</code>s, <code>ContextTracker</code>s and some helper methods.<br/>
- * <br/>
+ * gRPC Guice {@link Scope}s, {@link ContextTracker}s and some helper methods.
+ * <p>
  * <b>NO STATIC:</b> by a common convention, objects such as <code>Scope</code>s are usually stored
  * on <code>static</code> vars. Global context however has a lot of drawbacks. Instead, create just
- * 1 singleton instance in your app initialization code (like <code>main</code> method), pass it
- * (or its members) to your <code>ContextTrackingExecutor</code>s and Guice <code>Module</code>s
- * and then discard.
+ * 1 {@code GrpcModule} instance in your app initialization code (for example on a local var in your
+ * <code>main</code> method) and then use its member scopes ({@link #rpcScope},
+ * {@link #listenerCallScope}) in your Guice {@link Module}s and {@link #contextInterceptor} to
+ * build your services.</p>
  */
 public class GrpcModule implements Module {
 

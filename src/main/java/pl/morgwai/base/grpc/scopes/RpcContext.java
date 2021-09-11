@@ -9,11 +9,12 @@ import pl.morgwai.base.guice.scopes.ServerSideContext;
 
 
 /**
- * Context of a given RPC (<code>ServerCall</code>).
+ * Context of a given RPC ({@link io.grpc.ServerCall}).
  * A single instance spans over the whole processing of a given RPC: from the beginning of the
  * invocation of a given remote procedure, across all its messages, until the RPC is closed.
- * Specifically <code>ServerCallHandler.startCall(Metadata)</code> and all methods of the returned
- * <code>Listener</code> are executed within a given <code>RpcContext</code>.
+ * Specifically {@link io.grpc.ServerCallHandler#startCall(ServerCall, io.grpc.Metadata)} and all
+ * methods of the returned {@link io.grpc.ServerCall.Listener} are executed within the same
+ * <code>RpcContext</code>.
  *
  * @see GrpcModule#rpcScope corresponding <code>Scope</code>
  * @see <a href="https://gist.github.com/morgwai/6967bcf51b8ba586847c7f1922c99b88">a simplified

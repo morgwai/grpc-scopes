@@ -7,7 +7,7 @@ import pl.morgwai.base.guice.scopes.ServerSideContext;
 
 
 /**
- * Context of a single call to one of the methods of <code>ServerCall.Listener</code>.
+ * Context of a single call to one of the methods of {@link io.grpc.ServerCall.Listener}.
  * Each method of a <code>Listener</code> is executed with a new <code>ListenerCallContext</code>.
  *
  * @see GrpcModule#listenerCallScope corresponding <code>Scope</code>
