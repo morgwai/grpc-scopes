@@ -28,14 +28,9 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
-	@Inject
-	RecordDao dao;
-
-	@Inject
-	ContextTrackingExecutor jpaExecutor;
-
-	@Inject
-	Provider<EntityManager> entityManagerProvider;
+	@Inject RecordDao dao;
+	@Inject ContextTrackingExecutor jpaExecutor;
+	@Inject Provider<EntityManager> entityManagerProvider;
 
 
 
