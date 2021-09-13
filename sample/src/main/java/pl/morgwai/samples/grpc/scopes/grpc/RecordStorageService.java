@@ -45,8 +45,8 @@ public class RecordStorageService extends RecordStorageImplBase {
 			try {
 				final RecordEntity entity = process(message);
 
-				performInTx(() -> {  // EntityManager is message scoped and this is the first time
-						// an instance is requested within this scope: a new instance will be
+				executeWithinTx(() -> {  // EntityManager is message scoped and this is the first
+						// time an instance is requested within this scope: a new instance will be
 						// provided by entityManagerProvider to create a transaction and stored for
 						// a later use within this scope.
 
@@ -83,7 +83,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 			(request, individualObserver) -> jpaExecutor.execute(() -> {
 				try {
 					final RecordEntity entity = process(request);
-					performInTx(() -> { dao.persist(entity); return null; });
+					executeWithinTx(() -> { dao.persist(entity); return null; });
 					individualObserver.onNext(
 							StoreRecordResponse.newBuilder()
 								.setRequestId(request.getRequestId())
@@ -140,11 +140,11 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
-	protected <T> T performInTx(Callable<T> operation) throws Exception {
-		return performInTx(entityManagerProvider, operation);
+	protected <T> T executeWithinTx(Callable<T> operation) throws Exception {
+		return executeWithinTx(entityManagerProvider, operation);
 	}
 
-	public static <T> T performInTx(
+	public static <T> T executeWithinTx(
 			Provider<EntityManager> entityManagerProvider, Callable<T> operation) throws Exception {
 		EntityTransaction tx = entityManagerProvider.get().getTransaction();
 		if ( ! tx.isActive()) tx.begin();
