@@ -72,7 +72,8 @@ public class GrpcModule implements Module {
 
 	/**
 	 * Binds {@link #rpcContextTracker} and {@link #listenerCallContextTracker} and corresponding
-	 * contexts for injection.
+	 * contexts for injection. Binds {@code ContextTracker<?>[]} to instance containing all
+	 * trackers for use with {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
 	 */
 	@Override
 	public void configure(Binder binder) {
@@ -87,7 +88,12 @@ public class GrpcModule implements Module {
 		binder.bind(messageContextTrackerType).toInstance(listenerCallContextTracker);
 		binder.bind(ListenerCallContext.class).toProvider(
 				() -> listenerCallContextTracker.getCurrentContext());
+
+		TypeLiteral<ContextTracker<?>[]> trackerArrayType = new TypeLiteral<>() {};
+		binder.bind(trackerArrayType).toInstance(trackers);
 	}
+
+	public final ContextTracker<?>[] trackers = {listenerCallContextTracker, rpcContextTracker};
 
 
 
