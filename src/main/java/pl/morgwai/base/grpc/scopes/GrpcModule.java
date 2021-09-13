@@ -10,6 +10,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scope;
 import com.google.inject.TypeLiteral;
+import io.grpc.Metadata;
 import io.grpc.ServerCall;
 
 import pl.morgwai.base.guice.scopes.ContextScope;
@@ -141,8 +142,8 @@ public class GrpcModule implements Module {
 
 
 
-	RpcContext newRpcContext(ServerCall<?, ?> rpc) {
-		return new RpcContext(rpc, rpcContextTracker);
+	RpcContext newRpcContext(ServerCall<?, ?> rpc, Metadata headers) {
+		return new RpcContext(rpc, headers, rpcContextTracker);
 	}
 
 	ListenerCallContext newListenerCallContext() {

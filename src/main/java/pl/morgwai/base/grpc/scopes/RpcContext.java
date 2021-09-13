@@ -1,6 +1,7 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
+import io.grpc.Metadata;
 import io.grpc.ServerCall;
 
 import pl.morgwai.base.guice.scopes.ContextTracker;
@@ -29,10 +30,14 @@ public class RpcContext extends ServerSideContext<RpcContext> {
 	final ServerCall<?, ?> rpc;
 	public ServerCall<?, ?> getRpc() { return rpc; }
 
+	final Metadata headers;
+	public Metadata getHeaders() { return headers; }
 
 
-	RpcContext(ServerCall<?, ?> rpc, ContextTracker<RpcContext> tracker) {
+
+	RpcContext(ServerCall<?, ?> rpc, Metadata headers, ContextTracker<RpcContext> tracker) {
 		super(tracker);
 		this.rpc = rpc;
+		this.headers = headers;
 	}
 }

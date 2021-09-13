@@ -28,15 +28,14 @@ public class ContextInterceptor implements ServerInterceptor {
 			ServerCall<Request, Response> call,
 			Metadata headers,
 			ServerCallHandler<Request, Response> handler) {
-		final RpcContext rpcContext = grpcModule.newRpcContext(call);
+		final RpcContext rpcContext = grpcModule.newRpcContext(call, headers);
 		final Listener<Request> listener;
 		try {
 			listener = rpcContext.executeWithinSelf(() -> handler.startCall(call, headers));
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
-			// unreachable code: result of wrapping handler.startCall(call, headers) in a Callable
-			return null;
+			return null;  // dead code: result of wrapping handler.startCall(...) with a Callable
 		}
 
 		return new Listener<Request>() {
