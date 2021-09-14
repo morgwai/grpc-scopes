@@ -63,7 +63,7 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * <code>ServerInterceptor</code> that must be installed for all gRPC services that use
+	 * {@link io.grpc.ServerInterceptor} that must be installed for all gRPC services that use
 	 * {@link #rpcScope} and {@link #listenerCallScope}.
 	 */
 	public final ContextInterceptor contextInterceptor = new ContextInterceptor(this);
@@ -98,7 +98,7 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Convenience "constructor" for <code>ContextTrackingExecutor</code>. (I really miss method
+	 * Convenience "constructor" for {@link ContextTrackingExecutor}. (I really miss method
 	 * extensions in Java)
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(String name, int poolSize) {
@@ -109,7 +109,7 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Convenience "constructor" for <code>ContextTrackingExecutor</code>.
+	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
@@ -122,7 +122,7 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Convenience "constructor" for <code>ContextTrackingExecutor</code>.
+	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,

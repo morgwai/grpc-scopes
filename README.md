@@ -50,7 +50,7 @@ public class MyServer {
             .forPort(port)
             .directExecutor()
             .addService(ServerInterceptors.intercept(
-                myService, grpcModule.contextInterceptor /* more interceptors */))
+                myService, grpcModule.contextInterceptor /* more interceptors here... */))
             // more services here...
             .build();
 
