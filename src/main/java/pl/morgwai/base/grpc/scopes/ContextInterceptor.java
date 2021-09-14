@@ -24,12 +24,12 @@ public class ContextInterceptor implements ServerInterceptor {
 
 
 	@Override
-	public <Request, Response> Listener<Request> interceptCall(
-			ServerCall<Request, Response> call,
+	public <RequestT, ResponseT> Listener<RequestT> interceptCall(
+			ServerCall<RequestT, ResponseT> call,
 			Metadata headers,
-			ServerCallHandler<Request, Response> handler) {
+			ServerCallHandler<RequestT, ResponseT> handler) {
 		final RpcContext rpcContext = grpcModule.newRpcContext(call, headers);
-		final Listener<Request> listener;
+		final Listener<RequestT> listener;
 		try {
 			listener = rpcContext.executeWithinSelf(() -> handler.startCall(call, headers));
 		} catch (RuntimeException e) {
@@ -38,51 +38,51 @@ public class ContextInterceptor implements ServerInterceptor {
 			return null;  // dead code: result of wrapping handler.startCall(...) with a Callable
 		}
 
-		return new Listener<Request>() {
+		return new Listener<RequestT>() {
 
 			@Override
-			public void onMessage(Request message) {
-				rpcContext.executeWithinSelf(() -> {
-					grpcModule.newListenerCallContext().executeWithinSelf(
+			public void onMessage(RequestT message) {
+				rpcContext.executeWithinSelf(
+					() -> grpcModule.newListenerCallContext().executeWithinSelf(
 						() -> listener.onMessage(message)
-					);
-				});
+					)
+				);
 			}
 
 			@Override
 			public void onHalfClose() {
-				rpcContext.executeWithinSelf(() -> {
-					grpcModule.newListenerCallContext().executeWithinSelf(
+				rpcContext.executeWithinSelf(
+					() -> grpcModule.newListenerCallContext().executeWithinSelf(
 						() -> listener.onHalfClose()
-					);
-				});
+					)
+				);
 			}
 
 			@Override
 			public void onCancel() {
-				rpcContext.executeWithinSelf(() -> {
-					grpcModule.newListenerCallContext().executeWithinSelf(
+				rpcContext.executeWithinSelf(
+					() -> grpcModule.newListenerCallContext().executeWithinSelf(
 						() -> listener.onCancel()
-					);
-				});
+					)
+				);
 			}
 
 			@Override
 			public void onComplete() {
-				rpcContext.executeWithinSelf(() -> {
-					grpcModule.newListenerCallContext().executeWithinSelf(
+				rpcContext.executeWithinSelf(
+					() -> grpcModule.newListenerCallContext().executeWithinSelf(
 						() -> listener.onComplete()
-					);
-				});
+					)
+				);
 			}
 
 			@Override
 			public void onReady() {
-				rpcContext.executeWithinSelf(() -> {
-					grpcModule.newListenerCallContext().executeWithinSelf(
+				rpcContext.executeWithinSelf(
+					() -> grpcModule.newListenerCallContext().executeWithinSelf(
 						() -> listener.onReady()
-					);
-				});
+					)
+				);
 			}
 		};
 	}
