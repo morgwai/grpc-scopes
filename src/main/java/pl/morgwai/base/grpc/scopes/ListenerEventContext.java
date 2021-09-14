@@ -7,8 +7,10 @@ import pl.morgwai.base.guice.scopes.ServerSideContext;
 
 
 /**
- * Context of a single call to one of the methods of {@link io.grpc.ServerCall.Listener}.
- * Each method of a <code>Listener</code> is executed with a new <code>ListenerEventContext</code>.
+ * Context of a single call to one of the methods of {@link io.grpc.ServerCall.Listener} and
+ * listener creation in
+ * {@link io.grpc.ServerCallHandler#startCall(io.grpc.ServerCall, io.grpc.Metadata)}.
+ * Each such event is executed within a separate new {@code ListenerEventContext} instance.
  *
  * @see GrpcModule#listenerEventScope corresponding <code>Scope</code>
  * @see <a href="https://gist.github.com/morgwai/6967bcf51b8ba586847c7f1922c99b88">a simplified
