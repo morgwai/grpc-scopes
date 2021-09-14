@@ -26,7 +26,7 @@ import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
  * on <code>static</code> vars. Global context however has a lot of drawbacks. Instead, create just
  * 1 {@code GrpcModule} instance in your app initialization code (for example on a local var in your
  * <code>main</code> method) and then use its member scopes ({@link #rpcScope},
- * {@link #listenerCallScope}) in your Guice {@link Module}s and {@link #contextInterceptor} to
+ * {@link #listenerEventScope}) in your Guice {@link Module}s and {@link #contextInterceptor} to
  * build your services.</p>
  */
 public class GrpcModule implements Module {
@@ -46,32 +46,32 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Allows tracking of the {@link ListenerCallContext context of a single
+	 * Allows tracking of the {@link ListenerEventContext context of a single
 	 * <code>ServerCall.Listener</code> call} and as a consequence also of a corresponding request
 	 * observer's call.
 	 */
-	public final ContextTracker<ListenerCallContext> listenerCallContextTracker =
+	public final ContextTracker<ListenerEventContext> listenerEventContextTracker =
 			new ContextTracker<>();
 
 	/**
-	 * Scopes objects to the {@link ListenerCallContext context of a given <code>Listener</code>
+	 * Scopes objects to the {@link ListenerEventContext context of a given <code>Listener</code>
 	 * call} and as a consequence also of a corresponding request observer's call.
 	 */
-	public final Scope listenerCallScope =
-			new ContextScope<>("LISTENER_CALL_SCOPE", listenerCallContextTracker);
+	public final Scope listenerEventScope =
+			new ContextScope<>("LISTENER_EVENT_SCOPE", listenerEventContextTracker);
 
 
 
 	/**
 	 * {@link io.grpc.ServerInterceptor} that must be installed for all gRPC services that use
-	 * {@link #rpcScope} and {@link #listenerCallScope}.
+	 * {@link #rpcScope} and {@link #listenerEventScope}.
 	 */
 	public final ContextInterceptor contextInterceptor = new ContextInterceptor(this);
 
 
 
 	/**
-	 * Binds {@link #rpcContextTracker} and {@link #listenerCallContextTracker} and corresponding
+	 * Binds {@link #rpcContextTracker} and {@link #listenerEventContextTracker} and corresponding
 	 * contexts for injection. Binds {@code ContextTracker<?>[]} to instance containing all
 	 * trackers for use with {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
 	 */
@@ -83,17 +83,17 @@ public class GrpcModule implements Module {
 		binder.bind(RpcContext.class).toProvider(
 				() -> rpcContextTracker.getCurrentContext());
 
-		TypeLiteral<ContextTracker<ListenerCallContext>> messageContextTrackerType =
+		TypeLiteral<ContextTracker<ListenerEventContext>> messageContextTrackerType =
 				new TypeLiteral<>() {};
-		binder.bind(messageContextTrackerType).toInstance(listenerCallContextTracker);
-		binder.bind(ListenerCallContext.class).toProvider(
-				() -> listenerCallContextTracker.getCurrentContext());
+		binder.bind(messageContextTrackerType).toInstance(listenerEventContextTracker);
+		binder.bind(ListenerEventContext.class).toProvider(
+				() -> listenerEventContextTracker.getCurrentContext());
 
 		TypeLiteral<ContextTracker<?>[]> trackerArrayType = new TypeLiteral<>() {};
 		binder.bind(trackerArrayType).toInstance(trackers);
 	}
 
-	public final ContextTracker<?>[] trackers = {listenerCallContextTracker, rpcContextTracker};
+	public final ContextTracker<?>[] trackers = {listenerEventContextTracker, rpcContextTracker};
 
 
 
@@ -103,7 +103,7 @@ public class GrpcModule implements Module {
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(String name, int poolSize) {
 		return new ContextTrackingExecutor(
-				name, poolSize, rpcContextTracker, listenerCallContextTracker);
+				name, poolSize, rpcContextTracker, listenerEventContextTracker);
 	}
 
 
@@ -116,7 +116,7 @@ public class GrpcModule implements Module {
 			int poolSize,
 			BlockingQueue<Runnable> workQueue) {
 		return new ContextTrackingExecutor(
-				name, poolSize, workQueue, rpcContextTracker, listenerCallContextTracker);
+				name, poolSize, workQueue, rpcContextTracker, listenerEventContextTracker);
 	}
 
 
@@ -143,7 +143,7 @@ public class GrpcModule implements Module {
 				workQueue,
 				threadFactory,
 				handler,
-				rpcContextTracker, listenerCallContextTracker);
+				rpcContextTracker, listenerEventContextTracker);
 	}
 
 
@@ -152,7 +152,7 @@ public class GrpcModule implements Module {
 		return new RpcContext(rpc, headers, rpcContextTracker);
 	}
 
-	ListenerCallContext newListenerCallContext() {
-		return new ListenerCallContext(listenerCallContextTracker);
+	ListenerEventContext newListenerEventContext() {
+		return new ListenerEventContext(listenerEventContextTracker);
 	}
 }

@@ -11,7 +11,7 @@ import io.grpc.ServerInterceptor;
 
 /**
  * Creates and starts tracking a new {@link RpcContext} for each new RPC ({@link ServerCall})
- * and a new {@link ListenerCallContext} for each {@link Listener} call.
+ * and a new {@link ListenerEventContext} for each {@link Listener} call.
  *
  * @see GrpcModule
  */
@@ -31,7 +31,11 @@ public class ContextInterceptor implements ServerInterceptor {
 		final RpcContext rpcContext = grpcModule.newRpcContext(call, headers);
 		final Listener<RequestT> listener;
 		try {
-			listener = rpcContext.executeWithinSelf(() -> handler.startCall(call, headers));
+			listener = rpcContext.executeWithinSelf(
+				() -> grpcModule.newListenerEventContext().executeWithinSelf(
+					() -> handler.startCall(call, headers)
+				)
+			);
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -43,7 +47,7 @@ public class ContextInterceptor implements ServerInterceptor {
 			@Override
 			public void onMessage(RequestT message) {
 				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerCallContext().executeWithinSelf(
+					() -> grpcModule.newListenerEventContext().executeWithinSelf(
 						() -> listener.onMessage(message)
 					)
 				);
@@ -52,7 +56,7 @@ public class ContextInterceptor implements ServerInterceptor {
 			@Override
 			public void onHalfClose() {
 				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerCallContext().executeWithinSelf(
+					() -> grpcModule.newListenerEventContext().executeWithinSelf(
 						() -> listener.onHalfClose()
 					)
 				);
@@ -61,7 +65,7 @@ public class ContextInterceptor implements ServerInterceptor {
 			@Override
 			public void onCancel() {
 				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerCallContext().executeWithinSelf(
+					() -> grpcModule.newListenerEventContext().executeWithinSelf(
 						() -> listener.onCancel()
 					)
 				);
@@ -70,7 +74,7 @@ public class ContextInterceptor implements ServerInterceptor {
 			@Override
 			public void onComplete() {
 				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerCallContext().executeWithinSelf(
+					() -> grpcModule.newListenerEventContext().executeWithinSelf(
 						() -> listener.onComplete()
 					)
 				);
@@ -79,7 +83,7 @@ public class ContextInterceptor implements ServerInterceptor {
 			@Override
 			public void onReady() {
 				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerCallContext().executeWithinSelf(
+					() -> grpcModule.newListenerEventContext().executeWithinSelf(
 						() -> listener.onReady()
 					)
 				);

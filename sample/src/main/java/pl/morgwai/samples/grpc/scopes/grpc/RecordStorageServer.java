@@ -65,7 +65,7 @@ public class RecordStorageServer {
 		final Module jpaModule = (binder) -> {
 			binder.bind(EntityManager.class)
 				.toProvider(() -> entityManagerFactory.createEntityManager())
-				.in(grpcModule.listenerCallScope);
+				.in(grpcModule.listenerEventScope);
 			binder.bind(EntityManagerFactory.class).toInstance(entityManagerFactory);
 			binder.bind(ContextTrackingExecutor.class).toInstance(jpaExecutor);
 			binder.bind(RecordDao.class).to(JpaRecordDao.class).in(Scopes.SINGLETON);
