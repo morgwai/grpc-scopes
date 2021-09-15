@@ -29,71 +29,81 @@ public class ContextInterceptor implements ServerInterceptor {
 			Metadata headers,
 			ServerCallHandler<RequestT, ResponseT> handler) {
 		final RpcContext rpcContext = grpcModule.newRpcContext(call, headers);
-		final Listener<RequestT> listener;
 		try {
-			listener = rpcContext.executeWithinSelf(
+			final var listener = rpcContext.executeWithinSelf(
 				() -> grpcModule.newListenerEventContext().executeWithinSelf(
 					() -> handler.startCall(call, headers)
 				)
 			);
+			return new ListenerWrapper<>(listener, rpcContext);
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
 			return null;  // dead code: result of wrapping handler.startCall(...) with a Callable
 		}
-
-		return new Listener<RequestT>() {
-
-			@Override
-			public void onMessage(RequestT message) {
-				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerEventContext().executeWithinSelf(
-						() -> listener.onMessage(message)
-					)
-				);
-			}
-
-			@Override
-			public void onHalfClose() {
-				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerEventContext().executeWithinSelf(
-						() -> listener.onHalfClose()
-					)
-				);
-			}
-
-			@Override
-			public void onCancel() {
-				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerEventContext().executeWithinSelf(
-						() -> listener.onCancel()
-					)
-				);
-			}
-
-			@Override
-			public void onComplete() {
-				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerEventContext().executeWithinSelf(
-						() -> listener.onComplete()
-					)
-				);
-			}
-
-			@Override
-			public void onReady() {
-				rpcContext.executeWithinSelf(
-					() -> grpcModule.newListenerEventContext().executeWithinSelf(
-						() -> listener.onReady()
-					)
-				);
-			}
-		};
 	}
 
 
 
-	public ContextInterceptor(GrpcModule grpcModule) {
+	class ListenerWrapper<RequestT> extends Listener<RequestT> {
+
+		final Listener<RequestT> wrappedListener;
+		final RpcContext rpcContext;
+
+		@Override
+		public void onMessage(RequestT message) {
+			rpcContext.executeWithinSelf(
+				() -> grpcModule.newListenerEventContext().executeWithinSelf(
+					() -> wrappedListener.onMessage(message)
+				)
+			);
+		}
+
+		@Override
+		public void onHalfClose() {
+			rpcContext.executeWithinSelf(
+				() -> grpcModule.newListenerEventContext().executeWithinSelf(
+					() -> wrappedListener.onHalfClose()
+				)
+			);
+		}
+
+		@Override
+		public void onCancel() {
+			rpcContext.executeWithinSelf(
+				() -> grpcModule.newListenerEventContext().executeWithinSelf(
+					() -> wrappedListener.onCancel()
+				)
+			);
+		}
+
+		@Override
+		public void onComplete() {
+			rpcContext.executeWithinSelf(
+				() -> grpcModule.newListenerEventContext().executeWithinSelf(
+					() -> wrappedListener.onComplete()
+				)
+			);
+		}
+
+		@Override
+		public void onReady() {
+			rpcContext.executeWithinSelf(
+				() -> grpcModule.newListenerEventContext().executeWithinSelf(
+					() -> wrappedListener.onReady()
+				)
+			);
+		}
+
+		ListenerWrapper(Listener<RequestT> wrappedListener, RpcContext rpcContext) {
+			this.wrappedListener = wrappedListener;
+			this.rpcContext = rpcContext;
+		}
+	}
+
+
+
+	ContextInterceptor(GrpcModule grpcModule) {
 		this.grpcModule = grpcModule;
 	}
 }
