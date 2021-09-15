@@ -2,7 +2,7 @@
 
 RPC and ListenerEvent Guice Scopes for gRPC server, that are automatically transferred when dispatching work to other threads.<br/>
 <br/>
-**latest release: [1.0-alpha7](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/1.0-alpha7/jar)**
+**latest release: [1.0-alpha7](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/1.0-alpha7/jar)** ([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/1.0-alpha7))
 
 
 
@@ -10,10 +10,10 @@ RPC and ListenerEvent Guice Scopes for gRPC server, that are automatically trans
 
 Provides `rpcScope` and `listenerEventScope` Guice scopes built using [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes) which automatically transfers them to a new thread when dispatching using [ContextTrackingExecutor](https://github.com/morgwai/guice-context-scopes/blob/master/src/main/java/pl/morgwai/base/guice/scopes/ContextTrackingExecutor.java).<br/>
 <br/>
-Oversimplifying, in case of a streaming client, `listenerEventScope` spans over processing of a single message from client's stream, while `rpcScope` spans over a whole given RPC. Oversimplifying again, in case of a unary client, these 2 scopes have roughly the same span.<br/>
+Oversimplifying, in case of a streaming client, `listenerEventScope` spans over processing of a single message from client's stream, while `rpcScope` spans over the whole RPC. Oversimplifying again, in case of a unary client, these 2 scopes have roughly the same span.<br/>
 More specifically though:
-* each call to any of `ServerCall.Listener`'s methods and listener creation in `ServerCallHandler.startCall(...)` runs within a separate instance of [ListenerEventContext](src/main/java/pl/morgwai/base/grpc/scopes/ListenerEventContext.java) (hence the name)
-* `ServerCallHandler.startCall(...)` and each call to any of `ServerCall.Listener`'s methods from the same RPC run within the same instance of [RpcContext](src/main/java/pl/morgwai/base/grpc/scopes/RpcContext.java)
+* each call to any of `ServerCall.Listener`'s methods and listener creation in `ServerCallHandler.startCall(...)` run within a separate instance of [ListenerEventContext](src/main/java/pl/morgwai/base/grpc/scopes/ListenerEventContext.java) (hence the name).
+* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within the same instance of [RpcContext](src/main/java/pl/morgwai/base/grpc/scopes/RpcContext.java).
 
 
 

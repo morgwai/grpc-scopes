@@ -47,15 +47,15 @@ public class GrpcModule implements Module {
 
 	/**
 	 * Allows tracking of the {@link ListenerEventContext context of a single
-	 * <code>ServerCall.Listener</code> call} and as a consequence also of a corresponding request
-	 * observer's call.
+	 * <code>ServerCall.Listener</code> event} and as a consequence also of the corresponding
+	 * request observer call.
 	 */
 	public final ContextTracker<ListenerEventContext> listenerEventContextTracker =
 			new ContextTracker<>();
 
 	/**
 	 * Scopes objects to the {@link ListenerEventContext context of a given <code>Listener</code>
-	 * call} and as a consequence also of a corresponding request observer's call.
+	 * event} and as a consequence also of the corresponding request observer call.
 	 */
 	public final Scope listenerEventScope =
 			new ContextScope<>("LISTENER_EVENT_SCOPE", listenerEventContextTracker);
