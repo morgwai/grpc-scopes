@@ -68,11 +68,6 @@
 			<artifactId>hibernate-entitymanager</artifactId>
 			<version>5.4.25.Final</version>
 		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-jdk14</artifactId>
-			<version>1.7.32</version>
-		</dependency>
 
 		<!-- order of these deps is important for enforcer -->
 		<dependency>
@@ -103,6 +98,12 @@
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<version>1.4.200</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-jdk14</artifactId>
+			<version>1.7.32</version>
 			<scope>runtime</scope>
 		</dependency>
 	</dependencies>
