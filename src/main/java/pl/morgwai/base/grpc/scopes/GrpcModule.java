@@ -34,28 +34,28 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Allows tracking of the {@link RpcContext context of a given RPC (<code>ServerCall</code>)}.
+	 * Allows tracking of the {@link RpcContext context of an RPC (ServerCall)}.
 	 */
 	public final ContextTracker<RpcContext> rpcContextTracker = new ContextTracker<>();
 
 	/**
-	 * Scopes objects to the {@link RpcContext context of a given RPC (<code>ServerCall</code>)}.
+	 * Scopes objects to the {@link RpcContext context of an RPC (ServerCall)}.
 	 */
 	public final Scope rpcScope = new ContextScope<>("RPC_SCOPE", rpcContextTracker);
 
 
 
 	/**
-	 * Allows tracking of the {@link ListenerEventContext context of a single
-	 * <code>ServerCall.Listener</code> event} and as a consequence also of the corresponding
-	 * request observer call.
+	 * Allows tracking of the
+	 * {@link ListenerEventContext context of a Listener event} and as a consequence also of the
+	 * corresponding request observer call.
 	 */
 	public final ContextTracker<ListenerEventContext> listenerEventContextTracker =
 			new ContextTracker<>();
 
 	/**
-	 * Scopes objects to the {@link ListenerEventContext context of a given <code>Listener</code>
-	 * event} and as a consequence also of the corresponding request observer call.
+	 * Scopes objects to the {@link ListenerEventContext context of a Listener event} and as a
+	 * consequence also of the corresponding request observer call.
 	 */
 	public final Scope listenerEventScope =
 			new ContextScope<>("LISTENER_EVENT_SCOPE", listenerEventContextTracker);
@@ -65,6 +65,8 @@ public class GrpcModule implements Module {
 	/**
 	 * {@link io.grpc.ServerInterceptor} that must be installed for all gRPC services that use
 	 * {@link #rpcScope} and {@link #listenerEventScope}.
+	 *
+	 * @see io.grpc.ServerInterceptors#intercept(io.grpc.BindableService, java.util.List)
 	 */
 	public final ContextInterceptor contextInterceptor = new ContextInterceptor(this);
 

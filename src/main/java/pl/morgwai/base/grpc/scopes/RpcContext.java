@@ -18,8 +18,9 @@ import pl.morgwai.base.guice.scopes.ServerSideContext;
  * <code>RpcContext</code>.
  *
  * @see GrpcModule#rpcScope corresponding <code>Scope</code>
- * @see <a href="https://gist.github.com/morgwai/6967bcf51b8ba586847c7f1922c99b88">a simplified
- *      overview of relation between methods of <code>Listener</code> and user code</a>
+ * @see <a href="https://javadoc.io/doc/pl.morgwai.base/grpc-utils/latest/pl/morgwai/base/grpc/
+utils/GrpcServerFlow.html">a simplified overview of relation between methods of
+ * Listener and user's request observer</a>
  * @see <a href="https://github.com/grpc/grpc-java/blob/master/stub/src/main/java/io/grpc/stub/
 ServerCalls.java">ServerCalls source for detailed info</a>
  */
