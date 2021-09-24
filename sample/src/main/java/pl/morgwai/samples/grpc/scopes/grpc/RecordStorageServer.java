@@ -17,6 +17,7 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
+import pl.morgwai.base.logging.JulManualResetLogManager;
 import pl.morgwai.samples.grpc.scopes.data_access.JpaRecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 
@@ -96,7 +97,7 @@ public class RecordStorageServer {
 			jpaExecutor.tryShutdownGracefully(5);
 			entityManagerFactory.close();
 			log.info("entity manager factory shutdown completed");
-			((LogManager) LogManager.getLogManager()).manualReset();
+			((JulManualResetLogManager) JulManualResetLogManager.getLogManager()).manualReset();
 		}));
 	}
 
@@ -123,17 +124,8 @@ public class RecordStorageServer {
 
 
 	static {
-		System.setProperty("java.util.logging.manager", LogManager.class.getName());
+		System.setProperty("java.util.logging.manager", JulManualResetLogManager.class.getName());
 	}
 
 	static final Logger log = Logger.getLogger(RecordStorageServer.class.getName());
-
-	public static class LogManager extends java.util.logging.LogManager {
-
-		@Override public void reset() throws SecurityException {}
-
-		public void manualReset() throws SecurityException {
-			super.reset();
-		}
-	}
 }
