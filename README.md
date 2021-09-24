@@ -2,8 +2,8 @@
 
 RPC and ListenerEvent Guice Scopes for gRPC server, that are automatically transferred when dispatching work to other threads.<br/>
 <br/>
-**latest release: [1.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/1.0/jar)** ([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/1.0))
-
+**latest release: [1.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/1.0/jar)**
+([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/1.0))
 
 
 ## OVERVIEW
@@ -16,20 +16,15 @@ More specifically though:
 * `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within the same instance of [RpcContext](src/main/java/pl/morgwai/base/grpc/scopes/RpcContext.java).
 
 
-
 ## MAIN USER CLASSES
 
 ### [GrpcModule](src/main/java/pl/morgwai/base/grpc/scopes/GrpcModule.java)
-
 Contains the above `Scope`s, `ContextTracker`s, some helper methods and [gRPC interceptor](src/main/java/pl/morgwai/base/grpc/scopes/ContextInterceptor.java) that starts the above contexts.
 
-
 ### [ContextTrackingExecutor](https://github.com/morgwai/guice-context-scopes/blob/master/src/main/java/pl/morgwai/base/guice/scopes/ContextTrackingExecutor.java)
-
 A `ThreadPoolExecutor` that upon dispatching automatically updates which thread handles which `RpcContext` and `ListenerEventContext`. Instances should usually be obtained using helper methods
 from the above `GrpcModule`.<br/>
 (this class actually comes from [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes))
-
 
 
 ## USAGE
@@ -69,7 +64,6 @@ public class MyServer {
     // more code here...
 }
 ```
-
 
 
 ## EXAMPLES
