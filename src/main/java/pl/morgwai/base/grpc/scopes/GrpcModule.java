@@ -74,8 +74,9 @@ public class GrpcModule implements Module {
 
 	/**
 	 * Binds {@link #rpcContextTracker} and {@link #listenerEventContextTracker} and corresponding
-	 * contexts for injection. Binds {@code ContextTracker<?>[]} to instance containing all
-	 * trackers for use with {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
+	 * contexts for injection. Binds {@code ContextTracker<?>[]} to {@link #allTrackers} that
+	 * contains all trackers for use with
+	 * {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
 	 */
 	@Override
 	public void configure(Binder binder) {
@@ -92,10 +93,14 @@ public class GrpcModule implements Module {
 				() -> listenerEventContextTracker.getCurrentContext());
 
 		TypeLiteral<ContextTracker<?>[]> trackerArrayType = new TypeLiteral<>() {};
-		binder.bind(trackerArrayType).toInstance(trackers);
+		binder.bind(trackerArrayType).toInstance(allTrackers);
 	}
 
-	public final ContextTracker<?>[] trackers = {listenerEventContextTracker, rpcContextTracker};
+	/**
+	 * Contains all trackers. {@link #configure(Binder)} binds {@code ContextTracker<?>[]} to it
+	 * for use with {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
+	 */
+	public final ContextTracker<?>[] allTrackers = {listenerEventContextTracker, rpcContextTracker};
 
 
 
@@ -150,10 +155,12 @@ public class GrpcModule implements Module {
 
 
 
+	// For internal use by ContextInterceptor.
 	RpcContext newRpcContext(ServerCall<?, ?> rpc, Metadata headers) {
 		return new RpcContext(rpc, headers, rpcContextTracker);
 	}
 
+	// For internal use by ContextInterceptor.
 	ListenerEventContext newListenerEventContext() {
 		return new ListenerEventContext(listenerEventContextTracker);
 	}
