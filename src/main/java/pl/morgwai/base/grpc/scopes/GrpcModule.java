@@ -153,7 +153,7 @@ public class GrpcModule implements Module {
 	 * <p>
 	 * <b>NOTE:</b> {@code backingExecutor.execute(task)} must throw
 	 * {@link RejectedExecutionException} in case of rejection for
-	 * {@link #execute(StreamObserver, Runnable)} to work properly.</p>
+	 * {@link ContextTrackingExecutor#execute(StreamObserver, Runnable)} to work properly.</p>
 	 *
 	 * @see pl.morgwai.base.guice.scopes.ContextTrackingExecutor#ContextTrackingExecutor(String,
 	 * ExecutorService, int, ContextTracker...)
