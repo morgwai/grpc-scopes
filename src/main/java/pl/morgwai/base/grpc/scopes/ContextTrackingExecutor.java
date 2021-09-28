@@ -32,6 +32,7 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 		try {
 			execute(task);
 		} catch (RejectedExecutionException e) {
+			if ( ! backingExecutor.isShutdown()) log.warn("executor " + getName() + " overloaded");
 			responseObserver.onError(Status.UNAVAILABLE.asException());
 		}
 	}
