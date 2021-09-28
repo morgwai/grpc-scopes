@@ -3,7 +3,7 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 
 import com.google.inject.Binder;
@@ -12,10 +12,10 @@ import com.google.inject.Scope;
 import com.google.inject.TypeLiteral;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
+import io.grpc.stub.StreamObserver;
 
 import pl.morgwai.base.guice.scopes.ContextScope;
 import pl.morgwai.base.guice.scopes.ContextTracker;
-import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
 
 
 
@@ -111,8 +111,7 @@ public class GrpcModule implements Module {
 	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, int, ContextTracker...)
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(String name, int poolSize) {
-		return new ContextTrackingExecutor(
-				name, poolSize, rpcContextTracker, listenerEventContextTracker);
+		return new ContextTrackingExecutor(name, poolSize, allTrackers);
 	}
 
 
@@ -127,8 +126,7 @@ public class GrpcModule implements Module {
 			String name,
 			int poolSize,
 			BlockingQueue<Runnable> workQueue) {
-		return new ContextTrackingExecutor(
-				name, poolSize, workQueue, rpcContextTracker, listenerEventContextTracker);
+		return new ContextTrackingExecutor(name, poolSize, workQueue, allTrackers);
 	}
 
 
@@ -137,42 +135,35 @@ public class GrpcModule implements Module {
 	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
 	 *
 	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, int, BlockingQueue,
-	 * ThreadFactory, RejectedExecutionHandler, ContextTracker...)
+	 * ThreadFactory, ContextTracker...)
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
 			int poolSize,
 			BlockingQueue<Runnable> workQueue,
 			ThreadFactory threadFactory,
-			RejectedExecutionHandler handler,
 			ContextTracker<?>... trackers) {
-		return new ContextTrackingExecutor(
-				name,
-				poolSize,
-				workQueue,
-				threadFactory,
-				handler,
-				rpcContextTracker, listenerEventContextTracker);
+		return new ContextTrackingExecutor(name, poolSize, workQueue, threadFactory, allTrackers);
 	}
 
 
 
 	/**
 	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
+	 * <p>
+	 * <b>NOTE:</b> {@code backingExecutor.execute(task)} must throw
+	 * {@link RejectedExecutionException} in case of rejection for
+	 * {@link #execute(StreamObserver, Runnable)} to work properly.</p>
 	 *
-	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, ExecutorService, int,
-	 * ContextTracker...)
+	 * @see pl.morgwai.base.guice.scopes.ContextTrackingExecutor#ContextTrackingExecutor(String,
+	 * ExecutorService, int, ContextTracker...)
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
 			ExecutorService backingExecutor,
 			int poolSize,
 			ContextTracker<?>... trackers) {
-		return new ContextTrackingExecutor(
-				name,
-				backingExecutor,
-				poolSize,
-				rpcContextTracker, listenerEventContextTracker);
+		return new ContextTrackingExecutor(name, backingExecutor, poolSize, allTrackers);
 	}
 
 

@@ -16,8 +16,8 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
+import pl.morgwai.base.grpc.scopes.ContextTrackingExecutor;
 import pl.morgwai.base.grpc.utils.ConcurrentRequestObserver;
-import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordEntity;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageImplBase;
@@ -36,7 +36,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 	@Override
 	public void store(Record message, StreamObserver<NewRecordId> responseObserver) {
-		jpaExecutor.execute(() -> {
+		jpaExecutor.execute(responseObserver, () -> {
 			try {
 				final RecordEntity entity = process(message);
 
@@ -75,7 +75,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 			(ServerCallStreamObserver<StoreRecordResponse>) responseObserver,
 			jpaExecutor.getPoolSize() + 1,  // +1 is to account for request message delivery delay
 
-			(request, individualObserver) -> jpaExecutor.execute(() -> {
+			(request, individualObserver) -> jpaExecutor.execute(responseObserver, () -> {
 				try {
 					final RecordEntity entity = process(request);
 					executeWithinTx(() -> { dao.persist(entity); return null; });
@@ -112,7 +112,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 			}
 		});
 
-		jpaExecutor.execute(() -> {
+		jpaExecutor.execute(responseObserver, () -> {
 			try {
 				for (var record: dao.findAll()) {
 					synchronized (responseObserver) {

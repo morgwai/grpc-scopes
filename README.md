@@ -8,7 +8,7 @@ RPC and ListenerEvent Guice Scopes for gRPC server, that are automatically trans
 
 ## OVERVIEW
 
-Provides `rpcScope` and `listenerEventScope` Guice scopes built using [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes) which automatically transfers them to a new thread when dispatching using [ContextTrackingExecutor](https://github.com/morgwai/guice-context-scopes/blob/master/src/main/java/pl/morgwai/base/guice/scopes/ContextTrackingExecutor.java).<br/>
+Provides `rpcScope` and `listenerEventScope` Guice scopes built using [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes) which automatically transfers them to a new thread when dispatching using `ContextTrackingExecutor` (see below).<br/>
 <br/>
 Oversimplifying, in case of a streaming client, `listenerEventScope` spans over processing of a single message from client's stream, while `rpcScope` spans over the whole RPC. Oversimplifying again, in case of a unary client, these 2 scopes have roughly the same span.<br/>
 More specifically though:
@@ -22,9 +22,7 @@ More specifically though:
 Contains the above `Scope`s, `ContextTracker`s, some helper methods and [gRPC interceptor](src/main/java/pl/morgwai/base/grpc/scopes/ContextInterceptor.java) that starts the above contexts.
 
 ### [ContextTrackingExecutor](https://github.com/morgwai/guice-context-scopes/blob/master/src/main/java/pl/morgwai/base/guice/scopes/ContextTrackingExecutor.java)
-A `ThreadPoolExecutor` that upon dispatching automatically updates which thread handles which `RpcContext` and `ListenerEventContext`. Instances should usually be obtained using helper methods
-from the above `GrpcModule`.<br/>
-(this class actually comes from [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes))
+An `Executor` (backed by a fixed size `ThreadPoolExecutor` by default) that upon dispatching automatically updates which thread handles which `RpcContext` and `ListenerEventContext`. Instances should usually be created using helper methods from the above `GrpcModule` and configured for named instance injection in user modules.<br/>
 
 
 ## USAGE
@@ -62,6 +60,25 @@ public class MyServer {
     public static final int PORT = 6666;
 
     // more code here...
+}
+```
+
+Hint: in cases when it's not possible to avoid thread switching without the use of `ContextTrackingExecutor` (for example when passing callbacks to some async calls), static helper methods `getActiveContexts(ContextTracker...)` and `executeWithinAll(List<ServerSideContext>, Runnable)` defined in `ContextTrackingExecutor` can be used to transfer context manually:
+
+```java
+class MyClass {
+
+    @Inject ContextTracker<?>[] allTrackers;
+
+    void myMethod(Object param) {
+        // myMethod code
+        var activeCtxList = ContextTrackingExecutor.getActiveContexts(allTrackers);
+        someAsyncMethod(param, (callbackParam) ->
+            ContextTrackingExecutor.executeWithinAll(activeCtxList, () -> {
+                // callback code
+            }
+        ));
+    }
 }
 ```
 

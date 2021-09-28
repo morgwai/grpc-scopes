@@ -15,8 +15,8 @@ import io.grpc.Server;
 import io.grpc.ServerInterceptors;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 
+import pl.morgwai.base.grpc.scopes.ContextTrackingExecutor;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
-import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
 import pl.morgwai.base.logging.JulManualResetLogManager;
 import pl.morgwai.samples.grpc.scopes.data_access.JpaRecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
