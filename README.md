@@ -21,8 +21,9 @@ More specifically though:
 ### [GrpcModule](src/main/java/pl/morgwai/base/grpc/scopes/GrpcModule.java)
 Contains the above `Scope`s, `ContextTracker`s, some helper methods and [gRPC interceptor](src/main/java/pl/morgwai/base/grpc/scopes/ContextInterceptor.java) that starts the above contexts.
 
-### [ContextTrackingExecutor](https://github.com/morgwai/guice-context-scopes/blob/master/src/main/java/pl/morgwai/base/guice/scopes/ContextTrackingExecutor.java)
-An `Executor` (backed by a fixed size `ThreadPoolExecutor` by default) that upon dispatching automatically updates which thread handles which `RpcContext` and `ListenerEventContext`. Instances should usually be created using helper methods from the above `GrpcModule` and configured for named instance injection in user modules.<br/>
+### [ContextTrackingExecutor](src/main/java/pl/morgwai/base/grpc/scopes/ContextTrackingExecutor.java)
+An `Executor` (backed by a fixed size `ThreadPoolExecutor` by default) that upon dispatching automatically updates which thread runs within which `RpcContext` and `ListenerEventContext`.<br/>
+Instances should usually be created using helper methods from the above `GrpcModule` and configured for named instance injection in user modules.
 
 
 ## USAGE

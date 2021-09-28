@@ -25,8 +25,8 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 
 
 	/**
-	 * Calls {@link #execute(Runnable) execute(task)} and sends {@link Status#UNAVAILABLE} to
-	 * {@code responseObserver} on rejection.
+	 * Calls {@link #execute(Runnable) execute(task)} and if it's rejected sends
+	 * {@link Status#UNAVAILABLE} to {@code responseObserver}.
 	 */
 	public void execute(StreamObserver<?> responseObserver, Runnable task) {
 		try {
@@ -56,7 +56,7 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 	 * {@link NamedThreadFactory}.
 	 * <p>
 	 * Throws a {@link RejectedExecutionException} if {@code workQueue} is full. It should usually
-	 * be handled by sending {@link Status#UNAVAILABLE}.</p>
+	 * be handled by sending status {@link Status#UNAVAILABLE} to the client.</p>
 	 */
 	public ContextTrackingExecutor(
 			String name,
@@ -72,7 +72,7 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor}.
 	 * <p>
 	 * Throws a {@link RejectedExecutionException} if {@code workQueue} is full. It should usually
-	 * be handled by sending {@link Status#UNAVAILABLE}.</p>
+	 * be handled by sending status {@link Status#UNAVAILABLE} to the client.</p>
 	 */
 	public ContextTrackingExecutor(
 			String name,

@@ -96,6 +96,8 @@ public class GrpcModule implements Module {
 		binder.bind(trackerArrayType).toInstance(allTrackers);
 	}
 
+
+
 	/**
 	 * Contains all trackers. {@link #configure(Binder)} binds {@code ContextTracker<?>[]} to it
 	 * for use with {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
@@ -155,8 +157,8 @@ public class GrpcModule implements Module {
 	 * {@link RejectedExecutionException} in case of rejection for
 	 * {@link ContextTrackingExecutor#execute(StreamObserver, Runnable)} to work properly.</p>
 	 *
-	 * @see pl.morgwai.base.guice.scopes.ContextTrackingExecutor#ContextTrackingExecutor(String,
-	 * ExecutorService, int, ContextTracker...)
+	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, ExecutorService, int,
+	 * ContextTracker...)
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
