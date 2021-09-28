@@ -73,7 +73,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 			StreamObserver<StoreRecordResponse> responseObserver) {
 		return new ConcurrentRequestObserver<>(
 			(ServerCallStreamObserver<StoreRecordResponse>) responseObserver,
-			jpaExecutor.getMaximumPoolSize(),
+			jpaExecutor.getPoolSize() + 1,  // +1 is to account for request message delivery delay
 
 			(request, individualObserver) -> jpaExecutor.execute(() -> {
 				try {

@@ -2,9 +2,9 @@
 package pl.morgwai.base.grpc.scopes;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -106,7 +106,9 @@ public class GrpcModule implements Module {
 
 	/**
 	 * Convenience "constructor" for {@link ContextTrackingExecutor}. (I really miss method
-	 * extensions in Java)
+	 * extensions in Java).
+	 *
+	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, int, ContextTracker...)
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(String name, int poolSize) {
 		return new ContextTrackingExecutor(
@@ -117,6 +119,9 @@ public class GrpcModule implements Module {
 
 	/**
 	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
+	 *
+	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, int, BlockingQueue,
+	 * ContextTracker...)
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
@@ -130,26 +135,43 @@ public class GrpcModule implements Module {
 
 	/**
 	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
+	 *
+	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, int, BlockingQueue,
+	 * ThreadFactory, RejectedExecutionHandler, ContextTracker...)
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
-			int corePoolSize,
-			int maximumPoolSize,
-			long keepAliveTime,
-			TimeUnit unit,
+			int poolSize,
 			BlockingQueue<Runnable> workQueue,
 			ThreadFactory threadFactory,
 			RejectedExecutionHandler handler,
 			ContextTracker<?>... trackers) {
 		return new ContextTrackingExecutor(
 				name,
-				corePoolSize,
-				maximumPoolSize,
-				keepAliveTime,
-				unit,
+				poolSize,
 				workQueue,
 				threadFactory,
 				handler,
+				rpcContextTracker, listenerEventContextTracker);
+	}
+
+
+
+	/**
+	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
+	 *
+	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, ExecutorService, int,
+	 * ContextTracker...)
+	 */
+	public ContextTrackingExecutor newContextTrackingExecutor(
+			String name,
+			ExecutorService backingExecutor,
+			int poolSize,
+			ContextTracker<?>... trackers) {
+		return new ContextTrackingExecutor(
+				name,
+				backingExecutor,
+				poolSize,
 				rpcContextTracker, listenerEventContextTracker);
 	}
 
