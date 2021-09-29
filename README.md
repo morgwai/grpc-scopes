@@ -2,8 +2,8 @@
 
 RPC and ListenerEvent Guice Scopes for gRPC server, that are automatically transferred when dispatching work to other threads.<br/>
 <br/>
-**latest release: [2.0-alpha1](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/2.0-alpha1/jar)**
-([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/2.0-alpha1))
+**latest release: [2.0-alpha2](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/2.0-alpha2/jar)**
+([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/2.0-alpha2))
 
 
 ## OVERVIEW
