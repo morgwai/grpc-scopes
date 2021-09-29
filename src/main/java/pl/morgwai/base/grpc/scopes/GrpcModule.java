@@ -3,7 +3,6 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 
 import com.google.inject.Binder;
@@ -12,7 +11,6 @@ import com.google.inject.Scope;
 import com.google.inject.TypeLiteral;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
-import io.grpc.stub.StreamObserver;
 
 import pl.morgwai.base.guice.scopes.ContextScope;
 import pl.morgwai.base.guice.scopes.ContextTracker;
@@ -107,10 +105,13 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Convenience "constructor" for {@link ContextTrackingExecutor}. (I really miss method
-	 * extensions in Java).
-	 *
-	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, int, ContextTracker...)
+	 * Constructs an executor backed by a new fixed size
+	 * {@link java.util.concurrent.ThreadPoolExecutor} that uses a
+	 * {@link ContextTrackingExecutor.NamedThreadFactory} and an unbound
+	 * {@link java.util.concurrent.LinkedBlockingQueue}.
+	 * <p>
+	 * To avoid {@link OutOfMemoryError}s, an external mechanism that limits maximum number of tasks
+	 * (such as a load balancer or frontend) should be used.</p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(String name, int poolSize) {
 		return new ContextTrackingExecutor(name, poolSize, allTrackers);
@@ -119,10 +120,14 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
-	 *
-	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, int, BlockingQueue,
-	 * ContextTracker...)
+	 * Constructs an executor backed by a new fixed size
+	 * {@link java.util.concurrent.ThreadPoolExecutor} that uses a
+	 * {@link ContextTrackingExecutor.NamedThreadFactory}.
+	 * <p>
+	 * {@link ContextTrackingExecutor#execute(Runnable)} throws a
+	 * {@link java.util.concurrent.RejectedExecutionException} if {@code workQueue} is full. It
+	 * should usually be handled by sending status {@link io.grpc.Status#UNAVAILABLE} to the client.
+	 * </p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
@@ -134,10 +139,13 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
-	 *
-	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, int, BlockingQueue,
-	 * ThreadFactory, ContextTracker...)
+	 * Constructs an executor backed by a new fixed size
+	 * {@link java.util.concurrent.ThreadPoolExecutor}.
+	 * <p>
+	 * {@link ContextTrackingExecutor#execute(Runnable)} throws a
+	 * {@link java.util.concurrent.RejectedExecutionException} if {@code workQueue} is full. It
+	 * should usually be handled by sending status {@link io.grpc.Status#UNAVAILABLE} to the client.
+	 * </p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
@@ -151,14 +159,15 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Convenience "constructor" for {@link ContextTrackingExecutor}.
+	 * Constructs an executor backed by {@code backingExecutor}.
 	 * <p>
 	 * <b>NOTE:</b> {@code backingExecutor.execute(task)} must throw
-	 * {@link RejectedExecutionException} in case of rejection for
-	 * {@link ContextTrackingExecutor#execute(StreamObserver, Runnable)} to work properly.</p>
-	 *
-	 * @see ContextTrackingExecutor#ContextTrackingExecutor(String, ExecutorService, int,
-	 * ContextTracker...)
+	 * {@link java.util.concurrent.RejectedExecutionException} in case of rejection for
+	 * {@link ContextTrackingExecutor#execute(io.grpc.stub.StreamObserver, Runnable)} to work
+	 * properly.</p>
+	 * <p>
+	 * {@code poolSize} is informative only, to be returned by
+	 * {@link ContextTrackingExecutor#getPoolSize()}.</p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
