@@ -97,8 +97,9 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Contains all trackers. {@link #configure(Binder)} binds {@code ContextTracker<?>[]} to it
-	 * for use with {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
+	 * Contains {@link #rpcScope} and {@link #listenerEventScope}.
+	 * {@link #configure(Binder)} binds {@code ContextTracker<?>[]} to it for use with
+	 * {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
 	 */
 	public final ContextTracker<?>[] allTrackers = {listenerEventContextTracker, rpcContextTracker};
 
@@ -107,7 +108,7 @@ public class GrpcModule implements Module {
 	/**
 	 * Constructs an executor backed by a new fixed size
 	 * {@link java.util.concurrent.ThreadPoolExecutor} that uses a
-	 * {@link ContextTrackingExecutor.NamedThreadFactory} and an unbound
+	 * {@link ContextTrackingExecutor.NamedThreadFactory NamedThreadFactory} and an unbound
 	 * {@link java.util.concurrent.LinkedBlockingQueue}.
 	 * <p>
 	 * To avoid {@link OutOfMemoryError}s, an external mechanism that limits maximum number of tasks
@@ -122,7 +123,7 @@ public class GrpcModule implements Module {
 	/**
 	 * Constructs an executor backed by a new fixed size
 	 * {@link java.util.concurrent.ThreadPoolExecutor} that uses a
-	 * {@link ContextTrackingExecutor.NamedThreadFactory}.
+	 * {@link ContextTrackingExecutor.NamedThreadFactory NamedThreadFactory}.
 	 * <p>
 	 * {@link ContextTrackingExecutor#execute(Runnable)} throws a
 	 * {@link java.util.concurrent.RejectedExecutionException} if {@code workQueue} is full. It
@@ -163,8 +164,8 @@ public class GrpcModule implements Module {
 	 * <p>
 	 * <b>NOTE:</b> {@code backingExecutor.execute(task)} must throw
 	 * {@link java.util.concurrent.RejectedExecutionException} in case of rejection for
-	 * {@link ContextTrackingExecutor#execute(io.grpc.stub.StreamObserver, Runnable)} to work
-	 * properly.</p>
+	 * {@link ContextTrackingExecutor#execute(io.grpc.stub.StreamObserver, Runnable)
+	 * execute(responseObserver, task)} to work properly.</p>
 	 * <p>
 	 * {@code poolSize} is informative only, to be returned by
 	 * {@link ContextTrackingExecutor#getPoolSize()}.</p>
