@@ -127,8 +127,7 @@ public class GrpcModule implements Module {
 	 * <p>
 	 * {@link ContextTrackingExecutor#execute(Runnable)} throws a
 	 * {@link java.util.concurrent.RejectedExecutionException} if {@code workQueue} is full. It
-	 * should usually be handled by sending status {@link io.grpc.Status#UNAVAILABLE} to the client.
-	 * </p>
+	 * should usually be handled by sending {@link io.grpc.Status#UNAVAILABLE} to the client.</p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
@@ -145,15 +144,13 @@ public class GrpcModule implements Module {
 	 * <p>
 	 * {@link ContextTrackingExecutor#execute(Runnable)} throws a
 	 * {@link java.util.concurrent.RejectedExecutionException} if {@code workQueue} is full. It
-	 * should usually be handled by sending status {@link io.grpc.Status#UNAVAILABLE} to the client.
-	 * </p>
+	 * should usually be handled by sending {@link io.grpc.Status#UNAVAILABLE} to the client.</p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
 			int poolSize,
 			BlockingQueue<Runnable> workQueue,
-			ThreadFactory threadFactory,
-			ContextTracker<?>... trackers) {
+			ThreadFactory threadFactory) {
 		return new ContextTrackingExecutor(name, poolSize, workQueue, threadFactory, allTrackers);
 	}
 
@@ -173,8 +170,7 @@ public class GrpcModule implements Module {
 	public ContextTrackingExecutor newContextTrackingExecutor(
 			String name,
 			ExecutorService backingExecutor,
-			int poolSize,
-			ContextTracker<?>... trackers) {
+			int poolSize) {
 		return new ContextTrackingExecutor(name, backingExecutor, poolSize, allTrackers);
 	}
 
