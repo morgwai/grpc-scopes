@@ -1,0 +1,37 @@
+// Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
+plugins {
+	id 'java-library'
+	id 'maven-publish'
+}
+
+group = 'pl.morgwai.base'
+version = '3.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_11
+	targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+	mavenCentral() 
+}
+
+dependencies {
+	api 'pl.morgwai.base:guice-context-scopes:2.1'
+	compileOnly 'com.google.inject:guice:5.0.1'
+	compileOnly 'io.grpc:grpc-api:1.40.0'
+	compileOnly 'io.grpc:grpc-stub:1.40.0'
+
+	testImplementation 'junit:junit:4.13.2'
+	testImplementation 'com.google.inject:guice:5.0.1'
+	testImplementation 'io.grpc:grpc-api:1.40.0'
+	testImplementation 'io.grpc:grpc-stub:1.40.0'
+}
+
+publishing {
+	publications {
+		maven(MavenPublication) {
+			from components.java
+		}
+	}
+}
