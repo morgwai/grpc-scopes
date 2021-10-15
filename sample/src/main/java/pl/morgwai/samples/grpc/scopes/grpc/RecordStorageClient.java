@@ -14,7 +14,7 @@ public class RecordStorageClient {
 
 
 
-	public static void main(String args[]) throws ErrorReportedException, InterruptedException {
+	public static void main(String[] args) throws ErrorReportedException, InterruptedException {
 		String target = "localhost:" + RecordStorageServer.DEFAULT_PORT;
 		if (args.length > 0) target = args[0];
 		final var channel = ManagedChannelBuilder

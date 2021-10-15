@@ -3,6 +3,7 @@ package pl.morgwai.samples.grpc.scopes.data_access;
 
 import java.util.List;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.persistence.EntityManager;
@@ -54,7 +55,7 @@ public class JpaRecordDao implements RecordDao {
 
 
 	@Override
-	public void persist(RecordEntity record) throws DaoException {
+	public void persist(@Nonnull RecordEntity record) throws DaoException {
 		try {
 			entityManagerProvider.get().persist(record);
 		} catch (Exception e) {

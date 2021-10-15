@@ -14,7 +14,7 @@ public interface RecordDao {
 
 
 
-	public static class DaoException extends Exception {
+	class DaoException extends Exception {
 
 		public DaoException() {}
 		public DaoException(String message, Throwable cause, boolean enableSuppression,

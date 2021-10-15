@@ -65,7 +65,7 @@ public class RecordStorageServer {
 
 		final Module jpaModule = (binder) -> {
 			binder.bind(EntityManager.class)
-				.toProvider(() -> entityManagerFactory.createEntityManager())
+				.toProvider(entityManagerFactory::createEntityManager)
 				.in(grpcModule.listenerEventScope);
 			binder.bind(EntityManagerFactory.class).toInstance(entityManagerFactory);
 			binder.bind(ContextTrackingExecutor.class).toInstance(jpaExecutor);
@@ -88,7 +88,7 @@ public class RecordStorageServer {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				recordStorageServer.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-			} catch (InterruptedException e) {}
+			} catch (InterruptedException ignored) {}
 			if (recordStorageServer.isTerminated()) {
 				log.info("gRPC server shutdown completed");
 			} else {
@@ -103,7 +103,7 @@ public class RecordStorageServer {
 
 
 
-	public static void main(String args[]) throws Exception {
+	public static void main(String[] args) throws Exception {
 		new RecordStorageServer(
 			getIntFromEnv(PORT_ENV_NAME, DEFAULT_PORT),
 			getIntFromEnv(MAX_CONNECTION_IDLE_ENV_NAME, DEFAULT_MAX_CONNECTION_IDLE),
