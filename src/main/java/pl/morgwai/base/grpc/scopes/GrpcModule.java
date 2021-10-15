@@ -81,14 +81,13 @@ public class GrpcModule implements Module {
 		TypeLiteral<ContextTracker<RpcContext>> rpcContextTrackerType =
 				new TypeLiteral<>() {};
 		binder.bind(rpcContextTrackerType).toInstance(rpcContextTracker);
-		binder.bind(RpcContext.class).toProvider(
-				() -> rpcContextTracker.getCurrentContext());
+		binder.bind(RpcContext.class).toProvider(rpcContextTracker::getCurrentContext);
 
 		TypeLiteral<ContextTracker<ListenerEventContext>> messageContextTrackerType =
 				new TypeLiteral<>() {};
 		binder.bind(messageContextTrackerType).toInstance(listenerEventContextTracker);
 		binder.bind(ListenerEventContext.class).toProvider(
-				() -> listenerEventContextTracker.getCurrentContext());
+				listenerEventContextTracker::getCurrentContext);
 
 		TypeLiteral<ContextTracker<?>[]> trackerArrayType = new TypeLiteral<>() {};
 		binder.bind(trackerArrayType).toInstance(allTrackers);

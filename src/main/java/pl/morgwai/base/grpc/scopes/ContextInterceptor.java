@@ -64,7 +64,7 @@ public class ContextInterceptor implements ServerInterceptor {
 		public void onHalfClose() {
 			rpcContext.executeWithinSelf(
 				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					() -> wrappedListener.onHalfClose()
+					wrappedListener::onHalfClose
 				)
 			);
 		}
@@ -73,7 +73,7 @@ public class ContextInterceptor implements ServerInterceptor {
 		public void onCancel() {
 			rpcContext.executeWithinSelf(
 				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					() -> wrappedListener.onCancel()
+					wrappedListener::onCancel
 				)
 			);
 		}
@@ -82,7 +82,7 @@ public class ContextInterceptor implements ServerInterceptor {
 		public void onComplete() {
 			rpcContext.executeWithinSelf(
 				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					() -> wrappedListener.onComplete()
+					wrappedListener::onComplete
 				)
 			);
 		}
@@ -91,7 +91,7 @@ public class ContextInterceptor implements ServerInterceptor {
 		public void onReady() {
 			rpcContext.executeWithinSelf(
 				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					() -> wrappedListener.onReady()
+					wrappedListener::onReady
 				)
 			);
 		}
