@@ -1,10 +1,15 @@
-build
-target
 local
-local.properties
-h2-1.4.200.jar
+
+# build
+target
+build
 .gradle
+build.gradle
+settings.gradle
+
+# ide
+.idea
+local.properties
 .project
 .classpath
 .settings
-.idea
