@@ -11,19 +11,19 @@ echo -e '}\n' >>build.gradle &&
 rm dependencies.txt testDependencies.txt &&
 
 echo -n "group = '" >>build.gradle &&
-mvn -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${project.groupId}' \
+./mvnw -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${project.groupId}' \
     >>build.gradle &&
 echo "'" >>build.gradle &&
 echo -n "version = '" >>build.gradle &&
-mvn -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${project.version}' \
+./mvnw -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${project.version}' \
     >>build.gradle &&
 echo "'" >>build.gradle &&
 echo -n "def grpcVersion = '" >>build.gradle &&
-mvn -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${grpc.version}' \
+./mvnw -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${grpc.version}' \
     >>build.gradle &&
 echo "'" >>build.gradle &&
 echo -n "def protobufVersion = '" >>build.gradle &&
-mvn -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${protobuf.version}' \
+./mvnw -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${protobuf.version}' \
     >>build.gradle &&
 echo "'" >>build.gradle &&
 
