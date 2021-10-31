@@ -43,7 +43,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<guice.scopes.version>3.0</guice.scopes.version>
 		<guice.version>5.0.1</guice.version>
-		<grpc.version>1.40.0</grpc.version>
+		<grpc.version>1.42.0</grpc.version>
 	</properties>
 
 	<dependencies>
