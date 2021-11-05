@@ -31,8 +31,8 @@ Instances should usually be created using helper methods from the above `GrpcMod
 ```java
 public class MyServer {
 
-    public void startAndAwaitTermination(int port  /* more params here... */)
-            throws IOException, InterruptedException {
+    public void startAndAwaitTermination(int port /* more params here... */)
+            throws Exception {
         GrpcModule grpcModule = new GrpcModule();
         // more modules here that can now use grpcModule.rpcScope and grpcModule.listenerEventScope
         Injector injector = Guice.createInjector(grpcModule  /* more modules here... */);
@@ -52,7 +52,7 @@ public class MyServer {
         myServer.start().awaitTermination();
     }
 
-    public static void main(String args[]) throws Exception {
+    public static void main(String[] args) throws Exception {
         new MyServer().startAndAwaitTermination(PORT /* more params here... */);
     }
 
@@ -64,7 +64,7 @@ public class MyServer {
 }
 ```
 
-Hint: in cases when it's not possible to avoid thread switching without the use of `ContextTrackingExecutor` (for example when passing callbacks to some async calls), static helper methods `getActiveContexts(ContextTracker...)` and `executeWithinAll(List<ServerSideContext>, Runnable)` defined in `ContextTrackingExecutor` can be used to transfer context manually:
+In cases when it's not possible to avoid thread switching without the use of `ContextTrackingExecutor` (for example when passing callbacks to some async calls), static helper methods `getActiveContexts(ContextTracker...)` and `executeWithinAll(List<ServerSideContext>, Runnable)` defined in `ContextTrackingExecutor` can be used to transfer context manually:
 
 ```java
 class MyClass {
@@ -82,6 +82,8 @@ class MyClass {
     }
 }
 ```
+
+Dependency of this jar on `guice` is declared with scope `provided`, so that apps can use any version of `guice` with compatible API.
 
 
 ## EXAMPLES
