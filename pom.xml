@@ -116,6 +116,21 @@
 						<link>https://google.github.io/guice/api-docs/${guice.version}/javadoc</link>
 						<link>https://javadoc.io/doc/io.grpc/grpc-all/${grpc.version}</link>
 					</links>
+					<offlineLinks>
+						<!-- to setup offline javadoc generation run ./setup-offline-javadocs.sh -->
+						<offlineLink>
+							<url>https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/${guice.scopes.version}</url>
+							<location>${settings.localRepository}/pl/morgwai/base/guice-context-scopes/${guice.scopes.version}</location>
+						</offlineLink>
+						<offlineLink>
+							<url>https://google.github.io/guice/api-docs/${guice.version}/javadoc</url>
+							<location>${settings.localRepository}/com/google/inject/guice/${guice.version}</location>
+						</offlineLink>
+						<offlineLink>
+							<url>https://javadoc.io/doc/io.grpc/grpc-all/${grpc.version}</url>
+							<location>${settings.localRepository}/io/grpc/grpc-all</location>
+						</offlineLink>
+					</offlineLinks>
 				</configuration>
 				<executions>
 					<execution>
