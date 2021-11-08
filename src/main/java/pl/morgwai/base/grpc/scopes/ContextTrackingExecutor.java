@@ -1,6 +1,7 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -40,7 +41,7 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 
 
 
-	ContextTrackingExecutor(String name, int poolSize, ContextTracker<?>... trackers) {
+	ContextTrackingExecutor(String name, int poolSize, List<ContextTracker<?>> trackers) {
 		super(name, poolSize, trackers);
 	}
 
@@ -50,7 +51,7 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 			String name,
 			int poolSize,
 			BlockingQueue<Runnable> workQueue,
-			ContextTracker<?>... trackers) {
+			List<ContextTracker<?>> trackers) {
 		super(name, poolSize, workQueue, trackers);
 	}
 
@@ -61,7 +62,7 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 			int poolSize,
 			BlockingQueue<Runnable> workQueue,
 			ThreadFactory threadFactory,
-			ContextTracker<?>... trackers) {
+			List<ContextTracker<?>> trackers) {
 		super(name, poolSize, workQueue, threadFactory, trackers);
 	}
 
@@ -71,7 +72,7 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 			String name,
 			ExecutorService backingExecutor,
 			int poolSize,
-			ContextTracker<?>... trackers) {
+			List<ContextTracker<?>> trackers) {
 		super(name, backingExecutor, poolSize, trackers);
 	}
 }

@@ -1,6 +1,7 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -71,10 +72,19 @@ public class GrpcModule implements Module {
 
 
 	/**
+	 * Contains {@link #rpcScope} and {@link #listenerEventScope}.
+	 * {@link #configure(Binder)} binds {@code List<ContextTracker<?>>} to it for use with
+	 * {@link ContextTrackingExecutor#getActiveContexts(List)}.
+	 */
+	public final List<ContextTracker<?>> allTrackers =
+			List.of(listenerEventContextTracker, rpcContextTracker);
+
+
+
+	/**
 	 * Binds {@link #rpcContextTracker} and {@link #listenerEventContextTracker} and corresponding
-	 * contexts for injection. Binds {@code ContextTracker<?>[]} to {@link #allTrackers} that
-	 * contains all trackers for use with
-	 * {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
+	 * contexts for injection. Binds {@code List<ContextTracker<?>>} to {@link #allTrackers} that
+	 * contains all trackers for use with {@link ContextTrackingExecutor#getActiveContexts(List)}.
 	 */
 	@Override
 	public void configure(Binder binder) {
@@ -89,18 +99,9 @@ public class GrpcModule implements Module {
 		binder.bind(ListenerEventContext.class).toProvider(
 				listenerEventContextTracker::getCurrentContext);
 
-		TypeLiteral<ContextTracker<?>[]> trackerArrayType = new TypeLiteral<>() {};
-		binder.bind(trackerArrayType).toInstance(allTrackers);
+		TypeLiteral<List<ContextTracker<?>>> trackersType = new TypeLiteral<>() {};
+		binder.bind(trackersType).toInstance(allTrackers);
 	}
-
-
-
-	/**
-	 * Contains {@link #rpcScope} and {@link #listenerEventScope}.
-	 * {@link #configure(Binder)} binds {@code ContextTracker<?>[]} to it for use with
-	 * {@link ContextTrackingExecutor#getActiveContexts(ContextTracker...)}.
-	 */
-	public final ContextTracker<?>[] allTrackers = {listenerEventContextTracker, rpcContextTracker};
 
 
 

@@ -5,7 +5,7 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 
 import pl.morgwai.base.guice.scopes.ContextTracker;
-import pl.morgwai.base.guice.scopes.ServerSideContext;
+import pl.morgwai.base.guice.scopes.TrackableContext;
 
 
 
@@ -24,7 +24,7 @@ utils/GrpcServerFlow.html">a simplified overview of relation between methods of
  * @see <a href="https://github.com/grpc/grpc-java/blob/master/stub/src/main/java/io/grpc/stub/
 ServerCalls.java">ServerCalls source for detailed info</a>
  */
-public class RpcContext extends ServerSideContext<RpcContext> {
+public class RpcContext extends TrackableContext<RpcContext> {
 
 
 

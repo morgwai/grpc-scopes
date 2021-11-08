@@ -64,22 +64,22 @@ public class MyServer {
 }
 ```
 
-In cases when it's not possible to avoid thread switching without the use of `ContextTrackingExecutor` (for example when passing callbacks to some async calls), static helper methods `getActiveContexts(ContextTracker...)` and `executeWithinAll(List<ServerSideContext>, Runnable)` defined in `ContextTrackingExecutor` can be used to transfer context manually:
+In cases when it's not possible to avoid thread switching without the use of `ContextTrackingExecutor` (for example when passing callbacks to some async calls), static helper methods `getActiveContexts(List<ContextTracker<?>>)` and `executeWithinAll(List<TrackableContext>, Runnable)` defined in `ContextTrackingExecutor` can be used to transfer context manually:
 
 ```java
 class MyClass {
 
-    @Inject ContextTracker<?>[] allTrackers;
+	@Inject List<ContextTracker<?>> allTrackers;
 
-    void myMethod(Object param) {
-        // myMethod code
-        var activeCtxList = ContextTrackingExecutor.getActiveContexts(allTrackers);
-        someAsyncMethod(param, (callbackParam) ->
-            ContextTrackingExecutor.executeWithinAll(activeCtxList, () -> {
-                // callback code
-            }
-        ));
-    }
+	void myMethod(Object param) {
+		// myMethod code
+		var activeCtxList = ContextTrackingExecutor.getActiveContexts(allTrackers);
+		someAsyncMethod(param, (callbackParam) ->
+				ContextTrackingExecutor.executeWithinAll(activeCtxList, () -> {
+							// callback code
+						}
+				));
+	}
 }
 ```
 

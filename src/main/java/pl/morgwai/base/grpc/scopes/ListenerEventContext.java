@@ -2,7 +2,7 @@
 package pl.morgwai.base.grpc.scopes;
 
 import pl.morgwai.base.guice.scopes.ContextTracker;
-import pl.morgwai.base.guice.scopes.ServerSideContext;
+import pl.morgwai.base.guice.scopes.TrackableContext;
 
 
 
@@ -19,7 +19,7 @@ utils/GrpcServerFlow.html">a simplified overview of relation between methods of
  * @see <a href="https://github.com/grpc/grpc-java/blob/master/stub/src/main/java/io/grpc/stub/
 ServerCalls.java">ServerCalls source for detailed info</a>
  */
-public class ListenerEventContext extends ServerSideContext<ListenerEventContext> {
+public class ListenerEventContext extends TrackableContext<ListenerEventContext> {
 
 
 
