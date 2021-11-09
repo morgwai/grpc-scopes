@@ -94,7 +94,7 @@ public class RecordStorageServer {
 			} else {
 				log.info("gRPC server has NOT shutdown cleanly");
 			}
-			jpaExecutor.tryShutdownGracefully(5);
+			grpcModule.shutdownAllExecutors(5);
 			entityManagerFactory.close();
 			log.info("entity manager factory shutdown completed");
 			((JulManualResetLogManager) JulManualResetLogManager.getLogManager()).manualReset();

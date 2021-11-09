@@ -1,6 +1,7 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -105,6 +106,10 @@ public class GrpcModule implements Module {
 
 
 
+	final List<ContextTrackingExecutor> executors = new LinkedList<>();
+
+
+
 	/**
 	 * Constructs an executor backed by a new fixed size
 	 * {@link java.util.concurrent.ThreadPoolExecutor} that uses a
@@ -115,7 +120,9 @@ public class GrpcModule implements Module {
 	 * (such as a load balancer or frontend) should be used.</p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(String name, int poolSize) {
-		return new ContextTrackingExecutor(name, poolSize, allTrackers);
+		var executor = new ContextTrackingExecutor(name, poolSize, allTrackers);
+		executors.add(executor);
+		return executor;
 	}
 
 
@@ -133,7 +140,9 @@ public class GrpcModule implements Module {
 			String name,
 			int poolSize,
 			BlockingQueue<Runnable> workQueue) {
-		return new ContextTrackingExecutor(name, poolSize, workQueue, allTrackers);
+		var executor = new ContextTrackingExecutor(name, poolSize, workQueue, allTrackers);
+		executors.add(executor);
+		return executor;
 	}
 
 
@@ -151,7 +160,10 @@ public class GrpcModule implements Module {
 			int poolSize,
 			BlockingQueue<Runnable> workQueue,
 			ThreadFactory threadFactory) {
-		return new ContextTrackingExecutor(name, poolSize, workQueue, threadFactory, allTrackers);
+		var executor =
+				new ContextTrackingExecutor(name, poolSize, workQueue, threadFactory, allTrackers);
+		executors.add(executor);
+		return executor;
 	}
 
 
@@ -171,7 +183,28 @@ public class GrpcModule implements Module {
 			String name,
 			ExecutorService backingExecutor,
 			int poolSize) {
-		return new ContextTrackingExecutor(name, backingExecutor, poolSize, allTrackers);
+		var executor = new ContextTrackingExecutor(name, backingExecutor, poolSize, allTrackers);
+		executors.add(executor);
+		return executor;
+	}
+
+
+
+	/**
+	 * Shutdowns all executors obtained from this module.
+	 */
+	public void shutdownAllExecutors(int timeoutSeconds) {
+		var shutdownThreads = new LinkedList<Thread>();
+		for (var executor: executors) {
+			var thread = new Thread(() -> executor.tryShutdownGracefully(timeoutSeconds));
+			shutdownThreads.add(thread);
+			thread.start();
+		}
+		for (var thread: shutdownThreads) {
+			try {
+				thread.join();
+			} catch (InterruptedException ignored) {}
+		}
 	}
 
 
