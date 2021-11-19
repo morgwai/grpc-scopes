@@ -27,16 +27,16 @@ public class RecordStorageServer {
 
 
 
-	static final String PORT_ENV_NAME = "PORT";
+	static final String PORT_ENVVAR = "PORT";
 	public static final int DEFAULT_PORT = 6666;
 
-	static final String MAX_CONNECTION_IDLE_ENV_NAME = "MAX_CONNECTION_IDLE_SECONDS";
+	static final String MAX_CONNECTION_IDLE_ENVVAR = "MAX_CONNECTION_IDLE_SECONDS";
 	static final int DEFAULT_MAX_CONNECTION_IDLE = 60;
 
-	static final String MAX_CONNECTION_AGE_ENV_NAME = "MAX_CONNECTION_AGE_MINUTES";
+	static final String MAX_CONNECTION_AGE_ENVVAR = "MAX_CONNECTION_AGE_MINUTES";
 	static final int DEFAULT_MAX_CONNECTION_AGE = 5;
 
-	static final String MAX_CONNECTION_AGE_GRACE_ENV_NAME = "MAX_CONNECTION_AGE_GRACE_HOURS";
+	static final String MAX_CONNECTION_AGE_GRACE_ENVVAR = "MAX_CONNECTION_AGE_GRACE_HOURS";
 	static final int DEFAULT_MAX_CONNECTION_AGE_GRACE = 24;
 
 
@@ -105,10 +105,10 @@ public class RecordStorageServer {
 
 	public static void main(String[] args) throws Exception {
 		new RecordStorageServer(
-			getIntFromEnv(PORT_ENV_NAME, DEFAULT_PORT),
-			getIntFromEnv(MAX_CONNECTION_IDLE_ENV_NAME, DEFAULT_MAX_CONNECTION_IDLE),
-			getIntFromEnv(MAX_CONNECTION_AGE_ENV_NAME, DEFAULT_MAX_CONNECTION_AGE),
-			getIntFromEnv(MAX_CONNECTION_AGE_GRACE_ENV_NAME, DEFAULT_MAX_CONNECTION_AGE_GRACE)
+			getIntFromEnv(PORT_ENVVAR, DEFAULT_PORT),
+			getIntFromEnv(MAX_CONNECTION_IDLE_ENVVAR, DEFAULT_MAX_CONNECTION_IDLE),
+			getIntFromEnv(MAX_CONNECTION_AGE_ENVVAR, DEFAULT_MAX_CONNECTION_AGE),
+			getIntFromEnv(MAX_CONNECTION_AGE_GRACE_ENVVAR, DEFAULT_MAX_CONNECTION_AGE_GRACE)
 		).recordStorageServer.awaitTermination();
 	}
 
