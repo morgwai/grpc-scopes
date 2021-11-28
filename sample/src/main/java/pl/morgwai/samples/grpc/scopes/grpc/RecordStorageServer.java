@@ -15,6 +15,7 @@ import io.grpc.Server;
 import io.grpc.ServerInterceptors;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 
+import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.ContextTrackingExecutor;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.logging.JulManualResetLogManager;
@@ -31,13 +32,13 @@ public class RecordStorageServer {
 	public static final int DEFAULT_PORT = 6666;
 
 	static final String MAX_CONNECTION_IDLE_ENVVAR = "MAX_CONNECTION_IDLE_SECONDS";
-	static final int DEFAULT_MAX_CONNECTION_IDLE = 60;
+	static final int DEFAULT_MAX_CONNECTION_IDLE = 30;
 
-	static final String MAX_CONNECTION_AGE_ENVVAR = "MAX_CONNECTION_AGE_MINUTES";
-	static final int DEFAULT_MAX_CONNECTION_AGE = 5;
+	static final String MAX_CONNECTION_AGE_ENVVAR = "MAX_CONNECTION_AGE_SECONDS";
+	static final int DEFAULT_MAX_CONNECTION_AGE = 30;
 
-	static final String MAX_CONNECTION_AGE_GRACE_ENVVAR = "MAX_CONNECTION_AGE_GRACE_HOURS";
-	static final int DEFAULT_MAX_CONNECTION_AGE_GRACE = 24;
+	static final String MAX_CONNECTION_AGE_GRACE_ENVVAR = "MAX_CONNECTION_AGE_GRACE_SECONDS";
+	static final int DEFAULT_MAX_CONNECTION_AGE_GRACE = 5;
 
 
 
@@ -53,8 +54,8 @@ public class RecordStorageServer {
 	RecordStorageServer(
 			int port,
 			int maxConnectionIdleSeconds,
-			int maxConnectionAgeMinutes,
-			int maxConnectionAgeGraceHours) throws Exception {
+			int maxConnectionAgeSeconds,
+			int maxConnectionAgeGraceSeconds) throws Exception {
 		final var grpcModule = new GrpcModule();
 
 		entityManagerFactory = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
@@ -78,8 +79,8 @@ public class RecordStorageServer {
 			.forPort(port)
 			.directExecutor()
 			.maxConnectionIdle(maxConnectionIdleSeconds, TimeUnit.SECONDS)
-			.maxConnectionAge(maxConnectionAgeMinutes, TimeUnit.MINUTES)
-			.maxConnectionAgeGrace(maxConnectionAgeGraceHours, TimeUnit.HOURS)
+			.maxConnectionAge(maxConnectionAgeSeconds, TimeUnit.SECONDS)
+			.maxConnectionAgeGrace(maxConnectionAgeGraceSeconds, TimeUnit.SECONDS)
 			.addService(ServerInterceptors.intercept(service, grpcModule.contextInterceptor))
 			.build();
 		recordStorageServer.start();
@@ -87,19 +88,42 @@ public class RecordStorageServer {
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
-				recordStorageServer.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+				log.info("shutting down");
+				System.out.println("shutting down, timeout 5s");
+				Awaitable.awaitMultiple(
+					5l, TimeUnit.SECONDS,
+					(timeoUtMillis) -> {
+						recordStorageServer.shutdown();
+						if (recordStorageServer.awaitTermination(
+								percent(70, timeoUtMillis), TimeUnit.MILLISECONDS)) {
+							log.info("gRPC server shutdown completed");
+							grpcModule.shutdownAllExecutors();
+							return true;
+						} else {
+							grpcModule.shutdownAllExecutors();
+							recordStorageServer.shutdownNow();
+							log.warning("gRPC server has NOT shutdown cleanly");
+							return recordStorageServer.awaitTermination(
+									percent(10, timeoUtMillis), TimeUnit.MILLISECONDS);
+						}
+					},
+					(timeoUtMillis) -> {
+						if (grpcModule.enforceTerminationOfAllExecutors(percent(80, timeoUtMillis))
+								.isEmpty()) {
+							return true;
+						}
+						return grpcModule.awaitTerminationOfAllExecutors(percent(20, timeoUtMillis))
+								.isEmpty();
+					}
+				);
 			} catch (InterruptedException ignored) {}
-			if (recordStorageServer.isTerminated()) {
-				log.info("gRPC server shutdown completed");
-			} else {
-				log.info("gRPC server has NOT shutdown cleanly");
-			}
-			grpcModule.shutdownAllExecutors(5);
 			entityManagerFactory.close();
-			log.info("entity manager factory shutdown completed");
+			log.info("exiting, bye!");
 			((JulManualResetLogManager) JulManualResetLogManager.getLogManager()).manualReset();
 		}));
 	}
+
+	static long percent(int p, long x) { return x > 1l ? x*p/100l : x; }
 
 
 
@@ -124,7 +148,9 @@ public class RecordStorageServer {
 
 
 	static {
-		System.setProperty("java.util.logging.manager", JulManualResetLogManager.class.getName());
+		System.setProperty(
+				JulManualResetLogManager.JUL_LOG_MANAGER_PROPERTY,
+				JulManualResetLogManager.class.getName());
 	}
 
 	static final Logger log = Logger.getLogger(RecordStorageServer.class.getName());

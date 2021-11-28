@@ -1,11 +1,13 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -14,6 +16,7 @@ import com.google.inject.TypeLiteral;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 
+import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.guice.scopes.ContextScope;
 import pl.morgwai.base.guice.scopes.ContextTracker;
 
@@ -107,6 +110,9 @@ public class GrpcModule implements Module {
 
 
 	final List<ContextTrackingExecutor> executors = new LinkedList<>();
+	public List<ContextTrackingExecutor> getExecutors() {
+		return Collections.unmodifiableList(executors);
+	}
 
 
 
@@ -193,18 +199,78 @@ public class GrpcModule implements Module {
 	/**
 	 * Shutdowns all executors obtained from this module.
 	 */
-	public void shutdownAllExecutors(int timeoutSeconds) {
-		var shutdownThreads = new LinkedList<Thread>();
-		for (var executor: executors) {
-			var thread = new Thread(() -> executor.tryShutdownGracefully(timeoutSeconds));
-			shutdownThreads.add(thread);
-			thread.start();
-		}
-		for (var thread: shutdownThreads) {
-			try {
-				thread.join();
-			} catch (InterruptedException ignored) {}
-		}
+	public void shutdownAllExecutors() {
+		for (var executor: executors) executor.shutdown();
+	}
+
+
+
+	/**
+	 * {@link ContextTrackingExecutor#enforceTermination(long, java.util.concurrent.TimeUnit)
+	 * Enforces termination} of all executors obtained from this module.
+	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
+	 */
+	public List<ContextTrackingExecutor> enforceTerminationOfAllExecutors(long timeoutMillis)
+			throws InterruptedException {
+		return Awaitable.awaitMultiple(
+				timeoutMillis,
+				ContextTrackingExecutor::awaitableOfEnforceTermination,
+				executors);
+	}
+
+	/**
+	 * {@link ContextTrackingExecutor#enforceTermination(long, java.util.concurrent.TimeUnit)
+	 * Enforces termination} of all executors obtained from this module.
+	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
+	 */
+	public List<ContextTrackingExecutor> enforceTerminationOfAllExecutors(
+			long timeout, TimeUnit unit) throws InterruptedException {
+		return Awaitable.awaitMultiple(
+				timeout,
+				unit,
+				ContextTrackingExecutor::awaitableOfEnforceTermination,
+				executors);
+	}
+
+
+
+	/**
+	 * {@link ContextTrackingExecutor#awaitTermination(long, java.util.concurrent.TimeUnit)
+	 * Awaits for termination} of all executors obtained from this module.
+	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
+	 * @see #enforceTerminationOfAllExecutors(long)
+	 */
+	public List<ContextTrackingExecutor> awaitTerminationOfAllExecutors(long timeoutMillis)
+			throws InterruptedException {
+		return Awaitable.awaitMultiple(
+				timeoutMillis,
+				ContextTrackingExecutor::awaitableOfAwaitTermination,
+				executors);
+	}
+
+	/**
+	 * {@link ContextTrackingExecutor#awaitTermination(long, java.util.concurrent.TimeUnit)
+	 * Awaits for termination} of all executors obtained from this module.
+	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
+	 * @see #enforceTerminationOfAllExecutors(long)
+	 */
+	public List<ContextTrackingExecutor> awaitTerminationOfAllExecutors(
+			long timeout, TimeUnit unit) throws InterruptedException {
+		return Awaitable.awaitMultiple(
+				timeout,
+				unit,
+				ContextTrackingExecutor::awaitableOfAwaitTermination,
+				executors);
+	}
+
+	/**
+	 * {@link ContextTrackingExecutor#awaitTermination() Awaits for termination} of all executors
+	 * obtained from this module.
+	 * @see #enforceTerminationOfAllExecutors(long)
+	 * @see #awaitTerminationOfAllExecutors(long)
+	 */
+	public void awaitTerminationOfAllExecutors() throws InterruptedException {
+		for (var executor: executors) executor.awaitTermination();
 	}
 
 

@@ -10,6 +10,7 @@ import java.util.concurrent.ThreadFactory;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
+import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.guice.scopes.ContextTracker;
 
 
@@ -37,6 +38,18 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 		} catch (RejectedExecutionException e) {
 			responseObserver.onError(Status.UNAVAILABLE.asException());
 		}
+	}
+
+
+
+	public Awaitable.WithUnit awaitableOfEnforceTermination() {
+		return (timeout, unit) -> enforceTermination(timeout, unit).isEmpty();
+	}
+
+
+
+	public Awaitable.WithUnit awaitableOfAwaitTermination() {
+		return (timeout, unit) -> awaitTermination(timeout, unit);
 	}
 
 
