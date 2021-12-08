@@ -143,9 +143,7 @@ public class GrpcModule implements Module {
 	 * should usually be handled by sending {@link io.grpc.Status#UNAVAILABLE} to the client.</p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
-			String name,
-			int poolSize,
-			BlockingQueue<Runnable> workQueue) {
+			String name, int poolSize, BlockingQueue<Runnable> workQueue) {
 		var executor = new ContextTrackingExecutor(name, poolSize, workQueue, allTrackers);
 		executors.add(executor);
 		return executor;
@@ -162,10 +160,8 @@ public class GrpcModule implements Module {
 	 * should usually be handled by sending {@link io.grpc.Status#UNAVAILABLE} to the client.</p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
-			String name,
-			int poolSize,
-			BlockingQueue<Runnable> workQueue,
-			ThreadFactory threadFactory) {
+		String name, int poolSize, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory
+	) {
 		var executor =
 				new ContextTrackingExecutor(name, poolSize, workQueue, threadFactory, allTrackers);
 		executors.add(executor);
@@ -186,9 +182,7 @@ public class GrpcModule implements Module {
 	 * {@link ContextTrackingExecutor#getPoolSize()}.</p>
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
-			String name,
-			ExecutorService backingExecutor,
-			int poolSize) {
+			String name, ExecutorService backingExecutor, int poolSize) {
 		var executor = new ContextTrackingExecutor(name, backingExecutor, poolSize, allTrackers);
 		executors.add(executor);
 		return executor;
@@ -224,7 +218,8 @@ public class GrpcModule implements Module {
 	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
 	 */
 	public List<ContextTrackingExecutor> enforceTerminationOfAllExecutors(
-			long timeout, TimeUnit unit) throws InterruptedException {
+		long timeout, TimeUnit unit
+	) throws InterruptedException {
 		return Awaitable.awaitMultiple(
 				timeout,
 				unit,
@@ -254,8 +249,8 @@ public class GrpcModule implements Module {
 	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
 	 * @see #enforceTerminationOfAllExecutors(long)
 	 */
-	public List<ContextTrackingExecutor> awaitTerminationOfAllExecutors(
-			long timeout, TimeUnit unit) throws InterruptedException {
+	public List<ContextTrackingExecutor> awaitTerminationOfAllExecutor(long timeout, TimeUnit unit)
+			throws InterruptedException {
 		return Awaitable.awaitMultiple(
 				timeout,
 				unit,
