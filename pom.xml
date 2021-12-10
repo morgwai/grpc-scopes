@@ -87,7 +87,7 @@
 		<dependency>
 			<groupId>pl.morgwai.base</groupId>
 			<artifactId>grpc-utils</artifactId>
-			<version>2.1</version>
+			<version>2.2</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -107,19 +107,6 @@
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-netty-shaded</artifactId>
 			<version>[${grpc.version},1.999.0]</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.hibernate</groupId>
-			<artifactId>hibernate-entitymanager</artifactId>
-			<version>[5.6.0.Final,5.999.0.Final]</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<version>[1.4.200,1.999.9999]</version>
 			<scope>test</scope>
 		</dependency>
 

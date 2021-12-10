@@ -1,0 +1,18 @@
+// Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
+syntax = "proto3";
+package pl.morgwai.base.grpc.scopes.tests.grpc;
+
+option java_outer_classname = "ScopedObjectHashProto";
+option java_multiple_files = true;
+
+service ScopedObjectHash {
+	rpc unary(Empty) returns (ScopedObjectsHashes) {}
+	rpc streaming(stream Empty) returns (stream ScopedObjectsHashes) {}
+}
+
+message Empty {}
+
+message ScopedObjectsHashes {
+	int32 eventScopedHash = 1;
+	int32 rpcScopedHash = 2;
+}

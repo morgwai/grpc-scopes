@@ -10,11 +10,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import pl.morgwai.base.concurrent.Awaitable;
-import pl.morgwai.base.grpc.scopes.tests.server.grpc.RecordStorageClient;
-import pl.morgwai.base.grpc.scopes.tests.server.grpc.RecordStorageServer;
+import pl.morgwai.base.grpc.scopes.tests.ScopedObjectHashClient;
+import pl.morgwai.base.grpc.scopes.tests.ScopedObjectHashServer;
+import pl.morgwai.base.grpc.scopes.tests.grpc.Empty;
+import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
+import pl.morgwai.base.grpc.utils.BlockingResponseObserver;
 
-import static org.junit.Assert.assertTrue;
-import static pl.morgwai.base.grpc.scopes.tests.server.grpc.RecordStorageServer.*;
+import static org.junit.Assert.*;
 
 
 
@@ -22,19 +24,18 @@ public class IntegrationTest {
 
 
 
-	RecordStorageServer server;
-	RecordStorageClient client;
+	ScopedObjectHashServer server;
+	ScopedObjectHashClient client;
+
+	volatile String error;
 
 
 
 	@Before
 	public void setup() throws Exception {
-		server = new RecordStorageServer(
-				0,
-				DEFAULT_MAX_CONNECTION_IDLE,
-				DEFAULT_MAX_CONNECTION_AGE,
-				DEFAULT_MAX_CONNECTION_AGE_GRACE);
-		client = new RecordStorageClient("localhost:" + server.getPort(), 1000l);
+		error = null;
+		server = new ScopedObjectHashServer(0, (errorMessage) -> { error = errorMessage; });
+		client = new ScopedObjectHashClient("localhost:" + server.getPort(), 500l);
 	}
 
 
@@ -56,7 +57,30 @@ public class IntegrationTest {
 
 	@Test
 	public void test() throws Exception {
-		client.doStuff();
+		final var hashObserver =
+				new BlockingResponseObserver<Empty, ScopedObjectsHashes>(this::logHashes);
+		client.streaming(5, hashObserver);
+		hashObserver.awaitCompletion(500l);
+		if (error != null) fail(error);
+		logHashes(client.unary());
+		if (error != null) fail(error);
+		final var hashObserver2 =
+				new BlockingResponseObserver<Empty, ScopedObjectsHashes>(this::logHashes);
+		client.streaming(5, hashObserver2);
+		hashObserver2.awaitCompletion(500l);
+		if (error != null) fail(error);
+		logHashes(client.unary());
+		if (error != null) fail(error);
+	}
+
+
+
+	void logHashes(ScopedObjectsHashes hashes) {
+		if (log.isLoggable(Level.FINER)) {
+			log.finer(
+					"rpc: " + hashes.getRpcScopedHash()
+					+ ", event: " + hashes.getEventScopedHash());
+		}
 	}
 
 
