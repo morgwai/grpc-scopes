@@ -41,7 +41,7 @@
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<guice.scopes.version>5.0</guice.scopes.version>
+		<guice.scopes.version>5.1</guice.scopes.version>
 		<utils.version>1.9</utils.version>
 		<guice.version>5.0.1</guice.version>
 		<grpc.version>1.42.1</grpc.version>
@@ -63,7 +63,7 @@
 			<groupId>com.google.inject</groupId>
 			<artifactId>guice</artifactId>
 			<version>${guice.version}</version>
-			<scope>provided</scope>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>io.grpc</groupId>
