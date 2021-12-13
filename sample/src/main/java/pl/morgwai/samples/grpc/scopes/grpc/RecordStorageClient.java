@@ -36,7 +36,8 @@ public class RecordStorageClient {
 
 		System.out.println();
 		System.out.println("store multiple");
-		var storeRecordResponseObserver = new BlockingResponseObserver<StoreRecordResponse>(
+		final var storeRecordResponseObserver =
+				new BlockingResponseObserver<StoreRecordRequest, StoreRecordResponse>(
 			response -> System.out.println(response.getRequestId()+ " -> " + response.getRecordId())
 		);
 		final var requestObserver = connector.storeMultiple(storeRecordResponseObserver);
