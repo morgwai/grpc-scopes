@@ -6,11 +6,13 @@ option java_outer_classname = "ScopedObjectHashProto";
 option java_multiple_files = true;
 
 service ScopedObjectHash {
-	rpc unary(Empty) returns (ScopedObjectsHashes) {}
-	rpc streaming(stream Empty) returns (stream ScopedObjectsHashes) {}
+	rpc unary(Request) returns (ScopedObjectsHashes) {}
+	rpc streaming(stream Request) returns (stream ScopedObjectsHashes) {}
 }
 
-message Empty {}
+message Request {
+	int32 id = 1;
+}
 
 message ScopedObjectsHashes {
 	int32 eventScopedHash = 1;

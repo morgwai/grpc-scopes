@@ -3,10 +3,8 @@ package pl.morgwai.base.grpc.scopes.tests;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.function.Consumer;
 
 import com.google.inject.Guice;
-import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import io.grpc.Server;
 import io.grpc.ServerInterceptors;
@@ -24,15 +22,17 @@ public class ScopedObjectHashServer {
 
 
 	final Server grpcServer;
+
 	final GrpcModule grpcModule;
 
+	final ScopedObjectHashService service;
+	public ScopedObjectHashService getService() { return service; }
 
 
-	public ScopedObjectHashServer(int port, Consumer<String> errorReporter) throws IOException {
+
+	public ScopedObjectHashServer(int port) throws IOException {
 		grpcModule = new GrpcModule();
 		final var injector = Guice.createInjector(grpcModule, (binder) -> {
-			TypeLiteral<Consumer<String>> errorReporterType = new TypeLiteral<>() {};
-			binder.bind(errorReporterType).toInstance(errorReporter);
 			binder
 				.bind(Service.class).annotatedWith(Names.named(RPC_SCOPE))
 				.to(Service.class).in(grpcModule.rpcScope);
@@ -40,7 +40,7 @@ public class ScopedObjectHashServer {
 				.bind(Service.class).annotatedWith(Names.named(EVENT_SCOPE))
 				.to(Service.class).in(grpcModule.listenerEventScope);
 		});
-		final var service = injector.getInstance(ScopedObjectHashService.class);
+		service = injector.getInstance(ScopedObjectHashService.class);
 		grpcServer = NettyServerBuilder
 			.forPort(port)
 			.addService(ServerInterceptors.intercept(service, grpcModule.contextInterceptor))

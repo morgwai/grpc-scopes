@@ -1,9 +1,14 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.grpc.stub.StreamObserver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -12,9 +17,8 @@ import org.junit.Test;
 import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.tests.ScopedObjectHashClient;
 import pl.morgwai.base.grpc.scopes.tests.ScopedObjectHashServer;
-import pl.morgwai.base.grpc.scopes.tests.grpc.Empty;
+import pl.morgwai.base.grpc.scopes.tests.ScopedObjectHashService;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
-import pl.morgwai.base.grpc.utils.BlockingResponseObserver;
 
 import static org.junit.Assert.*;
 
@@ -25,16 +29,24 @@ public class IntegrationTest {
 
 
 	ScopedObjectHashServer server;
+	ScopedObjectHashService service;
 	ScopedObjectHashClient client;
 
-	volatile String error;
+	HashObserver[] hashObservers;
+	CountDownLatch[] callLatches;
+	List<String> errors;
 
 
 
 	@Before
 	public void setup() throws Exception {
-		error = null;
-		server = new ScopedObjectHashServer(0, (errorMessage) -> { error = errorMessage; });
+		server = new ScopedObjectHashServer(0);
+		service = server.getService();
+		errors = new ArrayList<>(20);
+		service.setFinalizationListener((id, callErrors) -> {
+			errors.addAll(callErrors);
+			callLatches[id].countDown();
+		});
 		client = new ScopedObjectHashClient("localhost:" + server.getPort(), 500l);
 	}
 
@@ -55,22 +67,118 @@ public class IntegrationTest {
 
 
 
+	String formatError() {
+		StringBuilder combined = new StringBuilder();
+		for (var error: errors) combined.append(error).append('\n');
+		return combined.toString();
+	}
+
+
+
+	class HashObserver implements StreamObserver<ScopedObjectsHashes> {
+
+		final int id;
+		Throwable error = null;
+
+		public HashObserver(int id) {
+			this.id = id;
+		}
+
+		@Override public void onNext(ScopedObjectsHashes value) {
+			logHashes(value);
+		}
+
+		@Override public void onError(Throwable t) {
+			error = t;
+			callLatches[id].countDown();
+		}
+
+		@Override public void onCompleted() {
+			callLatches[id].countDown();
+		}
+	}
+
+
+
+	void unary(int i) {
+		client.unary(i, hashObservers[i]);
+	}
+
+
+
+	void streaming(int i) {
+		client.streaming(i, 5, hashObservers[i]);
+	}
+
+
+
+	void streamingAndCancel(int i) {
+		client.streamingAndCancel(i, 5, hashObservers[i]);
+	}
+
+
+
 	@Test
-	public void test() throws Exception {
-		final var hashObserver =
-				new BlockingResponseObserver<Empty, ScopedObjectsHashes>(this::logHashes);
-		client.streaming(5, hashObserver);
-		hashObserver.awaitCompletion(500l);
-		if (error != null) fail(error);
-		logHashes(client.unary());
-		if (error != null) fail(error);
-		final var hashObserver2 =
-				new BlockingResponseObserver<Empty, ScopedObjectsHashes>(this::logHashes);
-		client.streaming(5, hashObserver2);
-		hashObserver2.awaitCompletion(500l);
-		if (error != null) fail(error);
-		logHashes(client.unary());
-		if (error != null) fail(error);
+	public void testPositiveCase() throws Throwable {
+		callLatches = new CountDownLatch[4];
+		hashObservers = new HashObserver[4];
+		for (int i = 0; i < 4; i++) {
+			callLatches[i] = new CountDownLatch(2);
+			hashObservers[i] = new HashObserver(i);
+		}
+		int callCount = 0;
+
+		streaming(callCount);
+		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
+		if ( ! errors.isEmpty()) fail(formatError());
+		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
+		callCount++;
+
+		unary(callCount);
+		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
+		if ( ! errors.isEmpty()) fail(formatError());
+		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
+		callCount++;
+
+		streaming(callCount);
+		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
+		if ( ! errors.isEmpty()) fail(formatError());
+		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
+		callCount++;
+
+		unary(callCount);
+		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
+		if ( ! errors.isEmpty()) fail(formatError());
+		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
+		callCount++;
+	}
+
+
+
+	@Test
+	public void testCancel() throws Throwable {
+		callLatches = new CountDownLatch[2];
+		hashObservers = new HashObserver[2];
+		for (int i = 0; i < 2; i++) {
+			callLatches[i] = new CountDownLatch(2);
+			hashObservers[i] = new HashObserver(i);
+		}
+		int callCount = 0;
+
+		unary(callCount);
+		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
+		if ( ! errors.isEmpty()) fail(formatError());
+		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
+		callCount++;
+
+		service.setCancelExpected(true);
+		streamingAndCancel(callCount);
+		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
+		if ( ! errors.isEmpty()) fail(formatError());
+		final var error = hashObservers[callCount].error;
+		if (error == null) fail("cancellation expected");
+		if ( ! ScopedObjectHashService.isCancellation(error)) throw error;
+		callCount++;
 	}
 
 
