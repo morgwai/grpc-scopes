@@ -69,17 +69,18 @@ In cases when it's not possible to avoid thread switching without the use of `Co
 ```java
 class MyClass {
 
-	@Inject List<ContextTracker<?>> allTrackers;
+    @Inject List<ContextTracker<?>> allTrackers;
 
-	void myMethod(Object param) {
-		// myMethod code
-		var activeCtxList = ContextTrackingExecutor.getActiveContexts(allTrackers);
-		someAsyncMethod(param, (callbackParam) ->
-				ContextTrackingExecutor.executeWithinAll(activeCtxList, () -> {
-							// callback code
-						}
-				));
-	}
+    void myMethod(Object param) {
+        // myMethod code
+        var activeCtxList = ContextTrackingExecutor.getActiveContexts(allTrackers);
+        someAsyncMethod(
+            param,
+            (callbackParam) -> ContextTrackingExecutor.executeWithinAll(activeCtxList, () -> {
+                // callback code
+            })
+        );
+    }
 }
 ```
 
