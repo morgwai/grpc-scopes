@@ -249,7 +249,7 @@ public class GrpcModule implements Module {
 	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
 	 * @see #enforceTerminationOfAllExecutors(long)
 	 */
-	public List<ContextTrackingExecutor> awaitTerminationOfAllExecutor(long timeout, TimeUnit unit)
+	public List<ContextTrackingExecutor> awaitTerminationOfAllExecutors(long timeout, TimeUnit unit)
 			throws InterruptedException {
 		return Awaitable.awaitMultiple(
 				timeout,
