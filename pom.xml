@@ -10,7 +10,7 @@
 
 	<groupId>pl.morgwai.base</groupId>
 	<artifactId>grpc-scopes</artifactId>
-	<version>6.0</version>
+	<version>6.1-SNAPSHOT</version>
 
 	<name>gRPC Guice Scopes</name>
 	<description>RPC and ListenerEvent Guice Scopes for gRPC server</description>
