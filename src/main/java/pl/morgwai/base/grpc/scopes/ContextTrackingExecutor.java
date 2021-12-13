@@ -49,7 +49,7 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 
 
 	public Awaitable.WithUnit awaitableOfAwaitTermination() {
-		return (timeout, unit) -> awaitTermination(timeout, unit);
+		return this::awaitTermination;
 	}
 
 
