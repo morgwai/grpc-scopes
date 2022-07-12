@@ -41,14 +41,26 @@
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<guice.scopes.version>5.2</guice.scopes.version>
+		<guice.scopes.version>6.0</guice.scopes.version>
 		<utils.version>1.9</utils.version>
-		<guice.version>5.0.1</guice.version>
-		<grpc.version>1.42.1</grpc.version>
-		<protobuf.version>3.17.2</protobuf.version>
+		<guice.version>5.1.0</guice.version>
+		<grpc.version>1.46.0</grpc.version>
+		<protobuf.version>3.19.2</protobuf.version>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-api</artifactId>
+			<version>${grpc.version}</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-stub</artifactId>
+			<version>${grpc.version}</version>
+			<optional>true</optional>
+		</dependency>
 		<dependency>
 			<groupId>pl.morgwai.base</groupId>
 			<artifactId>guice-context-scopes</artifactId>
@@ -65,18 +77,6 @@
 			<version>${guice.version}</version>
 			<optional>true</optional>
 		</dependency>
-		<dependency>
-			<groupId>io.grpc</groupId>
-			<artifactId>grpc-api</artifactId>
-			<version>[${grpc.version},1.999.0]</version>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>io.grpc</groupId>
-			<artifactId>grpc-stub</artifactId>
-			<version>[${grpc.version},1.999.0]</version>
-			<optional>true</optional>
-		</dependency>
 
 		<dependency>
 			<groupId>junit</groupId>
@@ -88,7 +88,7 @@
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-protobuf</artifactId>
-			<version>[${grpc.version},1.999.0]</version>
+			<version>${grpc.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -100,7 +100,7 @@
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-netty-shaded</artifactId>
-			<version>[${grpc.version},1.999.0]</version>
+			<version>${grpc.version}</version>
 			<scope>test</scope>
 		</dependency>
 
