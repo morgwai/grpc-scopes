@@ -7,9 +7,9 @@ A simple gRPC service that stores and retrieves records from a DB.
 
 build: `./mvnw package`
 
-start server: `java -jar target/grpc-scopes-sample-1.0-SNAPSHOT-jar-with-dependencies.jar`
+start the server: `java -jar target/grpc-scopes-sample-1.0-SNAPSHOT-executable.jar`
 
-run client in another terminal: `java -cp target/grpc-scopes-sample-1.0-SNAPSHOT-jar-with-dependencies.jar pl.morgwai.samples.grpc.scopes.grpc.RecordStorageClient`
+run the client in another terminal: `java -cp target/grpc-scopes-sample-1.0-SNAPSHOT-executable.jar pl.morgwai.samples.grpc.scopes.grpc.RecordStorageClient`
 
 to stop the server press `CTRL`+`C` on its console
 
