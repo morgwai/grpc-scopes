@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,13 +25,26 @@ public class IntegrationTest {
 
 
 
+	public static final long TIMEOUT_MILLIS = 500l;
+
 	ScopedObjectHashServer server;
 	ScopedObjectHashService service;
 	ScopedObjectHashClient client;
 
-	HashObserver[] hashObservers;
-	CountDownLatch[] callLatches;
-	List<String> errors;
+	/**
+	 * Whether given call is finalized both from client's and server's perspective.
+	 * Decreased by the server in
+	 * {@link ScopedObjectHashService#setFinalizationListener(BiConsumer)} callback set in
+	 * {@link #setup()}. Decreased by the client in {@link ResponseObserver#onCompleted()} /
+	 * {@link ResponseObserver#onError(Throwable)}.
+	 */
+	CountDownLatch[] callBiFinalized;
+
+	/**
+	 * Errors reported by the service via
+	 * {@link ScopedObjectHashService#setFinalizationListener(BiConsumer)} callback.
+	 */
+	List<String> serverErrors;
 
 
 
@@ -37,12 +52,14 @@ public class IntegrationTest {
 	public void setup() throws Exception {
 		server = new ScopedObjectHashServer(0);
 		service = server.getService();
-		errors = new ArrayList<>(20);
-		service.setFinalizationListener((id, callErrors) -> {
-			errors.addAll(callErrors);
-			callLatches[id].countDown();
+		serverErrors = new ArrayList<>(20);
+		service.setFinalizationListener((callId, callErrors) -> {
+			synchronized (serverErrors) {
+				serverErrors.addAll(callErrors);
+			}
+			callBiFinalized[callId].countDown();
 		});
-		client = new ScopedObjectHashClient("localhost:" + server.getPort(), 500l);
+		client = new ScopedObjectHashClient("localhost:" + server.getPort(), TIMEOUT_MILLIS);
 	}
 
 
@@ -53,16 +70,104 @@ public class IntegrationTest {
 		assertTrue(
 			"server and client should shutdown cleanly",
 			Awaitable.awaitMultiple(
-				500l,
+				TIMEOUT_MILLIS,
 				(timeout) -> client.enforceTermination(timeout),
-				(timeout) -> server.shutdownAndforceTermination(timeout)
+				(timeout) -> server.shutdownAndEnforceTermination(timeout)
 			)
 		);
 	}
 
 
 
-	String formatError() {
+	static class ResponseObserver implements StreamObserver<ScopedObjectsHashes> {
+
+		final int callId;
+		final CountDownLatch finalizationLatch;
+		Throwable error = null;
+
+		public ResponseObserver(int callId, CountDownLatch finalizationLatch) {
+			this.callId = callId;
+			this.finalizationLatch = finalizationLatch;
+		}
+
+		@Override public void onNext(ScopedObjectsHashes response) {
+			logHashes(callId, response);
+		}
+
+		@Override public void onError(Throwable t) {
+			error = t;
+			finalizationLatch.countDown();
+		}
+
+		@Override public void onCompleted() {
+			finalizationLatch.countDown();
+		}
+	}
+
+
+
+	/**
+	 * Four calls: streaming, unary, streaming, unary. 3 request messages per streaming call.
+	 */
+	@Test
+	public void testPositiveCase() throws Throwable {
+		final int numberOfCalls = 4;
+		callBiFinalized = new CountDownLatch[numberOfCalls];
+		for (int callId = 0; callId < numberOfCalls; callId++) {
+			callBiFinalized[callId] = new CountDownLatch(2);
+			var responseObserver = new ResponseObserver(callId, callBiFinalized[callId]);
+			if (callId % 2 == 0) {
+				client.streaming(callId, 3, responseObserver);
+			} else {
+				client.unary(callId, responseObserver);
+			}
+			if ( ! callBiFinalized[callId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException();
+			}
+			if ( ! serverErrors.isEmpty()) fail(formatError(serverErrors));
+			if (responseObserver.error != null) throw responseObserver.error;
+		}
+	}
+
+
+	/**
+	 * First issues a "warmup" unary call to populate scoped object logs, then issues a streaming
+	 * call that is cancelled after 3 request messages.
+	 */
+	@Test
+	public void testCancel() throws Throwable {
+		final int warmupId = 0;
+		final int cancelledId = 1;
+		callBiFinalized = new CountDownLatch[2];
+
+		// warmup call
+		callBiFinalized[warmupId] = new CountDownLatch(2);
+		var warmupResponseObserver = new ResponseObserver(warmupId, callBiFinalized[warmupId]);
+		client.unary(warmupId, warmupResponseObserver);
+		if ( ! callBiFinalized[warmupId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+			throw new TimeoutException();
+		}
+		if ( ! serverErrors.isEmpty()) fail(formatError(serverErrors));
+		if (warmupResponseObserver.error != null) throw warmupResponseObserver.error;
+
+		// cancelled call
+		callBiFinalized[cancelledId] = new CountDownLatch(2);
+		var cancelResponseObserver =
+				new ResponseObserver(cancelledId, callBiFinalized[cancelledId]);
+		service.setCancelExpected(true);
+		client.streamingAndCancel(cancelledId, 3, cancelResponseObserver);
+		if ( ! callBiFinalized[cancelledId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+			throw new TimeoutException();
+		}
+		if ( ! serverErrors.isEmpty()) fail(formatError(serverErrors));
+		final var error = cancelResponseObserver.error;
+		if (error == null) fail("cancellation expected");
+		if ( ! ScopedObjectHashService.isCancellation(error)) throw error;
+	}
+
+
+
+	static String formatError(List<String> errors) {
 		StringBuilder combined = new StringBuilder();
 		for (var error: errors) combined.append(error).append('\n');
 		return combined.toString();
@@ -70,119 +175,13 @@ public class IntegrationTest {
 
 
 
-	class HashObserver implements StreamObserver<ScopedObjectsHashes> {
-
-		final int id;
-		Throwable error = null;
-
-		public HashObserver(int id) {
-			this.id = id;
-		}
-
-		@Override public void onNext(ScopedObjectsHashes value) {
-			logHashes(value);
-		}
-
-		@Override public void onError(Throwable t) {
-			error = t;
-			callLatches[id].countDown();
-		}
-
-		@Override public void onCompleted() {
-			callLatches[id].countDown();
-		}
-	}
-
-
-
-	void unary(int i) {
-		client.unary(i, hashObservers[i]);
-	}
-
-
-
-	void streaming(int i) {
-		client.streaming(i, 5, hashObservers[i]);
-	}
-
-
-
-	void streamingAndCancel(int i) {
-		client.streamingAndCancel(i, 5, hashObservers[i]);
-	}
-
-
-
-	@Test
-	public void testPositiveCase() throws Throwable {
-		callLatches = new CountDownLatch[4];
-		hashObservers = new HashObserver[4];
-		for (int i = 0; i < 4; i++) {
-			callLatches[i] = new CountDownLatch(2);
-			hashObservers[i] = new HashObserver(i);
-		}
-		int callCount = 0;
-
-		streaming(callCount);
-		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
-		if ( ! errors.isEmpty()) fail(formatError());
-		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
-		callCount++;
-
-		unary(callCount);
-		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
-		if ( ! errors.isEmpty()) fail(formatError());
-		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
-		callCount++;
-
-		streaming(callCount);
-		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
-		if ( ! errors.isEmpty()) fail(formatError());
-		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
-		callCount++;
-
-		unary(callCount);
-		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
-		if ( ! errors.isEmpty()) fail(formatError());
-		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
-		callCount++;
-	}
-
-
-
-	@Test
-	public void testCancel() throws Throwable {
-		callLatches = new CountDownLatch[2];
-		hashObservers = new HashObserver[2];
-		for (int i = 0; i < 2; i++) {
-			callLatches[i] = new CountDownLatch(2);
-			hashObservers[i] = new HashObserver(i);
-		}
-		int callCount = 0;
-
-		unary(callCount);
-		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
-		if ( ! errors.isEmpty()) fail(formatError());
-		if (hashObservers[callCount].error != null) throw hashObservers[callCount].error;
-		callCount++;
-
-		service.setCancelExpected(true);
-		streamingAndCancel(callCount);
-		callLatches[callCount].await(500l, TimeUnit.MILLISECONDS);
-		if ( ! errors.isEmpty()) fail(formatError());
-		final var error = hashObservers[callCount].error;
-		if (error == null) fail("cancellation expected");
-		if ( ! ScopedObjectHashService.isCancellation(error)) throw error;
-		callCount++;
-	}
-
-
-
-	void logHashes(ScopedObjectsHashes hashes) {
+	static void logHashes(int callId, ScopedObjectsHashes hashes) {
 		if (log.isLoggable(Level.FINER)) {
 			log.finer(
-					"rpc: " + hashes.getRpcScopedHash()
-					+ ", event: " + hashes.getEventScopedHash());
+					"call: " + callId
+					+ ", event: " + hashes.getEventName()
+					+ ", rpc-scoped hash: " + hashes.getRpcScopedHash()
+					+ ", event-scoped hash: " + hashes.getEventScopedHash());
 		}
 	}
 

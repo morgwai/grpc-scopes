@@ -22,10 +22,12 @@ public class ScopedObjectHashClient {
 
 	final ManagedChannel channel;
 	final ScopedObjectHashStub connector;
+	final long deadlineMillis;
 
 
 
 	public ScopedObjectHashClient(String target, long deadlineMillis) {
+		this.deadlineMillis = deadlineMillis;
 		channel = ManagedChannelBuilder
 				.forTarget(target)
 				.usePlaintext()
@@ -35,49 +37,55 @@ public class ScopedObjectHashClient {
 
 
 
-	public void unary(int id, StreamObserver<ScopedObjectsHashes> hashObserver) {
-		connector.unary(Request.newBuilder().setId(id).build(), hashObserver);
+	public void unary(int callId, StreamObserver<ScopedObjectsHashes> hashObserver) {
+		connector.unary(Request.newBuilder().setCallId(callId).build(), hashObserver);
 	}
 
 
 
 	void streaming(
-		int id, int requestCount, StreamObserver<ScopedObjectsHashes> hashObserver, boolean cancel
+		int callId,
+		int requestCount,
+		StreamObserver<ScopedObjectsHashes> responseObserver,
+		boolean cancel
 	) {
-		final var messagesReceived = new CountDownLatch(requestCount);
-		final var decoratedHashObserver = new StreamObserver<ScopedObjectsHashes>() {
+		final var messagesReceivedLatch = new CountDownLatch(requestCount + 2);
+			// 1 additional for startCall and 1 for onReady
+		final var decoratedResponseObserver = new StreamObserver<ScopedObjectsHashes>() {
 
 			@Override public void onNext(ScopedObjectsHashes value) {
-				messagesReceived.countDown();
-				hashObserver.onNext(value);
+				messagesReceivedLatch.countDown();
+				responseObserver.onNext(value);
 			}
 
-			@Override public void onError(Throwable t) { hashObserver.onError(t); }
+			@Override public void onError(Throwable t) { responseObserver.onError(t); }
 
-			@Override public void onCompleted() { hashObserver.onCompleted(); }
+			@Override public void onCompleted() { responseObserver.onCompleted(); }
 		};
-		final var requestObserver = connector.streaming(decoratedHashObserver);
+		final var requestObserver = connector.streaming(decoratedResponseObserver);
 		for (int i = 0; i < requestCount; i++) {
-			requestObserver.onNext(Request.newBuilder().setId(id).build());
+			requestObserver.onNext(Request.newBuilder().setCallId(callId).build());
 		}
+		boolean messagesReceived = false;
+		try {
+			messagesReceived = messagesReceivedLatch.await(deadlineMillis, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException ignored) {}
 		if (cancel) {
-			try {
-				messagesReceived.await(500l, TimeUnit.MILLISECONDS);
-			} catch (InterruptedException ignored) {}
 			((ClientCallStreamObserver<?>) requestObserver).cancel("requested by caller", null);
 		} else {
 			requestObserver.onCompleted();
 		}
+		if ( ! messagesReceived) throw new RuntimeException("deadline exceeded");
 	}
 
 	public void streaming(
-			int id, int requestCount, StreamObserver<ScopedObjectsHashes> hashObserver) {
-		streaming(id, requestCount, hashObserver, false);
+			int callId, int requestCount, StreamObserver<ScopedObjectsHashes> responseObserver) {
+		streaming(callId, requestCount, responseObserver, false);
 	}
 
 	public void streamingAndCancel(
-			int id, int requestCount, StreamObserver<ScopedObjectsHashes> hashObserver) {
-		streaming(id, requestCount, hashObserver, true);
+			int callId, int requestCount, StreamObserver<ScopedObjectsHashes> responseObserver) {
+		streaming(callId, requestCount, responseObserver, true);
 	}
 
 

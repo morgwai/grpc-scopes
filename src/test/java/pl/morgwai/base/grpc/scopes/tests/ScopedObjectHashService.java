@@ -32,19 +32,41 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 	@Inject @Named(RPC_SCOPE) Provider<Service> rpcScopedProvider;
 	@Inject @Named(EVENT_SCOPE) Provider<Service> eventScopedProvider;
 
-	Set<Service> rpcScopedLog = new HashSet<>();
-	Set<Service> eventScopedLog = new HashSet<>();
-
-	boolean cancelExpected = false;
+	/**
+	 * Whether to treat cancellation as an error (and add to error log of the given call) or as an
+	 * expected event. By default false.
+	 */
 	public void setCancelExpected(boolean cancelExpected) { this.cancelExpected = cancelExpected; }
+	boolean cancelExpected = false;
 
-	BiConsumer<Integer, List<String>> finalizationListener;
+	/**
+	 * Sets a callback invoked each time some call is finalized from the server perspective (either
+	 * in {@code onClose()} or {@code onCancel()}). The first param will be the call ID and the
+	 * second list of errors (scoping or others) that occurred.
+	 */
 	public void setFinalizationListener(BiConsumer<Integer, List<String>> finalizationListener) {
 		this.finalizationListener = finalizationListener;
 	}
+	BiConsumer<Integer, List<String>> finalizationListener;
 
 
 
+	/**
+	 * Keeps the log of all RPC-scoped {@link Service} instances to check for duplications
+	 */
+	Set<Service> rpcScopedLog = new HashSet<>();
+
+	/**
+	 * Keeps the log of all event-scoped {@link Service} instances to check for duplications
+	 */
+	Set<Service> eventScopedLog = new HashSet<>();
+
+	static final String DUPLICATE_ERROR = "duplicated %2$s scoped object in %1$s";
+	static final String SCOPING_ERROR = "scoping failed in %1$s for scope %2$s";
+
+	/**
+	 * Called at each event.
+	 */
 	void verifyScoping(List<String> errors, Service rpcScoped, Service eventScoped, String event) {
 		if (rpcScoped != rpcScopedProvider.get()) {
 			errors.add(String.format(SCOPING_ERROR, event, RPC_SCOPE));
@@ -57,21 +79,13 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 		}
 	}
 
-
-
+	/**
+	 * Called once at the beginning of each call.
+	 */
 	void verifyRpcScopingDuplication(List<String> errors, Service rpcScoped, String event) {
 		if ( ! rpcScopedLog.add(rpcScoped)) {
 			errors.add(String.format(DUPLICATE_ERROR, event, RPC_SCOPE));
 		}
-	}
-
-
-
-	ScopedObjectsHashes buildResonse(Service rpcScoped, Service eventScoped) {
-		return ScopedObjectsHashes.newBuilder()
-			.setRpcScopedHash(rpcScoped.hashCode())
-			.setEventScopedHash(eventScoped.hashCode())
-			.build();
 	}
 
 
@@ -86,17 +100,17 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 		responseObserver.setOnCloseHandler(() -> {
 			final var eventScoped = eventScopedProvider.get();
 			verifyScoping(errors, rpcScoped, eventScoped, "onClose");
-			finalizationListener.accept(request.getId(), errors);
+			finalizationListener.accept(request.getCallId(), errors);
 		});
 
 		responseObserver.setOnCancelHandler(() -> {
 			final var eventScoped = eventScopedProvider.get();
 			verifyScoping(errors, rpcScoped, eventScoped, "onCancel");
 			if ( ! cancelExpected) errors.add("onCancel called");
-			finalizationListener.accept(request.getId(), errors);
+			finalizationListener.accept(request.getCallId(), errors);
 		});
 
-		responseObserver.onNext(buildResonse(rpcScoped, eventScopedProvider.get()));
+		responseObserver.onNext(buildResponse("unary", rpcScoped, eventScopedProvider.get()));
 		verifyScoping(errors, rpcScoped, eventScopedProvider.get(), "unary");
 		verifyRpcScopingDuplication(errors, rpcScoped, "unary");
 
@@ -108,7 +122,10 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 	}
 
 
-
+	/**
+	 * Sends a response message with hashes of scoped {@link Service} objects from every non-final
+	 * event.
+	 */
 	@Override
 	public StreamObserver<Request> streaming(StreamObserver<ScopedObjectsHashes> respObserver) {
 		final Integer[] requestIdHolder = {null};
@@ -126,24 +143,24 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 		responseObserver.setOnReadyHandler(() -> {
 			final var eventScoped = eventScopedProvider.get();
 			verifyScoping(errors, rpcScoped, eventScoped, "onReady");
-			responseObserver.onNext(buildResonse(rpcScoped, eventScoped));
+			responseObserver.onNext(buildResponse("onReady", rpcScoped, eventScoped));
 		});
 
-		responseObserver.onNext(buildResonse(rpcScoped, eventScopedProvider.get()));
-		verifyScoping(errors, rpcScoped, eventScopedProvider.get(), "creation");
+		responseObserver.onNext(buildResponse("startCall", rpcScoped, eventScopedProvider.get()));
+		verifyScoping(errors, rpcScoped, eventScopedProvider.get(), "startCall");
 		verifyRpcScopingDuplication(errors, rpcScoped, "streaming");
 
 		return new StreamObserver<>() {
 
 			@Override
 			public void onNext(Request request) {
-				requestIdHolder[0] = request.getId();
+				requestIdHolder[0] = request.getCallId();
 				final var eventScoped = eventScopedProvider.get();
 				verifyScoping(errors, rpcScoped, eventScoped, "onNext");
 				if ( ! errors.isEmpty()) {
 					responseObserver.onError(Status.INTERNAL.asException());
 				} else {
-					responseObserver.onNext(buildResonse(rpcScoped, eventScoped));
+					responseObserver.onNext(buildResponse("onNext", rpcScoped, eventScoped));
 				}
 			}
 
@@ -164,7 +181,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 				if ( ! errors.isEmpty()) {
 					responseObserver.onError(Status.INTERNAL.asException());
 				} else {
-					responseObserver.onNext(buildResonse(rpcScoped, eventScoped));
+					responseObserver.onNext(buildResponse("onCompleted", rpcScoped, eventScoped));
 					responseObserver.onCompleted();
 				}
 			}
@@ -187,6 +204,13 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 
 
-	static final String DUPLICATE_ERROR = "duplicated %2$s scoped object in %1$s";
-	static final String SCOPING_ERROR = "scoping failed in %1$s for scope %2$s";
+	static ScopedObjectsHashes buildResponse(
+		String eventName, Service rpcScoped, Service eventScoped
+	) {
+		return ScopedObjectsHashes.newBuilder()
+			.setEventName(eventName)
+			.setRpcScopedHash(rpcScoped.hashCode())
+			.setEventScopedHash(eventScoped.hashCode())
+			.build();
+	}
 }

@@ -11,10 +11,11 @@ service ScopedObjectHash {
 }
 
 message Request {
-	int32 id = 1;
+	int32 callId = 1;
 }
 
 message ScopedObjectsHashes {
-	int32 eventScopedHash = 1;
-	int32 rpcScopedHash = 2;
+	string eventName = 1;
+	int32 eventScopedHash = 2;
+	int32 rpcScopedHash = 3;
 }

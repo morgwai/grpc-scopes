@@ -56,7 +56,7 @@ public class ScopedObjectHashServer {
 
 
 
-	public boolean shutdownAndforceTermination(long timeoutMillis) throws InterruptedException {
+	public boolean shutdownAndEnforceTermination(long timeoutMillis) throws InterruptedException {
 		return Awaitable.awaitMultiple(
 			timeoutMillis,
 			(timeout, unit) -> {
