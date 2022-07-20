@@ -20,4 +20,14 @@ echo "'" >>build.gradle &&
 echo -n "version = '" >>build.gradle &&
 ./mvnw -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${project.version}' \
     >>build.gradle &&
-echo "'" >>build.gradle
+echo "'" >>build.gradle &&
+echo -n "def grpcVersion = '" >>build.gradle &&
+./mvnw -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${grpc.version}' \
+    >>build.gradle &&
+echo "'" >>build.gradle &&
+echo -n "def protobufVersion = '" >>build.gradle &&
+./mvnw -q --non-recursive exec:exec -Dexec.executable=echo '-Dexec.args=-n ${protobuf.version}' \
+    >>build.gradle &&
+echo "'" >>build.gradle &&
+
+cat build.gradle.protobuf >>build.gradle

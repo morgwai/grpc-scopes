@@ -2,6 +2,7 @@
 plugins {
 	id 'java-library'
 	id 'maven-publish'
+	id 'com.google.protobuf' version '0.8.17'
 }
 
 java {
@@ -21,3 +22,13 @@ publishing {
 		}
 	}
 }
+
+sourceSets {
+	test {
+		java {
+			srcDirs 'build/generated/source/proto/test/grpc'
+			srcDirs 'build/generated/source/proto/test/java'
+		}
+	}
+}
+
