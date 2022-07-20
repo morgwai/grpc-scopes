@@ -1,11 +1,8 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
-import io.grpc.Metadata;
-import io.grpc.ServerCall;
+import io.grpc.*;
 import io.grpc.ServerCall.Listener;
-import io.grpc.ServerCallHandler;
-import io.grpc.ServerInterceptor;
 
 
 

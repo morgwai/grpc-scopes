@@ -9,15 +9,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.grpc.stub.StreamObserver;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import pl.morgwai.base.concurrent.Awaitable;
-import pl.morgwai.base.grpc.scopes.tests.ScopedObjectHashClient;
-import pl.morgwai.base.grpc.scopes.tests.ScopedObjectHashServer;
-import pl.morgwai.base.grpc.scopes.tests.ScopedObjectHashService;
+import pl.morgwai.base.grpc.scopes.tests.*;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
 
 import static org.junit.Assert.*;

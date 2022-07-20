@@ -1,18 +1,12 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
-import com.google.inject.Binder;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.Scope;
-import com.google.inject.TypeLiteral;
+
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 
