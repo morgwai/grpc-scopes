@@ -29,8 +29,7 @@ public class ContextInterceptor implements ServerInterceptor {
 		final RpcContext rpcContext = grpcModule.newRpcContext(call, headers);
 		try {
 			final var listener = grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
-				() -> handler.startCall(call, headers)
-			);
+					() -> handler.startCall(call, headers));
 			return new ListenerWrapper<>(listener, rpcContext);
 		} catch (RuntimeException e) {
 			throw e;
@@ -46,44 +45,40 @@ public class ContextInterceptor implements ServerInterceptor {
 		final Listener<RequestT> wrappedListener;
 		final RpcContext rpcContext;
 
-		@Override
-		public void onMessage(RequestT message) {
-			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
-				() -> wrappedListener.onMessage(message)
-			);
-		}
 
-		@Override
-		public void onHalfClose() {
-			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
-				wrappedListener::onHalfClose
-			);
-		}
-
-		@Override
-		public void onCancel() {
-			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
-				wrappedListener::onCancel
-			);
-		}
-
-		@Override
-		public void onComplete() {
-			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
-				wrappedListener::onComplete
-			);
-		}
-
-		@Override
-		public void onReady() {
-			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
-				wrappedListener::onReady
-			);
-		}
 
 		ListenerWrapper(Listener<RequestT> wrappedListener, RpcContext rpcContext) {
 			this.wrappedListener = wrappedListener;
 			this.rpcContext = rpcContext;
+		}
+
+
+
+		// below just delegate within ctxs all Listener calls to wrappedListener
+
+		@Override public void onMessage(RequestT message) {
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+					() -> wrappedListener.onMessage(message));
+		}
+
+		@Override public void onHalfClose() {
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+					wrappedListener::onHalfClose);
+		}
+
+		@Override public void onCancel() {
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+					wrappedListener::onCancel);
+		}
+
+		@Override public void onComplete() {
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+					wrappedListener::onComplete);
+		}
+
+		@Override public void onReady() {
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+					wrappedListener::onReady);
 		}
 	}
 
