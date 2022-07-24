@@ -11,8 +11,7 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 
 import pl.morgwai.base.concurrent.Awaitable;
-import pl.morgwai.base.guice.scopes.ContextScope;
-import pl.morgwai.base.guice.scopes.ContextTracker;
+import pl.morgwai.base.guice.scopes.*;
 
 
 
@@ -24,21 +23,9 @@ import pl.morgwai.base.guice.scopes.ContextTracker;
  * 1 {@code GrpcModule} instance in your app initialization code (for example on a local var in your
  * <code>main</code> method) and then use its member scopes ({@link #rpcScope},
  * {@link #listenerEventScope}) in your Guice {@link Module}s and {@link #contextInterceptor} to
- * build your services.</p>
+ * configure your bindings.</p>
  */
 public class GrpcModule implements Module {
-
-
-
-	/**
-	 * Allows tracking of the {@link RpcContext context of an RPC (ServerCall)}.
-	 */
-	public final ContextTracker<RpcContext> rpcContextTracker = new ContextTracker<>();
-
-	/**
-	 * Scopes objects to the {@link RpcContext context of an RPC (ServerCall)}.
-	 */
-	public final Scope rpcScope = new ContextScope<>("RPC_SCOPE", rpcContextTracker);
 
 
 
@@ -60,6 +47,14 @@ public class GrpcModule implements Module {
 
 
 	/**
+	 * Scopes objects to the {@link RpcContext context of an RPC (ServerCall)}.
+	 */
+	public final Scope rpcScope = new InducedContextScope<>(
+			"RPC_SCOPE", listenerEventContextTracker, ListenerEventContext::getRpcContext);
+
+
+
+	/**
 	 * {@link io.grpc.ServerInterceptor} that must be installed for all gRPC services that use
 	 * {@link #rpcScope} and {@link #listenerEventScope}.
 	 *
@@ -74,28 +69,24 @@ public class GrpcModule implements Module {
 	 * {@link #configure(Binder)} binds {@code List<ContextTracker<?>>} to it for use with
 	 * {@link ContextTrackingExecutor#getActiveContexts(List)}.
 	 */
-	public final List<ContextTracker<?>> allTrackers =
-			List.of(listenerEventContextTracker, rpcContextTracker);
+	public final List<ContextTracker<?>> allTrackers = List.of(listenerEventContextTracker);
 
 
 
 	/**
-	 * Binds {@link #rpcContextTracker} and {@link #listenerEventContextTracker} and corresponding
-	 * contexts for injection. Binds {@code List<ContextTracker<?>>} to {@link #allTrackers} that
-	 * contains all trackers for use with {@link ContextTrackingExecutor#getActiveContexts(List)}.
+	 * Binds  {@link #listenerEventContextTracker} and both contexts for injection.
+	 * Binds {@code List<ContextTracker<?>>} to {@link #allTrackers} that contains all trackers for
+	 * use with {@link ContextTrackingExecutor#getActiveContexts(List)}.
 	 */
 	@Override
 	public void configure(Binder binder) {
-		TypeLiteral<ContextTracker<RpcContext>> rpcContextTrackerType =
-				new TypeLiteral<>() {};
-		binder.bind(rpcContextTrackerType).toInstance(rpcContextTracker);
-		binder.bind(RpcContext.class).toProvider(rpcContextTracker::getCurrentContext);
-
 		TypeLiteral<ContextTracker<ListenerEventContext>> messageContextTrackerType =
 				new TypeLiteral<>() {};
 		binder.bind(messageContextTrackerType).toInstance(listenerEventContextTracker);
 		binder.bind(ListenerEventContext.class).toProvider(
 				listenerEventContextTracker::getCurrentContext);
+		binder.bind(RpcContext.class).toProvider(
+				() -> listenerEventContextTracker.getCurrentContext().getRpcContext());
 
 		TypeLiteral<List<ContextTracker<?>>> trackersType = new TypeLiteral<>() {};
 		binder.bind(trackersType).toInstance(allTrackers);
@@ -266,11 +257,11 @@ public class GrpcModule implements Module {
 
 	// For internal use by ContextInterceptor.
 	RpcContext newRpcContext(ServerCall<?, ?> rpc, Metadata headers) {
-		return new RpcContext(rpc, headers, rpcContextTracker);
+		return new RpcContext(rpc, headers);
 	}
 
 	// For internal use by ContextInterceptor.
-	ListenerEventContext newListenerEventContext() {
-		return new ListenerEventContext(listenerEventContextTracker);
+	ListenerEventContext newListenerEventContext(RpcContext rpcContext) {
+		return new ListenerEventContext(rpcContext, listenerEventContextTracker);
 	}
 }

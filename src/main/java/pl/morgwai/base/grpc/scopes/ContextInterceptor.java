@@ -28,10 +28,8 @@ public class ContextInterceptor implements ServerInterceptor {
 			ServerCallHandler<RequestT, ResponseT> handler) {
 		final RpcContext rpcContext = grpcModule.newRpcContext(call, headers);
 		try {
-			final var listener = rpcContext.executeWithinSelf(
-				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					() -> handler.startCall(call, headers)
-				)
+			final var listener = grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+				() -> handler.startCall(call, headers)
 			);
 			return new ListenerWrapper<>(listener, rpcContext);
 		} catch (RuntimeException e) {
@@ -50,46 +48,36 @@ public class ContextInterceptor implements ServerInterceptor {
 
 		@Override
 		public void onMessage(RequestT message) {
-			rpcContext.executeWithinSelf(
-				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					() -> wrappedListener.onMessage(message)
-				)
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+				() -> wrappedListener.onMessage(message)
 			);
 		}
 
 		@Override
 		public void onHalfClose() {
-			rpcContext.executeWithinSelf(
-				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					wrappedListener::onHalfClose
-				)
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+				wrappedListener::onHalfClose
 			);
 		}
 
 		@Override
 		public void onCancel() {
-			rpcContext.executeWithinSelf(
-				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					wrappedListener::onCancel
-				)
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+				wrappedListener::onCancel
 			);
 		}
 
 		@Override
 		public void onComplete() {
-			rpcContext.executeWithinSelf(
-				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					wrappedListener::onComplete
-				)
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+				wrappedListener::onComplete
 			);
 		}
 
 		@Override
 		public void onReady() {
-			rpcContext.executeWithinSelf(
-				() -> grpcModule.newListenerEventContext().executeWithinSelf(
-					wrappedListener::onReady
-				)
+			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+				wrappedListener::onReady
 			);
 		}
 

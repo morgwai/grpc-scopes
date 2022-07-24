@@ -23,7 +23,13 @@ public class ListenerEventContext extends TrackableContext<ListenerEventContext>
 
 
 
-	ListenerEventContext(ContextTracker<ListenerEventContext> tracker) {
+	public RpcContext getRpcContext() { return  rpcContext; }
+	RpcContext rpcContext;
+
+
+
+	ListenerEventContext(RpcContext rpcContext, ContextTracker<ListenerEventContext> tracker) {
 		super(tracker);
+		this.rpcContext = rpcContext;
 	}
 }
