@@ -7,11 +7,10 @@ import io.grpc.ServerCall.Listener;
 
 
 /**
- * Creates and starts tracking a new {@link RpcContext} for each new RPC ({@link ServerCall})
- * and a new {@link ListenerEventContext} for each {@link Listener} call and creation in
- * {@link ServerCallHandler#startCall(ServerCall, Metadata)}.
- *
- * @see GrpcModule
+ * Creates a new {@link RpcContext} for each new RPC ({@link ServerCall}), then also creates and
+ * starts tracking a new {@link ListenerEventContext} for each {@link Listener Listener} call and
+ * creation in {@link ServerCallHandler#startCall(ServerCall, Metadata) startCall(...)}.
+ * Instance can be obtained from {@link GrpcModule#contextInterceptor}.
  */
 public class ContextInterceptor implements ServerInterceptor {
 
