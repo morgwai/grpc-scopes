@@ -1,6 +1,6 @@
 # gRPC Guice Scopes
 
-RPC and ListenerEvent Guice Scopes for gRPC server, that are automatically transferred when dispatching work to other threads.<br/>
+Provides `rpcScope` and `listenerEventScope` Guice Scopes.<br/>
 <br/>
 **latest release: [7.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/7.0/jar)**
 ([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/7.0))
@@ -8,12 +8,10 @@ RPC and ListenerEvent Guice Scopes for gRPC server, that are automatically trans
 
 ## OVERVIEW
 
-Provides `rpcScope` and `listenerEventScope` Guice scopes built using [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes) which automatically transfers them to a new thread when dispatching using `ContextTrackingExecutor` (see below).<br/>
-<br/>
-Oversimplifying, in case of a streaming client, `listenerEventScope` spans over processing of a single message from client's stream, while `rpcScope` spans over the whole RPC. Oversimplifying again, in case of a unary client, these 2 scopes have roughly the same span.<br/>
+Oversimplifying, in case of streaming requests, `listenerEventScope` spans over processing of a single message from the request stream, while `rpcScope` spans over the whole RPC. Oversimplifying again, in case of unary requests, these 2 Scopes have roughly the same span.<br/>
 More specifically though:
-* each call to any of `ServerCall.Listener`'s methods and listener creation in `ServerCallHandler.startCall(...)` run within a separate instance of [ListenerEventContext](src/main/java/pl/morgwai/base/grpc/scopes/ListenerEventContext.java) (hence the name).
-* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within the same instance of [RpcContext](src/main/java/pl/morgwai/base/grpc/scopes/RpcContext.java).
+* each call to any of `ServerCall.Listener`'s methods and listener creation in `ServerCallHandler.startCall(...)` run within **a separate instance** of [ListenerEventContext](src/main/java/pl/morgwai/base/grpc/scopes/ListenerEventContext.java) (hence the name). This means that all callbacks to request `StreamObserver` returned by methods implementing RPC procedures, methods implementing RPC procedures themselves and all invocations of callbacks registered via `ServerCallStreamObserver`, run within "separate `listenerEventScope`". 
+* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within **the same instance** of [RpcContext](src/main/java/pl/morgwai/base/grpc/scopes/RpcContext.java). This means that a single call to a method implementing RPC procedure, all callbacks to request `StreamObserver` returned by this given call to the RPC method and all callbacks registered via `ServerCallStreamObserver` argument of this given call to the RPC method all run within "the same `rpcScope`".
 
 
 ## MAIN USER CLASSES
@@ -28,19 +26,33 @@ Instances should usually be created using helper methods from the above `GrpcMod
 
 ## USAGE
 
+1. Create an instance of `GrpcModule` and pass it to other modules.
+1. Other modules can use `GrpcModule.rpcScope` and `GrpcModule.listenerEventScope` to scope their bindings: `bind(MyComponent.class).to(MyComponentImpl.class).in(grpcModule.rpcScope);`
+1. All gRPC service instances added to server must be intercepted by `GrpcModule.contextInterceptor` like following: `.addService(ServerInterceptors.intercept(myService, grpcModule.contextInterceptor /* more interceptors here... */))` 
+
+Example:
 ```java
 public class MyServer {
 
-    public void startAndAwaitTermination(int port /* more params here... */)
-            throws Exception {
-        GrpcModule grpcModule = new GrpcModule();
-        // more modules here that can now use grpcModule.rpcScope and grpcModule.listenerEventScope
-        Injector injector = Guice.createInjector(grpcModule  /* more modules here... */);
+    final Server grpcServer;
+    final Thread shutdownHook = new Thread(() -> {/* shutdown code here... */});
 
-        MyService myService = injector.getInstance(MyService.class);
+    public MyServer(int port /* more params here... */) throws Exception {
+        final var grpcModule = new GrpcModule();
+        final var myModule = (binder) -> {
+            binder.bind(MyComponent.class)
+                    .to(MyComponentImpl.class)
+                    .in(grpcModule.rpcScope);
+            // more bindings here
+        };
+        // more modules here
+
+        final var injector = Guice.createInjector(grpcModule, myModule /* more modules here... */);
+
+        final var myService = injector.getInstance(MyService.class);
         // more services here...
 
-        myServer = ServerBuilder
+        grpcServer = ServerBuilder
             .forPort(port)
             .directExecutor()
             .addService(ServerInterceptors.intercept(
@@ -49,16 +61,12 @@ public class MyServer {
             .build();
 
         Runtime.getRuntime().addShutdownHook(shutdownHook);
-        myServer.start().awaitTermination();
+        grpcServer.start();
     }
 
     public static void main(String[] args) throws Exception {
-        new MyServer().startAndAwaitTermination(PORT /* more params here... */);
+        new MyServer(6666 /* more params here... */).grpcServer.awaitTermination();
     }
-
-    Server myServer;
-    Thread shutdownHook = new Thread(() -> {/* shutdown code here... */});
-    public static final int PORT = 6666;
 
     // more code here...
 }
