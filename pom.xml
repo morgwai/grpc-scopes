@@ -9,7 +9,7 @@
 	<version>7.1-SNAPSHOT</version>
 
 	<name>gRPC Guice Scopes</name>
-	<description>RPC and ListenerEvent Guice Scopes for gRPC server</description>
+	<description>RPC and Listener event Guice Scopes for gRPC server</description>
 	<url>https://github.com/morgwai/grpc-scopes</url>
 
 	<licenses>

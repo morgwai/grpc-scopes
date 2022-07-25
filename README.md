@@ -1,6 +1,6 @@
 # gRPC Guice Scopes
 
-Provides `rpcScope` and `listenerEventScope` Guice Scopes.<br/>
+RPC and Listener event Guice Scopes for gRPC server.<br/>
 <br/>
 **latest release: [7.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/7.0/jar)**
 ([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/7.0))
@@ -8,6 +8,7 @@ Provides `rpcScope` and `listenerEventScope` Guice Scopes.<br/>
 
 ## OVERVIEW
 
+Provides `rpcScope` and `listenerEventScope` Guice ScopesProvides `rpcScope` and `listenerEventScope` Guice Scopes built using [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes) which automatically transfers them to a new thread when dispatching using `ContextTrackingExecutor` (see below).<br/>
 Oversimplifying, in case of streaming requests, `listenerEventScope` spans over processing of a single message from the request stream, while `rpcScope` spans over the whole RPC. Oversimplifying again, in case of unary requests, these 2 Scopes have roughly the same span.<br/>
 More specifically though:
 * each call to any of `ServerCall.Listener`'s methods and listener creation in `ServerCallHandler.startCall(...)` run within **a separate instance** of [ListenerEventContext](src/main/java/pl/morgwai/base/grpc/scopes/ListenerEventContext.java) (hence the name). This means that all callbacks to request `StreamObserver` returned by methods implementing RPC procedures, methods implementing RPC procedures themselves and all invocations of callbacks registered via `ServerCallStreamObserver`, run within "separate `listenerEventScope`". 
