@@ -92,10 +92,10 @@ public class RecordStorageServer {
 				System.out.println("shutting down, timeout 5s");
 				Awaitable.awaitMultiple(
 					5l, TimeUnit.SECONDS,
-					(timeoUtMillis) -> {
+					(timeoutMillis) -> {
 						recordStorageServer.shutdown();
 						if (recordStorageServer.awaitTermination(
-								percent(70, timeoUtMillis), TimeUnit.MILLISECONDS)) {
+								percent(70, timeoutMillis), TimeUnit.MILLISECONDS)) {
 							log.info("gRPC server shutdown completed");
 							grpcModule.shutdownAllExecutors();
 							return true;
@@ -104,15 +104,15 @@ public class RecordStorageServer {
 							recordStorageServer.shutdownNow();
 							log.warning("gRPC server has NOT shutdown cleanly");
 							return recordStorageServer.awaitTermination(
-									percent(10, timeoUtMillis), TimeUnit.MILLISECONDS);
+									percent(10, timeoutMillis), TimeUnit.MILLISECONDS);
 						}
 					},
-					(timeoUtMillis) -> {
-						if (grpcModule.enforceTerminationOfAllExecutors(percent(80, timeoUtMillis))
+					(timeoutMillis) -> {
+						if (grpcModule.enforceTerminationOfAllExecutors(percent(80, timeoutMillis))
 								.isEmpty()) {
 							return true;
 						}
-						return grpcModule.awaitTerminationOfAllExecutors(percent(20, timeoUtMillis))
+						return grpcModule.awaitTerminationOfAllExecutors(percent(20, timeoutMillis))
 								.isEmpty();
 					}
 				);
