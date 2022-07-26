@@ -4,11 +4,11 @@ package pl.morgwai.base.grpc.scopes.tests;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.*;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
+import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.scopes.tests.grpc.Request;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc.ScopedObjectHashStub;
@@ -26,13 +26,14 @@ public class ScopedObjectHashClient {
 
 
 
-	public ScopedObjectHashClient(String target, long deadlineMillis) {
+	public ScopedObjectHashClient(String target, long deadlineMillis, GrpcModule grpcModule) {
 		this.deadlineMillis = deadlineMillis;
 		channel = ManagedChannelBuilder
-				.forTarget(target)
-				.usePlaintext()
-				.build();
-		connector = ScopedObjectHashGrpc.newStub(channel);
+			.forTarget(target)
+			.usePlaintext()
+			.build();
+		connector = ScopedObjectHashGrpc.newStub(
+				ClientInterceptors.intercept(channel, grpcModule.clientInterceptor));
 	}
 
 

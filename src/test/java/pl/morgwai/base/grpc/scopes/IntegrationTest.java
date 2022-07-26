@@ -30,6 +30,7 @@ public class IntegrationTest {
 	ScopedObjectHashServer server;
 	ScopedObjectHashService service;
 	ScopedObjectHashClient client;
+	GrpcModule clientGrpcModule;
 
 	/**
 	 * Whether given call is finalized both from client's and server's perspective.
@@ -59,7 +60,9 @@ public class IntegrationTest {
 			}
 			callBiFinalized[callId].countDown();
 		});
-		client = new ScopedObjectHashClient("localhost:" + server.getPort(), TIMEOUT_MILLIS);
+		clientGrpcModule = new GrpcModule();
+		client = new ScopedObjectHashClient(
+				"localhost:" + server.getPort(), TIMEOUT_MILLIS, clientGrpcModule);
 	}
 
 
@@ -83,23 +86,57 @@ public class IntegrationTest {
 
 		final int callId;
 		final CountDownLatch finalizationLatch;
+		final GrpcModule grpcModule;
+		final List<Throwable> clientScopingErrors = new ArrayList<>(10);
 		Throwable error = null;
+		ContextVerifier ctxVerifier;
 
-		public ResponseObserver(int callId, CountDownLatch finalizationLatch) {
+
+
+		public ResponseObserver(int callId, CountDownLatch finalizationLatch, GrpcModule grpcModule)
+		{
 			this.callId = callId;
 			this.finalizationLatch = finalizationLatch;
+			this.grpcModule = grpcModule;
 		}
+
+
 
 		@Override public void onNext(ScopedObjectsHashes response) {
 			logHashes(callId, response);
+			if (ctxVerifier == null) {
+				final var eventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
+				ctxVerifier = new ContextVerifier(grpcModule, eventCtx.getRpcContext());
+				ctxVerifier.add(eventCtx);
+			} else {
+				try {
+					ctxVerifier.verifyCtxs();
+				} catch (Throwable scopingError) {
+					clientScopingErrors.add(scopingError);
+				}
+			}
 		}
+
+
 
 		@Override public void onError(Throwable t) {
 			error = t;
+			try {
+				ctxVerifier.verifyCtxs();
+			} catch (Throwable scopingError) {
+				clientScopingErrors.add(scopingError);
+			}
 			finalizationLatch.countDown();
 		}
 
+
+
 		@Override public void onCompleted() {
+			try {
+				ctxVerifier.verifyCtxs();
+			} catch (Throwable scopingError) {
+				clientScopingErrors.add(scopingError);
+			}
 			finalizationLatch.countDown();
 		}
 	}
@@ -115,7 +152,8 @@ public class IntegrationTest {
 		callBiFinalized = new CountDownLatch[numberOfCalls];
 		for (int callId = 0; callId < numberOfCalls; callId++) {
 			callBiFinalized[callId] = new CountDownLatch(2);
-			var responseObserver = new ResponseObserver(callId, callBiFinalized[callId]);
+			var responseObserver = new ResponseObserver(
+					callId, callBiFinalized[callId], clientGrpcModule);
 			if (callId % 2 == 0) {
 				client.streaming(callId, 3, responseObserver);
 			} else {
@@ -126,6 +164,9 @@ public class IntegrationTest {
 			}
 			if ( ! serverErrors.isEmpty()) fail(formatError(serverErrors));
 			if (responseObserver.error != null) throw responseObserver.error;
+			if ( ! responseObserver.clientScopingErrors.isEmpty()) {
+				throw responseObserver.clientScopingErrors.get(0);
+			}
 		}
 	}
 
@@ -142,18 +183,22 @@ public class IntegrationTest {
 
 		// warmup call
 		callBiFinalized[warmupId] = new CountDownLatch(2);
-		var warmupResponseObserver = new ResponseObserver(warmupId, callBiFinalized[warmupId]);
+		var warmupResponseObserver = new ResponseObserver(
+				warmupId, callBiFinalized[warmupId], clientGrpcModule);
 		client.unary(warmupId, warmupResponseObserver);
 		if ( ! callBiFinalized[warmupId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
 			throw new TimeoutException();
 		}
 		if ( ! serverErrors.isEmpty()) fail(formatError(serverErrors));
 		if (warmupResponseObserver.error != null) throw warmupResponseObserver.error;
+		if ( ! warmupResponseObserver.clientScopingErrors.isEmpty()) {
+			throw warmupResponseObserver.clientScopingErrors.get(0);
+		}
 
 		// cancelled call
 		callBiFinalized[cancelledId] = new CountDownLatch(2);
 		var cancelResponseObserver =
-				new ResponseObserver(cancelledId, callBiFinalized[cancelledId]);
+				new ResponseObserver(cancelledId, callBiFinalized[cancelledId], clientGrpcModule);
 		service.setCancelExpected(true);
 		client.streamingAndCancel(cancelledId, 3, cancelResponseObserver);
 		if ( ! callBiFinalized[cancelledId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
@@ -163,6 +208,9 @@ public class IntegrationTest {
 		final var error = cancelResponseObserver.error;
 		if (error == null) fail("cancellation expected");
 		if ( ! ScopedObjectHashService.isCancellation(error)) throw error;
+		if ( ! cancelResponseObserver.clientScopingErrors.isEmpty()) {
+			throw cancelResponseObserver.clientScopingErrors.get(0);
+		}
 	}
 
 
