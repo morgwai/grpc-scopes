@@ -81,7 +81,7 @@ public class RecordStorageServer {
 			.maxConnectionIdle(maxConnectionIdleSeconds, TimeUnit.SECONDS)
 			.maxConnectionAge(maxConnectionAgeSeconds, TimeUnit.SECONDS)
 			.maxConnectionAgeGrace(maxConnectionAgeGraceSeconds, TimeUnit.SECONDS)
-			.addService(ServerInterceptors.intercept(service, grpcModule.contextInterceptor))
+			.addService(ServerInterceptors.intercept(service, grpcModule.serverInterceptor))
 			.build();
 		recordStorageServer.start();
 		log.info("server started on port " + port);

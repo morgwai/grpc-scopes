@@ -3,8 +3,9 @@ package pl.morgwai.samples.grpc.scopes.grpc;
 
 import java.util.concurrent.TimeUnit;
 
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.*;
 
+import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.utils.BlockingResponseObserver;
 import pl.morgwai.base.grpc.utils.BlockingResponseObserver.ErrorReportedException;
 
@@ -15,12 +16,15 @@ public class RecordStorageClient {
 
 
 	public static void main(String[] args) throws ErrorReportedException, InterruptedException {
+		final var grpcModule = new GrpcModule();
 		String target = "localhost:" + RecordStorageServer.DEFAULT_PORT;
 		if (args.length > 0) target = args[0];
-		final var channel = ManagedChannelBuilder
-				.forTarget(target)
-				.usePlaintext()
-				.build();
+		final var managedChannel = ManagedChannelBuilder
+			.forTarget(target)
+			.usePlaintext()
+			.build();
+		final var channel = ClientInterceptors.intercept(
+				managedChannel, grpcModule.clientInterceptor);
 		final var connector = RecordStorageGrpc.newStub(channel);
 		final var blockingConnector = RecordStorageGrpc.newBlockingStub(channel)
 				.withDeadlineAfter(10, TimeUnit.SECONDS);
@@ -63,7 +67,9 @@ public class RecordStorageClient {
 
 
 
-		channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-		if ( ! channel.isTerminated()) System.out.println("channel has NOT shutdown cleanly");
+		managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+		if ( ! managedChannel.isTerminated()) {
+			System.out.println("channel has NOT shutdown cleanly");
+		}
 	}
 }

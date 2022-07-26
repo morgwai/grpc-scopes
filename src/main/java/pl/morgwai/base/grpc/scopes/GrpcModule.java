@@ -7,8 +7,7 @@ import java.util.concurrent.*;
 import com.google.inject.*;
 import com.google.inject.Module;
 
-import io.grpc.Metadata;
-import io.grpc.ServerCall;
+import io.grpc.*;
 
 import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.guice.scopes.*;
@@ -22,8 +21,8 @@ import pl.morgwai.base.guice.scopes.*;
  * on <code>static</code> vars. Global context however has a lot of drawbacks. Instead, create just
  * 1 {@code GrpcModule} instance in your app initialization code (for example on a local var in your
  * <code>main</code> method) and then use its member scopes ({@link #rpcScope},
- * {@link #listenerEventScope}) in your Guice {@link Module}s and {@link #contextInterceptor} to
- * configure your bindings.</p>
+ * {@link #listenerEventScope}) in your Guice {@link Module}s and {@link #serverInterceptor}
+ * to configure your bindings.</p>
  */
 public class GrpcModule implements Module {
 
@@ -31,15 +30,16 @@ public class GrpcModule implements Module {
 
 	/**
 	 * Allows tracking of the
-	 * {@link ListenerEventContext context of a Listener event} and as a consequence also of the
-	 * corresponding request observer call.
+	 * {@link ListenerEventContext context of a Listener event}.
+	 * @see #listenerEventScope
 	 */
 	public final ContextTracker<ListenerEventContext> listenerEventContextTracker =
 			new ContextTracker<>();
 
 	/**
-	 * Scopes objects to the {@link ListenerEventContext context of a Listener event} and as a
-	 * consequence also of the corresponding request observer call.
+	 * Scopes objects to the {@link ListenerEventContext context of a Listener event} (either
+	 * {@link io.grpc.ServerCall.Listener server} or {@link io.grpc.ClientCall.Listener client}) and
+	 * as a consequence also of the corresponding {@link io.grpc.stub.StreamObserver} call.
 	 */
 	public final Scope listenerEventScope =
 			new ContextScope<>("LISTENER_EVENT_SCOPE", listenerEventContextTracker);
@@ -47,7 +47,8 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Scopes objects to the {@link RpcContext context of an RPC (ServerCall)}.
+	 * Scopes objects to the of an RPC (either {@link ServerRpcContext} or
+	 * {@link ClientRpcContext}).
 	 */
 	public final Scope rpcScope = new InducedContextScope<>(
 			"RPC_SCOPE", listenerEventContextTracker, ListenerEventContext::getRpcContext);
@@ -57,11 +58,15 @@ public class GrpcModule implements Module {
 	/**
 	 * {@link io.grpc.ServerInterceptor} that must be installed for all gRPC services that use
 	 * {@link #rpcScope} and {@link #listenerEventScope}.
-	 *
 	 * @see io.grpc.ServerInterceptors#intercept(io.grpc.BindableService, java.util.List)
 	 */
-	public final ContextInterceptor contextInterceptor = new ContextInterceptor(this);
+	public final ServerContextInterceptor serverInterceptor = new ServerContextInterceptor(this);
 
+	/**
+	 * {@link ClientInterceptor} that must be installed for all {@link Channel Channels}.
+	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
+	 */
+	public final ClientContextInterceptor clientInterceptor = new ClientContextInterceptor(this);
 
 
 	/**
@@ -94,10 +99,11 @@ public class GrpcModule implements Module {
 
 
 
-	final List<ContextTrackingExecutor> executors = new LinkedList<>();
 	public List<ContextTrackingExecutor> getExecutors() {
 		return Collections.unmodifiableList(executors);
 	}
+
+	final List<ContextTrackingExecutor> executors = new LinkedList<>();
 
 
 
@@ -255,12 +261,17 @@ public class GrpcModule implements Module {
 
 
 
-	// For internal use by ContextInterceptor.
-	RpcContext newRpcContext(ServerCall<?, ?> rpc, Metadata headers) {
-		return new RpcContext(rpc, headers);
+	// For internal use by ServerContextInterceptor.
+	ServerRpcContext newServerRpcContext(ServerCall<?, ?> rpc, Metadata requestHeaders) {
+		return new ServerRpcContext(rpc, requestHeaders);
 	}
 
-	// For internal use by ContextInterceptor.
+	// For internal use by ClientContextInterceptor.
+	ClientRpcContext newClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders) {
+		return new ClientRpcContext(rpc, requestHeaders);
+	}
+
+	// For internal use by interceptors.
 	ListenerEventContext newListenerEventContext(RpcContext rpcContext) {
 		return new ListenerEventContext(rpcContext, listenerEventContextTracker);
 	}

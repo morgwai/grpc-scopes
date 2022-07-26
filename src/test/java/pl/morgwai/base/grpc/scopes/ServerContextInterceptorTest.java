@@ -12,12 +12,12 @@ import static org.junit.Assert.*;
 
 
 
-public class ContextInterceptorTest {
+public class ServerContextInterceptorTest {
 
 
 
 	final GrpcModule grpcModule = new GrpcModule();
-	final ContextInterceptor interceptor = new ContextInterceptor(grpcModule);
+	final ServerContextInterceptor interceptor = new ServerContextInterceptor(grpcModule);
 
 
 

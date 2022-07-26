@@ -43,7 +43,7 @@ public class ScopedObjectHashServer {
 		service = injector.getInstance(ScopedObjectHashService.class);
 		grpcServer = NettyServerBuilder
 			.forPort(port)
-			.addService(ServerInterceptors.intercept(service, grpcModule.contextInterceptor))
+			.addService(ServerInterceptors.intercept(service, grpcModule.serverInterceptor))
 			.build();
 		grpcServer.start();
 	}

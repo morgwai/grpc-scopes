@@ -18,7 +18,7 @@ More specifically though:
 ## MAIN USER CLASSES
 
 ### [GrpcModule](src/main/java/pl/morgwai/base/grpc/scopes/GrpcModule.java)
-Contains the above `Scope`s, `ContextTracker`s, some helper methods and [gRPC interceptor](src/main/java/pl/morgwai/base/grpc/scopes/ContextInterceptor.java) that starts the above contexts.
+Contains the above `Scope`s, `ContextTracker`s, some helper methods and gRPC interceptors that starts the above contexts.
 
 ### [ContextTrackingExecutor](src/main/java/pl/morgwai/base/grpc/scopes/ContextTrackingExecutor.java)
 An `Executor` (backed by a fixed size `ThreadPoolExecutor` by default) that upon dispatching automatically updates which thread runs within which `RpcContext` and `ListenerEventContext`.<br/>
@@ -57,7 +57,7 @@ public class MyServer {
             .forPort(port)
             .directExecutor()
             .addService(ServerInterceptors.intercept(
-                myService, grpcModule.contextInterceptor /* more interceptors here... */))
+                myService, grpcModule.serverInterceptor /* more interceptors here... */))
             // more services here...
             .build();
 

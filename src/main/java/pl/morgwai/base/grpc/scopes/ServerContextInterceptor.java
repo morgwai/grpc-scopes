@@ -7,12 +7,12 @@ import io.grpc.ServerCall.Listener;
 
 
 /**
- * Creates a new {@link RpcContext} for each new RPC ({@link ServerCall}), then also creates and
- * starts tracking a new {@link ListenerEventContext} for each {@link Listener Listener} call and
- * creation in {@link ServerCallHandler#startCall(ServerCall, Metadata) startCall(...)}.
- * Instance can be obtained from {@link GrpcModule#contextInterceptor}.
+ * Creates a new {@link ServerRpcContext} for each new RPC ({@link ServerCall}), then also creates
+ * and starts tracking a new {@link ListenerEventContext} for each {@link Listener Listener} call
+ * and creation in {@link ServerCallHandler#startCall(ServerCall, Metadata) startCall(...)}.
+ * Instance can be obtained from {@link GrpcModule#serverInterceptor}.
  */
-public class ContextInterceptor implements ServerInterceptor {
+public class ServerContextInterceptor implements ServerInterceptor {
 
 
 
@@ -25,7 +25,7 @@ public class ContextInterceptor implements ServerInterceptor {
 			ServerCall<RequestT, ResponseT> call,
 			Metadata headers,
 			ServerCallHandler<RequestT, ResponseT> handler) {
-		final RpcContext rpcContext = grpcModule.newRpcContext(call, headers);
+		final RpcContext rpcContext = grpcModule.newServerRpcContext(call, headers);
 		try {
 			final var listener = grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
 					() -> handler.startCall(call, headers));
@@ -46,8 +46,8 @@ public class ContextInterceptor implements ServerInterceptor {
 
 
 
-		ListenerWrapper(Listener<RequestT> wrappedListener, RpcContext rpcContext) {
-			this.wrappedListener = wrappedListener;
+		ListenerWrapper(Listener<RequestT> listenerToWrap, RpcContext rpcContext) {
+			this.wrappedListener = listenerToWrap;
 			this.rpcContext = rpcContext;
 		}
 
@@ -59,7 +59,7 @@ public class ContextInterceptor implements ServerInterceptor {
 
 
 
-		// below just delegate within ctxs all Listener calls to wrappedListener
+		// below just delegate within ctxs all Listener method calls to wrappedListener
 
 		@Override public void onMessage(RequestT message) {
 			executeWithinCtxs(() -> wrappedListener.onMessage(message));
@@ -76,7 +76,5 @@ public class ContextInterceptor implements ServerInterceptor {
 
 
 
-	ContextInterceptor(GrpcModule grpcModule) {
-		this.grpcModule = grpcModule;
-	}
+	ServerContextInterceptor(GrpcModule grpcModule) { this.grpcModule = grpcModule; }
 }
