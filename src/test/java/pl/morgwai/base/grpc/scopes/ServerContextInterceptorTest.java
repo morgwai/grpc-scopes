@@ -1,88 +1,93 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import io.grpc.ServerCallHandler;
+import io.grpc.*;
 import io.grpc.ServerCall.Listener;
+import org.easymock.EasyMockSupport;
+import org.easymock.Mock;
 import org.junit.Test;
+import pl.morgwai.base.grpc.scopes.tests.ContextVerifier;
 
 import static org.junit.Assert.*;
 
 
 
-public class ServerContextInterceptorTest {
+public class ServerContextInterceptorTest extends EasyMockSupport {
 
 
 
 	final GrpcModule grpcModule = new GrpcModule();
-	final ServerContextInterceptor interceptor = new ServerContextInterceptor(grpcModule);
+	final ServerContextInterceptor interceptor = grpcModule.serverInterceptor;
+
+	@Mock final ServerCall<Integer, Integer> mockRpc = mock(ServerCall.class);
 
 
 
 	@Test
 	public void testInterceptCall() {
-		final var wrappedListener = interceptor.interceptCall(
-			null,
-			null,
+		final var requestHeaders = new Metadata();
+		final MockListener mockListener = new MockListener();
+		final var decoratedListener = interceptor.interceptCall(
+			mockRpc,
+			requestHeaders,
 			(ServerCallHandler<Integer, Integer>) (call, headers) -> {
 				final var eventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
+				assertNotNull("event context should be started", eventCtx);
 				final var rpcCtx = eventCtx.getRpcContext();
-				assertNotNull(rpcCtx);
-				return new MockListener(rpcCtx, eventCtx);
+				assertNotNull("RPC context should be started", rpcCtx);
+				assertSame("RPC (ServerCall) object should not be modified",
+						mockRpc, ((ServerRpcContext) rpcCtx).getRpc());
+				assertSame("request headers should not be modified",
+						requestHeaders, rpcCtx.getRequestHeaders());
+				final var ctxVerifier = new ContextVerifier(grpcModule, rpcCtx);
+				ctxVerifier.add(eventCtx);
+				mockListener.ctxVerifier = ctxVerifier;
+				return mockListener;
 			}
 		);
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
-		wrappedListener.onMessage(0);
+
+		final Integer message = 69;
+		decoratedListener.onMessage(message);
+		assertSame("messages should not be modified", message, mockListener.capturedMessage);
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
-		wrappedListener.onHalfClose();
+
+		decoratedListener.onHalfClose();
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
-		wrappedListener.onCancel();
+		decoratedListener.onCancel();
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
-		wrappedListener.onComplete();
+		decoratedListener.onComplete();
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
-		wrappedListener.onReady();
+		decoratedListener.onReady();
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 	}
 
 
 
-	class MockListener extends Listener<Integer> {
+	static class MockListener extends Listener<Integer> {
 
-		RpcContext rpcCtx;
-		Set<ListenerEventContext> seenEventCtxs = new HashSet<>();
-
+		ContextVerifier ctxVerifier;
 
 
-		MockListener(RpcContext rpcCtx, ListenerEventContext eventCtx) {
-			this.rpcCtx = rpcCtx;
-			seenEventCtxs.add(eventCtx);
+
+		Integer capturedMessage;
+
+		@Override public void onMessage(Integer message) {
+			capturedMessage = message;
+			ctxVerifier.verifyCtxs();
 		}
 
 
 
-		void verifyCtxs() {
-			final var eventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
-			assertNotNull(eventCtx);
-			assertTrue("each listener method should be executed within a new separate eventCtx",
-					seenEventCtxs.add(eventCtx));
-			assertSame("all listener methods should be executed within the same rpcCtx",
-					rpcCtx, eventCtx.getRpcContext());
-		}
-
-
-
-		@Override public void onMessage(Integer message) { verifyCtxs(); }
-		@Override public void onHalfClose() { verifyCtxs(); }
-		@Override public void onCancel() { verifyCtxs(); }
-		@Override public void onComplete() { verifyCtxs(); }
-		@Override public void onReady() { verifyCtxs(); }
+		@Override public void onHalfClose() { ctxVerifier.verifyCtxs(); }
+		@Override public void onCancel() { ctxVerifier.verifyCtxs(); }
+		@Override public void onComplete() { ctxVerifier.verifyCtxs(); }
+		@Override public void onReady() { ctxVerifier.verifyCtxs(); }
 	}
 }
