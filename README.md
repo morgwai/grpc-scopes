@@ -12,16 +12,16 @@ Provides `rpcScope` and `listenerEventScope` Guice Scopes for both client and se
 Oversimplifying, in case of streaming requests on servers and streaming responses on clients, `listenerEventScope` spans over processing of a single message from the stream, while `rpcScope` spans over the whole RPC. Oversimplifying again, in case of unary requests, these 2 Scopes have roughly the same span.<br/>
 More specifically though:
 * each call to any of `ClientCall.Listener`'s methods, `ServerCall.Listener`'s methods and server listener creation in `ServerCallHandler.startCall(...)` runs within **a separate instance** of [ListenerEventContext](src/main/java/pl/morgwai/base/grpc/scopes/ListenerEventContext.java).
-  * For servers this means that all callbacks to request `StreamObserver`s returned by methods implementing RPC procedures, methods implementing RPC procedures themselves and all invocations of callbacks registered via `ServerCallStreamObserver`, run within "separate `listenerEventScope`".
-  * For clients this means that all callbacks to response `StreamObserver`s supplied as arguments to methods implementing RPC procedures and all invocations of callbacks registered via `ClientCallStreamObserver`, run within "separate `listenerEventScope`".
-* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within **the same instance** of [ServerRpcContext](src/main/java/pl/morgwai/base/grpc/scopes/ServerRpcContext.java). This means that a single call to a method implementing RPC procedure, all callbacks to request `StreamObserver` returned by this given call and all callbacks registered via this call's `ServerCallStreamObserver`, all run within "the same `rpcScope`".
-* Each call to any of the `ClientCall.Listener`'s methods run within **the same instance** of [ClientRpcContext](src/main/java/pl/morgwai/base/grpc/scopes/ClientRpcContext.java). This means that all callbacks to response `StreamObserver` supplied as an argument to this given call to the RPC method and all callbacks registered via this call's `ClientCallStreamObserver`, all run within "the same `rpcScope`".
+  * For servers this means that all callbacks to request `StreamObserver`s returned by methods implementing RPC procedures, methods implementing RPC procedures themselves and all invocations of callbacks registered via `ServerCallStreamObserver`, run within "separate `listenerEventScope`s".
+  * For clients this means that all callbacks to response `StreamObserver`s supplied as arguments to stub RPC methods and all invocations of callbacks registered via `ClientCallStreamObserver`, run within "separate `listenerEventScope`s".
+* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within **the same instance** of [ServerRpcContext](src/main/java/pl/morgwai/base/grpc/scopes/ServerRpcContext.java). This means that a single given call to a method implementing RPC procedure, all callbacks to the request `StreamObserver` returned by this given call and all callbacks registered via this call's `ServerCallStreamObserver`, all run within "the same `rpcScope`".
+* Each method call to a single given instance of `ClientCall.Listener` run within **the same instance** of [ClientRpcContext](src/main/java/pl/morgwai/base/grpc/scopes/ClientRpcContext.java). This means that all callbacks to the response `StreamObserver` supplied as an argument to this given call of the stub sRPC method and all callbacks registered via this call's `ClientCallStreamObserver`, all run within "the same `rpcScope`".
 
 
 ## MAIN USER CLASSES
 
 ### [GrpcModule](src/main/java/pl/morgwai/base/grpc/scopes/GrpcModule.java)
-Contains the above `Scope`s, `ContextTracker`s, some helper methods and gRPC interceptors that starts the above contexts.
+Contains the above `Scope`s, `ContextTracker`s, some helper methods and gRPC interceptors that start the above contexts.
 
 ### [ContextTrackingExecutor](src/main/java/pl/morgwai/base/grpc/scopes/ContextTrackingExecutor.java)
 An `Executor` (backed by a fixed size `ThreadPoolExecutor` by default) that upon dispatching automatically updates which thread runs within which `RpcContext` and `ListenerEventContext`.<br/>
