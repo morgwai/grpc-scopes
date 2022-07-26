@@ -80,26 +80,29 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 
-		@Override
-		public void onHeaders(Metadata responseHeaders) {
+		@Override public void onHeaders(Metadata responseHeaders) {
 			rpcContext.setResponseHeaders(responseHeaders);
 			executeWithinCtxs(() -> wrappedListener.onHeaders(responseHeaders));
 		}
 
 
 
-		// below just delegate within ctxs all Listener method calls to wrappedListener
-
 		@Override public void onMessage(ResponseT message) {
 			executeWithinCtxs(() -> wrappedListener.onMessage(message));
 		}
 
-		@Override public void onClose(Status status, Metadata trailers) {
-			executeWithinCtxs(() -> wrappedListener.onClose(status, trailers));
-		}
+
 
 		@Override public void onReady() {
 			executeWithinCtxs(wrappedListener::onReady);
+		}
+
+
+
+		@Override public void onClose(Status status, Metadata trailers) {
+			rpcContext.setStatus(status);
+			rpcContext.setTrailers(trailers);
+			executeWithinCtxs(() -> wrappedListener.onClose(status, trailers));
 		}
 	}
 

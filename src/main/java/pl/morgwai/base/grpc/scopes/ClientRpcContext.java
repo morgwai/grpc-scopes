@@ -1,8 +1,7 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
-import io.grpc.ClientCall;
-import io.grpc.Metadata;
+import io.grpc.*;
 
 
 
@@ -26,6 +25,14 @@ public class ClientRpcContext extends RpcContext {
 	public Metadata getResponseHeaders() { return responseHeaders; }
 	void setResponseHeaders(Metadata responseHeaders) { this.responseHeaders = responseHeaders; }
 	Metadata responseHeaders;
+
+	public Metadata getTrailers() { return trailers; }
+	void setTrailers(Metadata trailers) {  this.trailers = trailers; }
+	Metadata trailers;
+
+	public Status getStatus() { return status; }
+	public void setStatus(Status status) { this.status = status; }
+	Status status;
 
 
 
