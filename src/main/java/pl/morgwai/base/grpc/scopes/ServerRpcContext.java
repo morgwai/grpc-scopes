@@ -7,12 +7,12 @@ import io.grpc.ServerCall;
 
 
 /**
- * Context of a given server RPC ({@link io.grpc.ServerCall}).
+ * Context of a server RPC ({@link io.grpc.ServerCall}).
  * A single instance spans over the whole processing of a given RPC: from the beginning of the
  * invocation of a given remote procedure, across all its messages, until the RPC is closed.
- * Specifically {@link io.grpc.ServerCallHandler#startCall(ServerCall, io.grpc.Metadata)} and all
- * methods of the returned {@link io.grpc.ServerCall.Listener} are executed within the same
- * <code>ServerRpcContext</code>.
+ * Specifically {@link io.grpc.ServerCallHandler#startCall(ServerCall, io.grpc.Metadata)
+ * ServerCallHandler.startCall(...)} and all methods of the returned
+ * {@link io.grpc.ServerCall.Listener} are executed within the same <code>ServerRpcContext</code>.
  *
  * @see GrpcModule#rpcScope corresponding <code>Scope</code>
  * @see <a href="https://javadoc.io/doc/pl.morgwai.base/grpc-utils/latest/pl/morgwai/base/grpc/

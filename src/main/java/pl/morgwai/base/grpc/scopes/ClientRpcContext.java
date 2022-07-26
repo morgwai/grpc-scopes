@@ -6,7 +6,7 @@ import io.grpc.*;
 
 
 /**
- * Context of a given client RPC ({@link ClientCall}).
+ * Context of a client RPC ({@link ClientCall}).
  * A single instance spans over the lifetime of the response stream.
  * Specifically all methods of {@link io.grpc.ClientCall.Listener} are executed within the same
  * <code>ClientRpcContext</code>.
