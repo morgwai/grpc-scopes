@@ -57,16 +57,28 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Must be installed for all gRPC services.
+	 * All gRPC services must be intercepted by this interceptor.
 	 * @see io.grpc.ServerInterceptors#intercept(io.grpc.BindableService, java.util.List)
 	 */
 	public final ServerInterceptor serverInterceptor = new ServerContextInterceptor(this);
 
 	/**
-	 * Must be installed for all {@link Channel Channels}.
+	 * All {@link Channel client Channels} must be intercepted either by this interceptor or by
+	 * {@link #nestingClientInterceptor}. This interceptor will keep child client RPC contexts
+	 * separate from their parent server RPC contexts.
 	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
 	 */
-	public final ClientInterceptor clientInterceptor = new ClientContextInterceptor(this);
+	public final ClientInterceptor clientInterceptor = new ClientContextInterceptor(this, false);
+
+	/**
+	 * All {@link Channel client Channels} must be intercepted either by this interceptor or by
+	 * {@link #clientInterceptor}. This interceptor will join together child client RPC contexts
+	 * with their parent server RPC contexts, so that all RPC scoped objects will be shared between
+	 * parent and child RPCs.
+	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
+	 */
+	public final ClientInterceptor nestingClientInterceptor =
+			new ClientContextInterceptor(this, true);
 
 
 

@@ -3,6 +3,8 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.Optional;
 
+import com.google.inject.Key;
+import com.google.inject.Provider;
 import io.grpc.*;
 
 
@@ -50,10 +52,32 @@ public class ClientRpcContext extends RpcContext {
 	public void setStatus(Status status) { this.status = status; }
 	Status status;
 
+	final ServerRpcContext parentCtx;
+
+
+
+	@Override
+	public <T> T provideIfAbsent(Key<T> key, Provider<T> provider) {
+		if (parentCtx == null) {
+			return super.provideIfAbsent(key, provider);
+		} else {
+			return parentCtx.provideIfAbsent(key, provider);
+		}
+	}
+
 
 
 	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders) {
 		super(requestHeaders);
 		this.rpc = rpc;
+		parentCtx = null;
+	}
+
+
+
+	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders, ServerRpcContext parentCtx) {
+		super(requestHeaders);
+		this.rpc = rpc;
+		this.parentCtx = parentCtx;
 	}
 }

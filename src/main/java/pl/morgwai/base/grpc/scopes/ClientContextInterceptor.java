@@ -16,6 +16,7 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 	final GrpcModule grpcModule;
+	final boolean nestingRpcContext;
 
 
 
@@ -37,10 +38,22 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 		@Override
 		public void start(Listener<ResponseT> listener, Metadata requestHeaders) {
-			wrappedRpc.start(
-				new ListenerWrapper<>(listener, new ClientRpcContext(wrappedRpc, requestHeaders)),
-				requestHeaders
-			);
+			ClientRpcContext rpcContext;
+			if (nestingRpcContext) {
+				final var parentEventCtx =
+						grpcModule.listenerEventContextTracker.getCurrentContext();
+				if (parentEventCtx != null) {
+					rpcContext = new ClientRpcContext(
+							wrappedRpc,
+							requestHeaders,
+							(ServerRpcContext) parentEventCtx.getRpcContext());
+				} else {
+					rpcContext = new ClientRpcContext(wrappedRpc, requestHeaders);
+				}
+			} else {
+				rpcContext = new ClientRpcContext(wrappedRpc, requestHeaders);
+			}
+			wrappedRpc.start(new ListenerWrapper<>(listener, rpcContext), requestHeaders);
 		}
 
 
@@ -107,5 +120,8 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 
-	ClientContextInterceptor(GrpcModule grpcModule) { this.grpcModule = grpcModule; }
+	ClientContextInterceptor(GrpcModule grpcModule, boolean nestingRpcContext) {
+		this.grpcModule = grpcModule;
+		this.nestingRpcContext = nestingRpcContext;
+	}
 }
