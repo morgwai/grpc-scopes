@@ -38,8 +38,7 @@ public class ClientContextInterceptor implements ClientInterceptor {
 		@Override
 		public void start(Listener<ResponseT> listener, Metadata requestHeaders) {
 			wrappedRpc.start(
-				new ListenerWrapper<>(
-						listener, grpcModule.newClientRpcContext(wrappedRpc, requestHeaders)),
+				new ListenerWrapper<>(listener, new ClientRpcContext(wrappedRpc, requestHeaders)),
 				requestHeaders
 			);
 		}

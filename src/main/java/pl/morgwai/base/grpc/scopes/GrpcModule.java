@@ -261,16 +261,6 @@ public class GrpcModule implements Module {
 
 
 
-	// For internal use by ServerContextInterceptor.
-	ServerRpcContext newServerRpcContext(ServerCall<?, ?> rpc, Metadata requestHeaders) {
-		return new ServerRpcContext(rpc, requestHeaders);
-	}
-
-	// For internal use by ClientContextInterceptor.
-	ClientRpcContext newClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders) {
-		return new ClientRpcContext(rpc, requestHeaders);
-	}
-
 	// For internal use by interceptors.
 	ListenerEventContext newListenerEventContext(RpcContext rpcContext) {
 		return new ListenerEventContext(rpcContext, listenerEventContextTracker);
