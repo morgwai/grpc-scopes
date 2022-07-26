@@ -98,7 +98,9 @@ public class ClientContextInterceptor implements ClientInterceptor {
 			executeWithinCtxs(() -> wrappedListener.onClose(status, trailers));
 		}
 
-		@Override public void onReady() { executeWithinCtxs(wrappedListener::onReady); }
+		@Override public void onReady() {
+			executeWithinCtxs(wrappedListener::onReady);
+		}
 	}
 
 
