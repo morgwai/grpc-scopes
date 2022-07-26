@@ -1,6 +1,6 @@
 # gRPC Guice Scopes
 
-RPC and Listener event Guice Scopes for gRPC server.<br/>
+RPC and Listener event Guice Scopes for gRPC.<br/>
 <br/>
 **latest release: [7.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/7.0/jar)**
 ([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/7.0))
@@ -8,11 +8,14 @@ RPC and Listener event Guice Scopes for gRPC server.<br/>
 
 ## OVERVIEW
 
-Provides `rpcScope` and `listenerEventScope` Guice ScopesProvides `rpcScope` and `listenerEventScope` Guice Scopes built using [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes) which automatically transfers them to a new thread when dispatching using `ContextTrackingExecutor` (see below).<br/>
-Oversimplifying, in case of streaming requests, `listenerEventScope` spans over processing of a single message from the request stream, while `rpcScope` spans over the whole RPC. Oversimplifying again, in case of unary requests, these 2 Scopes have roughly the same span.<br/>
+Provides `rpcScope` and `listenerEventScope` Guice Scopes for both client and server apps. Scopes are built using [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes) which automatically transfers them to a new thread when dispatching using `ContextTrackingExecutor` (see below).<br/>
+Oversimplifying, in case of streaming requests on servers and streaming responses on clients, `listenerEventScope` spans over processing of a single message from the stream, while `rpcScope` spans over the whole RPC. Oversimplifying again, in case of unary requests, these 2 Scopes have roughly the same span.<br/>
 More specifically though:
-* each call to any of `ServerCall.Listener`'s methods and listener creation in `ServerCallHandler.startCall(...)` run within **a separate instance** of [ListenerEventContext](src/main/java/pl/morgwai/base/grpc/scopes/ListenerEventContext.java) (hence the name). This means that all callbacks to request `StreamObserver` returned by methods implementing RPC procedures, methods implementing RPC procedures themselves and all invocations of callbacks registered via `ServerCallStreamObserver`, run within "separate `listenerEventScope`". 
-* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within **the same instance** of [RpcContext](src/main/java/pl/morgwai/base/grpc/scopes/RpcContext.java). This means that a single call to a method implementing RPC procedure, all callbacks to request `StreamObserver` returned by this given call to the RPC method and all callbacks registered via `ServerCallStreamObserver` argument of this given call to the RPC method all run within "the same `rpcScope`".
+* each call to any of `ClientCall.Listener`'s methods, `ServerCall.Listener`'s methods and server listener creation in `ServerCallHandler.startCall(...)` runs within **a separate instance** of [ListenerEventContext](src/main/java/pl/morgwai/base/grpc/scopes/ListenerEventContext.java).
+  * For servers this means that all callbacks to request `StreamObserver`s returned by methods implementing RPC procedures, methods implementing RPC procedures themselves and all invocations of callbacks registered via `ServerCallStreamObserver`, run within "separate `listenerEventScope`".
+  * For clients this means that all callbacks to response `StreamObserver`s supplied as arguments to methods implementing RPC procedures and all invocations of callbacks registered via `ClientCallStreamObserver`, run within "separate `listenerEventScope`".
+* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within **the same instance** of [ServerRpcContext](src/main/java/pl/morgwai/base/grpc/scopes/ServerRpcContext.java). This means that a single call to a method implementing RPC procedure, all callbacks to request `StreamObserver` returned by this given call and all callbacks registered via this call's `ServerCallStreamObserver`, all run within "the same `rpcScope`".
+* Each call to any of the `ClientCall.Listener`'s methods run within **the same instance** of [ClientRpcContext](src/main/java/pl/morgwai/base/grpc/scopes/ClientRpcContext.java). This means that all callbacks to response `StreamObserver` supplied as an argument to this given call to the RPC method and all callbacks registered via this call's `ClientCallStreamObserver`, all run within "the same `rpcScope`".
 
 
 ## MAIN USER CLASSES
@@ -29,9 +32,11 @@ Instances should usually be created using helper methods from the above `GrpcMod
 
 1. Create an instance of `GrpcModule` and pass it to other modules.
 1. Other modules can use `GrpcModule.rpcScope` and `GrpcModule.listenerEventScope` to scope their bindings: `bind(MyComponent.class).to(MyComponentImpl.class).in(grpcModule.rpcScope);`
-1. All gRPC service instances added to server must be intercepted by `GrpcModule.contextInterceptor` like following: `.addService(ServerInterceptors.intercept(myService, grpcModule.contextInterceptor /* more interceptors here... */))` 
+1. All gRPC service instances added to server must be intercepted with `GrpcModule.serverInterceptor` like the following: `.addService(ServerInterceptors.intercept(myService, grpcModule.contextInterceptor /* more interceptors here... */))`
+1. All client `Channel`s must be intercepted with `GrpcModule.clientInterceptor` like the following: `ClientInterceptors.intercept(channel, grpcModule.clientInterceptor)`
 
-Example:
+
+Server sample:
 ```java
 public class MyServer {
 
@@ -70,6 +75,29 @@ public class MyServer {
     }
 
     // more code here...
+}
+```
+
+Client sample:
+```java
+public class MyClient {
+
+    public static void main(String[] args) throws Exception {
+        final var grpcModule = new GrpcModule();
+        final var managedChannel = ManagedChannelBuilder
+            .forTarget(TARGET)
+            .usePlaintext()
+            .build();
+        final var channel = ClientInterceptors.intercept(
+                managedChannel, grpcModule.clientInterceptor);
+        final var stub = MyServiceGrpc.newStub(channel);
+
+        makeAnRpcCall(stub, args);
+
+        shutdown(managedChannel);
+    }
+
+    // ...
 }
 ```
 
