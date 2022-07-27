@@ -44,9 +44,7 @@ public class ClientContextInterceptor implements ClientInterceptor {
 						grpcModule.listenerEventContextTracker.getCurrentContext();
 				if (parentEventCtx != null) {
 					rpcContext = new ClientRpcContext(
-							wrappedRpc,
-							requestHeaders,
-							(ServerRpcContext) parentEventCtx.getRpcContext());
+							wrappedRpc, requestHeaders, parentEventCtx.getRpcContext());
 				} else {
 					rpcContext = new ClientRpcContext(wrappedRpc, requestHeaders);
 				}

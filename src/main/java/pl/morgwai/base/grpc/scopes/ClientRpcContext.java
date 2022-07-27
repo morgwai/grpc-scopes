@@ -52,7 +52,7 @@ public class ClientRpcContext extends RpcContext {
 	public void setStatus(Status status) { this.status = status; }
 	Status status;
 
-	final ServerRpcContext parentCtx;
+	final RpcContext parentCtx;
 
 
 
@@ -75,7 +75,7 @@ public class ClientRpcContext extends RpcContext {
 
 
 
-	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders, ServerRpcContext parentCtx) {
+	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders, RpcContext parentCtx) {
 		super(requestHeaders);
 		this.rpc = rpc;
 		this.parentCtx = parentCtx;
