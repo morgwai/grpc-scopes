@@ -1,9 +1,12 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
+import com.google.inject.Key;
+import com.google.inject.name.Names;
 import io.grpc.*;
 import io.grpc.ClientCall.Listener;
 import org.easymock.*;
+import org.junit.Before;
 import org.junit.Test;
 import pl.morgwai.base.grpc.scopes.ClientContextInterceptor.ListenerWrapper;
 import pl.morgwai.base.grpc.scopes.tests.ContextVerifier;
@@ -18,26 +21,33 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 
 
 	final GrpcModule grpcModule = new GrpcModule();
-	final ClientContextInterceptor interceptor =
-			(ClientContextInterceptor) grpcModule.clientInterceptor;
+	ClientContextInterceptor interceptor;
+
+	final MockListener<Integer> mockListener = new MockListener<>();
+	final Metadata requestHeaders = new Metadata();
+	final Capture<Listener<Integer>> listenerCapture = newCapture();
+	final MethodDescriptor<String, Integer> methodDescriptor = null;
+	final CallOptions options = CallOptions.DEFAULT;
 
 	@Mock final Channel mockChannel = mock(Channel.class);
 	@Mock final ClientCall<String, Integer> mockRpc = mock(ClientCall.class);
 
 
 
-	@Test
-	public void testInterceptCall() {
-		final MockListener<Integer> mockListener = new MockListener<>();
-		final var requestHeaders = new Metadata();
-		final Capture<Listener<Integer>> listenerCapture = newCapture();
-		final MethodDescriptor<String, Integer> methodDescriptor = null;
-		final var options = CallOptions.DEFAULT;
-
+	@Before
+	public void recordMockExpectations() {
 		expect(mockChannel.newCall(same(methodDescriptor), same(options)))
 			.andReturn(mockRpc);
 		mockRpc.start(capture(listenerCapture), same(requestHeaders));
 		replayAll();
+	}
+
+
+
+	void testStandAloneCall(boolean nestingRpcContext) {
+		interceptor = nestingRpcContext
+				? (ClientContextInterceptor) grpcModule.nestingClientInterceptor
+				: (ClientContextInterceptor) grpcModule.clientInterceptor;
 
 		interceptor.interceptCall(methodDescriptor, options, mockChannel)
 				.start(mockListener, requestHeaders);
@@ -82,6 +92,41 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 		verifyAll();
 	}
+
+	@Test public void testStandAloneCallWithNestingInterceptor() { testStandAloneCall(true); }
+	@Test public void testStandAloneCallWithStandardInterceptor() { testStandAloneCall(false); }
+
+
+
+	void testNestedCall(boolean nestingRpcContext) {
+		interceptor = nestingRpcContext
+				? (ClientContextInterceptor) grpcModule.nestingClientInterceptor
+				: (ClientContextInterceptor) grpcModule.clientInterceptor;
+		final Integer inheritedObject = 666;
+		final var inheritedObjectKey = Key.get(Integer.class, Names.named("inherited"));
+		final var parentRpcCtx = new ServerRpcContext(null, null);
+		parentRpcCtx.provideIfAbsent(inheritedObjectKey, () -> inheritedObject);
+
+		grpcModule.newListenerEventContext(parentRpcCtx).executeWithinSelf(
+				() -> interceptor.interceptCall(methodDescriptor, options, mockChannel)
+						.start(mockListener, requestHeaders));
+		final ListenerWrapper<Integer> decoratedListener =
+				(ListenerWrapper<Integer>) listenerCapture.getValue();
+
+		if (nestingRpcContext) {
+			assertSame("child RPC should inherit RPC scoped objects from the parent",
+					inheritedObject,
+					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 3));
+		} else {
+			assertNotSame("child RPC should NOT inherit RPC scoped objects from the parent",
+					inheritedObject,
+					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 3));
+		}
+		verifyAll();
+	}
+
+	@Test public void testNestedCallWithNestingInterceptor() { testNestedCall(true); }
+	@Test public void testNestedCallWithStandardInterceptor() { testNestedCall(false); }
 
 
 
