@@ -57,17 +57,16 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * {@link io.grpc.ServerInterceptor} that must be installed for all gRPC services that use
-	 * {@link #rpcScope} and {@link #listenerEventScope}.
+	 * Must be installed for all gRPC services.
 	 * @see io.grpc.ServerInterceptors#intercept(io.grpc.BindableService, java.util.List)
 	 */
-	public final ServerContextInterceptor serverInterceptor = new ServerContextInterceptor(this);
+	public final ServerInterceptor serverInterceptor = new ServerContextInterceptor(this);
 
 	/**
-	 * {@link ClientInterceptor} that must be installed for all {@link Channel Channels}.
+	 * Must be installed for all {@link Channel Channels}.
 	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
 	 */
-	public final ClientContextInterceptor clientInterceptor = new ClientContextInterceptor(this);
+	public final ClientInterceptor clientInterceptor = new ClientContextInterceptor(this);
 
 
 
