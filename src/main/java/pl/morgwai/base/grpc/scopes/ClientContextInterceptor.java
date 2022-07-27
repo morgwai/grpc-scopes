@@ -107,5 +107,5 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 
-	public ClientContextInterceptor(GrpcModule grpcModule) { this.grpcModule = grpcModule; }
+	ClientContextInterceptor(GrpcModule grpcModule) { this.grpcModule = grpcModule; }
 }
