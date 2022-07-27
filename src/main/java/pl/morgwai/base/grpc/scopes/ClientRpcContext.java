@@ -6,6 +6,7 @@ import java.util.Optional;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import io.grpc.*;
+import pl.morgwai.base.guice.scopes.ContextExposer;
 
 
 
@@ -52,12 +53,18 @@ public class ClientRpcContext extends RpcContext {
 	public void setStatus(Status status) { this.status = status; }
 	Status status;
 
-	final RpcContext parentCtx;
+	final ContextExposer<RpcContext> parentCtx;
+
+
+
+	public RpcContext getParentContext() {
+		return parentCtx == null ? null : parentCtx.getCtx();
+	}
 
 
 
 	@Override
-	public <T> T provideIfAbsent(Key<T> key, Provider<T> provider) {
+	protected <T> T provideIfAbsent(Key<T> key, Provider<T> provider) {
 		if (parentCtx == null) {
 			return super.provideIfAbsent(key, provider);
 		} else {
@@ -89,6 +96,6 @@ public class ClientRpcContext extends RpcContext {
 	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders, RpcContext parentCtx) {
 		super(requestHeaders);
 		this.rpc = rpc;
-		this.parentCtx = parentCtx;
+		this.parentCtx = new ContextExposer<>(parentCtx);
 	}
 }

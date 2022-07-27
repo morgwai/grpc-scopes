@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import pl.morgwai.base.grpc.scopes.ClientContextInterceptor.ListenerWrapper;
 import pl.morgwai.base.grpc.scopes.tests.ContextVerifier;
+import pl.morgwai.base.guice.scopes.ContextExposer;
 
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
@@ -101,6 +102,7 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 	final Integer inheritedObject = 666;
 	final Key<Integer> inheritedObjectKey = Key.get(Integer.class, Names.named("inherited"));
 	final ServerRpcContext parentRpcCtx = new ServerRpcContext(null, null);
+	final ContextExposer<RpcContext> parentRpcCtxExposer = new ContextExposer<>(parentRpcCtx);
 
 
 
@@ -108,7 +110,7 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 		interceptor = nestingRpcContext
 				? (ClientContextInterceptor) grpcModule.nestingClientInterceptor
 				: (ClientContextInterceptor) grpcModule.clientInterceptor;
-		parentRpcCtx.provideIfAbsent(inheritedObjectKey, () -> inheritedObject);
+		parentRpcCtxExposer.provideIfAbsent(inheritedObjectKey, () -> inheritedObject);
 
 		grpcModule.newListenerEventContext(parentRpcCtx).executeWithinSelf(
 				() -> interceptor.interceptCall(methodDescriptor, options, mockChannel)
@@ -137,7 +139,7 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 		interceptor = nestingRpcContext
 				? (ClientContextInterceptor) grpcModule.nestingClientInterceptor
 				: (ClientContextInterceptor) grpcModule.clientInterceptor;
-		parentRpcCtx.provideIfAbsent(inheritedObjectKey, () -> inheritedObject);
+		parentRpcCtxExposer.provideIfAbsent(inheritedObjectKey, () -> inheritedObject);
 
 		grpcModule.newListenerEventContext(parentRpcCtx).executeWithinSelf(
 				() -> interceptor.interceptCall(methodDescriptor, options, mockChannel)
@@ -151,11 +153,11 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 		if (nestingRpcContext) {
 			assertNotSame("inherited object should be removed from parent RPC ctx",
 					inheritedObject,
-					parentRpcCtx.provideIfAbsent(inheritedObjectKey, () -> 3));
+					parentRpcCtxExposer.provideIfAbsent(inheritedObjectKey, () -> 3));
 		} else {
 			assertSame("object scoped to parent RPC should NOT be removed",
 					inheritedObject,
-					parentRpcCtx.provideIfAbsent(inheritedObjectKey, () -> 3));
+					parentRpcCtxExposer.provideIfAbsent(inheritedObjectKey, () -> 3));
 			assertNotSame("object scoped to child RPC should be removed",
 					childObject,
 					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 3));
