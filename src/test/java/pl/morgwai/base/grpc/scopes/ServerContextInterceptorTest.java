@@ -17,7 +17,8 @@ public class ServerContextInterceptorTest extends EasyMockSupport {
 
 
 	final GrpcModule grpcModule = new GrpcModule();
-	final ServerContextInterceptor interceptor = grpcModule.serverInterceptor;
+	final ServerContextInterceptor interceptor =
+			(ServerContextInterceptor) grpcModule.serverInterceptor;
 
 	@Mock final ServerCall<Integer, Integer> mockRpc = mock(ServerCall.class);
 
@@ -30,7 +31,7 @@ public class ServerContextInterceptorTest extends EasyMockSupport {
 		final var decoratedListener = interceptor.interceptCall(
 			mockRpc,
 			requestHeaders,
-			(ServerCallHandler<Integer, Integer>) (call, headers) -> {
+			(call, headers) -> {
 				final var eventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
 				assertNotNull("event context should be started", eventCtx);
 				final var rpcCtx = eventCtx.getRpcContext();
