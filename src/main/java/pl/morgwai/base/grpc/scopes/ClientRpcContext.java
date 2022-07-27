@@ -57,8 +57,13 @@ public class ClientRpcContext extends RpcContext {
 
 
 
-	public RpcContext getParentContext() {
-		return parentCtx == null ? null : parentCtx.getCtx();
+	/**
+	 * If this RPC was issued as a nested child in the context of another RPC and
+	 * {@link GrpcModule#nestingClientInterceptor} was used to intercept the given {@link Channel},
+	 * then this method will return the context of the parent RPC. Otherwise {@code empty()}.
+	 */
+	public Optional<RpcContext> getParentContext() {
+		return parentCtx == null ? Optional.empty() : Optional.of(parentCtx.getCtx());
 	}
 
 
