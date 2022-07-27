@@ -98,13 +98,16 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 
 
 
+	final Integer inheritedObject = 666;
+	final Key<Integer> inheritedObjectKey = Key.get(Integer.class, Names.named("inherited"));
+	final ServerRpcContext parentRpcCtx = new ServerRpcContext(null, null);
+
+
+
 	void testNestedCall(boolean nestingRpcContext) {
 		interceptor = nestingRpcContext
 				? (ClientContextInterceptor) grpcModule.nestingClientInterceptor
 				: (ClientContextInterceptor) grpcModule.clientInterceptor;
-		final Integer inheritedObject = 666;
-		final var inheritedObjectKey = Key.get(Integer.class, Names.named("inherited"));
-		final var parentRpcCtx = new ServerRpcContext(null, null);
 		parentRpcCtx.provideIfAbsent(inheritedObjectKey, () -> inheritedObject);
 
 		grpcModule.newListenerEventContext(parentRpcCtx).executeWithinSelf(
@@ -116,17 +119,52 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 		if (nestingRpcContext) {
 			assertSame("child RPC should inherit RPC scoped objects from the parent",
 					inheritedObject,
-					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 3));
+					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 69));
 		} else {
 			assertNotSame("child RPC should NOT inherit RPC scoped objects from the parent",
 					inheritedObject,
-					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 3));
+					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 69));
 		}
 		verifyAll();
 	}
 
 	@Test public void testNestedCallWithNestingInterceptor() { testNestedCall(true); }
 	@Test public void testNestedCallWithStandardInterceptor() { testNestedCall(false); }
+
+
+
+	void testRemove(boolean nestingRpcContext) {
+		interceptor = nestingRpcContext
+				? (ClientContextInterceptor) grpcModule.nestingClientInterceptor
+				: (ClientContextInterceptor) grpcModule.clientInterceptor;
+		parentRpcCtx.provideIfAbsent(inheritedObjectKey, () -> inheritedObject);
+
+		grpcModule.newListenerEventContext(parentRpcCtx).executeWithinSelf(
+				() -> interceptor.interceptCall(methodDescriptor, options, mockChannel)
+						.start(mockListener, requestHeaders));
+		final ListenerWrapper<Integer> decoratedListener =
+				(ListenerWrapper<Integer>) listenerCapture.getValue();
+
+		final Integer childObject = 69;
+		decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> childObject);
+		decoratedListener.rpcContext.removeScopedObject(inheritedObjectKey);
+		if (nestingRpcContext) {
+			assertNotSame("inherited object should be removed from parent RPC ctx",
+					inheritedObject,
+					parentRpcCtx.provideIfAbsent(inheritedObjectKey, () -> 3));
+		} else {
+			assertSame("object scoped to parent RPC should NOT be removed",
+					inheritedObject,
+					parentRpcCtx.provideIfAbsent(inheritedObjectKey, () -> 3));
+			assertNotSame("object scoped to child RPC should be removed",
+					childObject,
+					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 3));
+		}
+		verifyAll();
+	}
+
+	@Test public void testRemoveWithNestingInterceptor() { testRemove(true); }
+	@Test public void testRemoveWithStandardInterceptor() { testRemove(false); }
 
 
 

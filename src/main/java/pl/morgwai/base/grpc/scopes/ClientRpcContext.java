@@ -67,6 +67,17 @@ public class ClientRpcContext extends RpcContext {
 
 
 
+	@Override
+	public void removeScopedObject(Key<?> key) {
+		if (parentCtx == null) {
+			super.removeScopedObject(key);
+		} else {
+			parentCtx.removeScopedObject(key);
+		}
+	}
+
+
+
 	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders) {
 		super(requestHeaders);
 		this.rpc = rpc;
