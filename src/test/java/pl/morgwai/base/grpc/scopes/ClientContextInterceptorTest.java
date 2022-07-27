@@ -70,10 +70,10 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 		decoratedListener.onClose(status, trailers);
 		assertSame("status should not be modified", status, mockListener.capturedStatus);
 		assertSame("status should be stored into rpcCtx",
-				status, decoratedListener.rpcContext.getStatus());
+				status, decoratedListener.rpcContext.getStatus().get());
 		assertSame("trailers should not be modified", trailers, mockListener.capturedTrailers);
 		assertSame("trailers should be stored into rpcCtx",
-				trailers, decoratedListener.rpcContext.getTrailers());
+				trailers, decoratedListener.rpcContext.getTrailers().get());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 

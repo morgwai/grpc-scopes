@@ -1,6 +1,8 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
+import java.util.Optional;
+
 import io.grpc.*;
 
 
@@ -26,11 +28,25 @@ public class ClientRpcContext extends RpcContext {
 	void setResponseHeaders(Metadata responseHeaders) { this.responseHeaders = responseHeaders; }
 	Metadata responseHeaders;
 
-	public Metadata getTrailers() { return trailers; }
-	void setTrailers(Metadata trailers) {  this.trailers = trailers; }
+	/**
+	 * Trailing metadata sent by the server upon the RPC completion. This will be {@code empty()}
+	 * for most of the RPC lifetime:<ul>
+	 *     <li>It is guaranteed to be not {@code empty()} only in
+	 *             {@link io.grpc.stub.StreamObserver#onCompleted()}.</li>
+	 *     <li>In {@link io.grpc.stub.StreamObserver#onNext(Object)} it will always be
+	 *             {@code empty()}.</li>
+	 *     <li>In {@link io.grpc.stub.StreamObserver#onError(Throwable)} it may be either.</li>
+	 * </ul>
+	 */
+	public Optional<Metadata> getTrailers() { return Optional.ofNullable(trailers); }
+	void setTrailers(Metadata trailers) { this.trailers = trailers; }
 	Metadata trailers;
 
-	public Status getStatus() { return status; }
+	/**
+	 * Final status sent by the server upon the RPC completion. This will be {@code empty()} for
+	 * most of the RPC lifetime similarly to {@link #getTrailers()}.
+	 */
+	public Optional<Status> getStatus() { return Optional.ofNullable(status); }
 	public void setStatus(Status status) { this.status = status; }
 	Status status;
 
