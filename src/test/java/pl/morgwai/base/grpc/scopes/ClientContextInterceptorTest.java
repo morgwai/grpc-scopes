@@ -58,6 +58,8 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 		mockListener.ctxVerifier = new ContextVerifier(grpcModule, decoratedListener.rpcContext);
 		assertSame("RPC should be stored into rpcCtx",
 				mockRpc, decoratedListener.rpcContext.getRpc());
+		assertTrue("there should be no parentCtx",
+				decoratedListener.rpcContext.getParentContext().isEmpty());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
@@ -119,10 +121,14 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 				(ListenerWrapper<Integer>) listenerCapture.getValue();
 
 		if (nestingRpcContext) {
+			assertTrue("parentCtx should be properly set",
+					decoratedListener.rpcContext.getParentContext().isPresent());
 			assertSame("child RPC should inherit RPC scoped objects from the parent",
 					inheritedObject,
 					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 69));
 		} else {
+			assertTrue("there should be no parentCtx",
+					decoratedListener.rpcContext.getParentContext().isEmpty());
 			assertNotSame("child RPC should NOT inherit RPC scoped objects from the parent",
 					inheritedObject,
 					decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> 69));
