@@ -1,22 +1,15 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes.tests;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.name.Named;
-import io.grpc.Status;
-import io.grpc.StatusException;
-import io.grpc.StatusRuntimeException;
+import io.grpc.*;
 import io.grpc.Status.Code;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-
 import pl.morgwai.base.grpc.scopes.tests.grpc.Request;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc.ScopedObjectHashImplBase;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
@@ -27,10 +20,8 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 
 
-	public static final String RPC_SCOPE = "RPC";
-	public static final String EVENT_SCOPE = "listenerEvent";
-	@Inject @Named(RPC_SCOPE) Provider<Service> rpcScopedProvider;
-	@Inject @Named(EVENT_SCOPE) Provider<Service> eventScopedProvider;
+	@Inject Provider<RpcScopedService> rpcScopedProvider;
+	@Inject Provider<EventScopedService> eventScopedProvider;
 
 	/**
 	 * Whether to treat cancellation as an error (and add to error log of the given call) or as an
@@ -52,14 +43,14 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 
 	/**
-	 * Keeps the log of all RPC-scoped {@link Service} instances to check for duplications
+	 * Keeps the log of all RPC-scoped instances to check for duplicates.
 	 */
-	Set<Service> rpcScopedLog = new HashSet<>();
+	Set<RpcScopedService> rpcScopedLog = new HashSet<>();
 
 	/**
-	 * Keeps the log of all event-scoped {@link Service} instances to check for duplications
+	 * Keeps the log of all event-scoped instances to check for duplicates.
 	 */
-	Set<Service> eventScopedLog = new HashSet<>();
+	Set<EventScopedService> eventScopedLog = new HashSet<>();
 
 	static final String DUPLICATE_ERROR = "duplicated %2$s scoped object in %1$s";
 	static final String SCOPING_ERROR = "scoping failed in %1$s for scope %2$s";
@@ -67,24 +58,29 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 	/**
 	 * Called at each event.
 	 */
-	void verifyScoping(List<String> errors, Service rpcScoped, Service eventScoped, String event) {
+	void verifyScoping(
+			List<String> errors,
+			RpcScopedService rpcScoped,
+			EventScopedService eventScoped,
+			String event) {
 		if (rpcScoped != rpcScopedProvider.get()) {
-			errors.add(String.format(SCOPING_ERROR, event, RPC_SCOPE));
+			errors.add(String.format(SCOPING_ERROR, event, "RPC"));
 		}
 		if (eventScoped != eventScopedProvider.get()) {
-			errors.add(String.format(SCOPING_ERROR, event, EVENT_SCOPE));
+			errors.add(String.format(SCOPING_ERROR, event, "event"));
 		}
 		if ( ! eventScopedLog.add(eventScoped)) {
-			errors.add(String.format(DUPLICATE_ERROR, event, EVENT_SCOPE));
+			errors.add(String.format(DUPLICATE_ERROR, event, "event"));
 		}
 	}
 
 	/**
 	 * Called once at the beginning of each call.
 	 */
-	void verifyRpcScopingDuplication(List<String> errors, Service rpcScoped, String event) {
+	void verifyRpcScopingDuplication(List<String> errors, RpcScopedService rpcScoped, String event)
+	{
 		if ( ! rpcScopedLog.add(rpcScoped)) {
-			errors.add(String.format(DUPLICATE_ERROR, event, RPC_SCOPE));
+			errors.add(String.format(DUPLICATE_ERROR, event, "RPC"));
 		}
 	}
 
@@ -122,9 +118,9 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 	}
 
 
+
 	/**
-	 * Sends a response message with hashes of scoped {@link Service} objects from every non-final
-	 * event.
+	 * Sends a response message with hashes of scoped objects from every non-final event.
 	 */
 	@Override
 	public StreamObserver<Request> streaming(StreamObserver<ScopedObjectsHashes> respObserver) {
@@ -205,7 +201,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 
 	static ScopedObjectsHashes buildResponse(
-		String eventName, Service rpcScoped, Service eventScoped
+			String eventName, RpcScopedService rpcScoped, EventScopedService eventScoped
 	) {
 		return ScopedObjectsHashes.newBuilder()
 			.setEventName(eventName)
