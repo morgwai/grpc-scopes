@@ -71,6 +71,22 @@ public class ServerContextInterceptorTest extends EasyMockSupport {
 
 
 
+	@Test
+	public void testInterceptCallWithRuntimeException() {
+		final var thrown = new RuntimeException();
+		try {
+			interceptor.interceptCall(
+				mockRpc,
+				new Metadata(),
+				(call, headers) -> { throw thrown; }
+			);
+		} catch (RuntimeException caught) {
+			assertSame("thrown exception should be caught", thrown, caught);
+		}
+	}
+
+
+
 	static class MockListener extends Listener<Integer> {
 
 		ContextVerifier ctxVerifier;
