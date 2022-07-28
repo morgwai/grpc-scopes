@@ -45,6 +45,8 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 				(ListenerWrapper<Integer>) listenerCapture.getValue();
 
 		mockListener.ctxVerifier = new ContextVerifier(grpcModule, decoratedListener.rpcContext);
+		assertSame("RPC should be stored into rpcCtx",
+				mockRpc, decoratedListener.rpcContext.getRpc());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
@@ -52,6 +54,8 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 		decoratedListener.onHeaders(responseHeaders);
 		assertSame("response headers should not be modified",
 				responseHeaders, mockListener.capturedResponseHeaders);
+		assertSame("response headers should be stored into rpcCtx",
+				responseHeaders, decoratedListener.rpcContext.getResponseHeaders());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
