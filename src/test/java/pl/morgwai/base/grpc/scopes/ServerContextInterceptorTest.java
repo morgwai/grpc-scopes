@@ -80,6 +80,7 @@ public class ServerContextInterceptorTest extends EasyMockSupport {
 				new Metadata(),
 				(call, headers) -> { throw thrown; }
 			);
+			fail("RuntimeException expected");
 		} catch (RuntimeException caught) {
 			assertSame("thrown exception should be caught", thrown, caught);
 		}
