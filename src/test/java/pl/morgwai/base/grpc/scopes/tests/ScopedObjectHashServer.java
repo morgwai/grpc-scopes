@@ -3,13 +3,16 @@ package pl.morgwai.base.grpc.scopes.tests;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.inject.Guice;
-import io.grpc.Server;
-import io.grpc.ServerInterceptors;
+import io.grpc.*;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
+import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc;
+import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc.BackendStub;
 
 
 
@@ -24,11 +27,22 @@ public class ScopedObjectHashServer {
 	final ScopedObjectHashService service;
 	public ScopedObjectHashService getService() { return service; }
 
+	final ManagedChannel backendChannel;
 
 
-	public ScopedObjectHashServer(int port) throws IOException {
+
+	public ScopedObjectHashServer(int port, String backendTarget) throws IOException {
 		grpcModule = new GrpcModule();
+		backendChannel = ManagedChannelBuilder
+			.forTarget(backendTarget)
+			.usePlaintext()
+			.build();
+		final var backendConnector = BackendGrpc.newStub(ClientInterceptors.intercept(
+				backendChannel, grpcModule.nestingClientInterceptor));
 		final var injector = Guice.createInjector(grpcModule, (binder) -> {
+			binder
+				.bind(BackendStub.class)
+				.toInstance(backendConnector);
 			binder
 				.bind(RpcScopedService.class)
 				.in(grpcModule.rpcScope);
@@ -57,16 +71,36 @@ public class ScopedObjectHashServer {
 			timeoutMillis,
 			(timeout, unit) -> {
 				grpcServer.shutdown();
-				if (grpcServer.awaitTermination(timeout, unit)) {
-					grpcModule.shutdownAllExecutors();
-					return true;
-				} else {
-					grpcModule.shutdownAllExecutors();
-					grpcServer.shutdownNow();
-					return false;
-				}
+				final var terminated = grpcServer.awaitTermination(timeout, unit);
+				if ( ! terminated) grpcServer.shutdownNow();
+				grpcModule.shutdownAllExecutors();
+				return terminated;
 			},
-			(timeout, unit) -> grpcModule.enforceTerminationOfAllExecutors(timeout, unit).isEmpty()
+			(timeout, unit) -> {
+				final var terminated =
+						grpcModule.enforceTerminationOfAllExecutors(timeout, unit).isEmpty();
+				backendChannel.shutdown();
+				return terminated;
+			},
+			(timeout, unit) -> {
+				if ( ! backendChannel.awaitTermination(timeout, unit)) {
+					backendChannel.shutdownNow();
+					return  false;
+				}
+				return true;
+			}
 		);
+	}
+
+
+
+	public static void main(String[] args) throws Exception {
+		ScopedObjectHashService.setLogLevel(Level.FINER);
+		for (final var handler: Logger.getLogger("").getHandlers()) handler.setLevel(Level.FINER);
+		final var server = new ScopedObjectHashServer(
+				Integer.parseInt(args[0]), "localhost:" + Integer.parseInt(args[1]));
+		Runtime.getRuntime().addShutdownHook(new Thread(server.grpcServer::shutdown));
+		server.grpcServer.awaitTermination();
+		server.shutdownAndEnforceTermination(500l);
 	}
 }

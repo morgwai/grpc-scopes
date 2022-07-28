@@ -31,6 +31,7 @@ public class IntegrationTest {
 	ScopedObjectHashService service;
 	ScopedObjectHashClient client;
 	GrpcModule clientGrpcModule;
+	BackendServer backendServer;
 
 	/**
 	 * Whether given call is finalized both from client's and server's perspective.
@@ -51,7 +52,8 @@ public class IntegrationTest {
 
 	@Before
 	public void setup() throws Exception {
-		server = new ScopedObjectHashServer(0);
+		backendServer = new BackendServer(0);
+		server = new ScopedObjectHashServer(0, "localhost:" + backendServer.getPort());
 		service = server.getService();
 		serverErrors = new ArrayList<>(20);
 		service.setFinalizationListener((callId, callErrors) -> {
@@ -71,11 +73,12 @@ public class IntegrationTest {
 	public void shutdown() throws InterruptedException {
 		client.shutdown();
 		assertTrue(
-			"server and client should shutdown cleanly",
+			"servers and client should shutdown cleanly",
 			Awaitable.awaitMultiple(
 				TIMEOUT_MILLIS,
 				(timeout) -> client.enforceTermination(timeout),
-				(timeout) -> server.shutdownAndEnforceTermination(timeout)
+				(timeout) -> server.shutdownAndEnforceTermination(timeout),
+				(timeout) -> backendServer.shutdownAndEnforceTermination(timeout)
 			)
 		);
 	}
@@ -246,6 +249,7 @@ public class IntegrationTest {
 					IntegrationTest.class.getPackageName() + ".level"));
 		} catch (Exception ignored) {}
 		log.setLevel(LOG_LEVEL);
+		ScopedObjectHashService.setLogLevel(LOG_LEVEL);
 		for (final var handler: Logger.getLogger("").getHandlers()) handler.setLevel(LOG_LEVEL);
 	}
 }

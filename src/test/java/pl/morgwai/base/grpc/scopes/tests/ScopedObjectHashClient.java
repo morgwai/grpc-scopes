@@ -1,8 +1,7 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes.tests;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import io.grpc.*;
 import io.grpc.stub.ClientCallStreamObserver;
@@ -49,9 +48,9 @@ public class ScopedObjectHashClient {
 		int requestCount,
 		StreamObserver<ScopedObjectsHashes> responseObserver,
 		boolean cancel
-	) {
-		final var messagesReceivedLatch = new CountDownLatch(requestCount + 2);
-			// 1 additional for startCall and 1 for onReady
+	) throws TimeoutException {
+		final var messagesReceivedLatch = new CountDownLatch(requestCount + 4);
+			// +4: startCall, onReady, backend.onNext, backend.onCompleted
 		final var decoratedResponseObserver = new StreamObserver<ScopedObjectsHashes>() {
 
 			@Override public void onNext(ScopedObjectsHashes value) {
@@ -76,16 +75,18 @@ public class ScopedObjectHashClient {
 		} else {
 			requestObserver.onCompleted();
 		}
-		if ( ! messagesReceived) throw new RuntimeException("deadline exceeded");
+		if ( ! messagesReceived) throw new TimeoutException();
 	}
 
 	public void streaming(
-			int callId, int requestCount, StreamObserver<ScopedObjectsHashes> responseObserver) {
+			int callId, int requestCount, StreamObserver<ScopedObjectsHashes> responseObserver)
+			throws TimeoutException {
 		streaming(callId, requestCount, responseObserver, false);
 	}
 
 	public void streamingAndCancel(
-			int callId, int requestCount, StreamObserver<ScopedObjectsHashes> responseObserver) {
+			int callId, int requestCount, StreamObserver<ScopedObjectsHashes> responseObserver)
+			throws TimeoutException {
 		streaming(callId, requestCount, responseObserver, true);
 	}
 
@@ -103,6 +104,55 @@ public class ScopedObjectHashClient {
 		} else {
 			channel.shutdownNow();
 			return false;
+		}
+	}
+
+
+
+	public static void main(String[] args) throws InterruptedException {
+		ScopedObjectHashClient client = null;
+		try {
+			int numberOfCalls = 2;
+			if (args.length > 1) numberOfCalls = Integer.parseInt(args[1]);
+			int numberOfMessages = 5;
+			if (args.length > 2) numberOfMessages = Integer.parseInt(args[2]);
+			long timeoutMillis = 500l;
+			if (args.length > 3) timeoutMillis = Long.parseLong(args[3]);
+			client = new ScopedObjectHashClient(
+					"localhost:" + Integer.parseInt(args[0]), timeoutMillis, new GrpcModule());
+			for (int callNumber = 0; callNumber < numberOfCalls; callNumber++) {
+				final int callId = callNumber;
+				final var latch = new CountDownLatch(1);
+				try {
+					client.streaming(callNumber, numberOfMessages, new StreamObserver<>() {
+
+						@Override public void onNext(ScopedObjectsHashes hashes) {
+							System.out.println(
+									"call: " + callId
+									+ ", event: " + hashes.getEventName()
+									+ ", rpc-scoped hash: " + hashes.getRpcScopedHash()
+									+ ", event-scoped hash: " + hashes.getEventScopedHash());
+						}
+
+						@Override public void onError(Throwable t) { t.printStackTrace(); }
+
+						@Override public void onCompleted() {
+							System.out.println("completed " + callId + '\n');
+							latch.countDown();
+						}
+					});
+				} catch (TimeoutException e) {
+					System.err.println("timeout waiting for messages, will wait 100ms more");
+				}
+				if ( ! latch.await(100l, TimeUnit.MILLISECONDS)) throw new TimeoutException();
+			}
+		} catch (Throwable t) {
+			t.printStackTrace();
+		} finally {
+			if (client != null) {
+				client.shutdown();
+				client.enforceTermination(200l);
+			}
 		}
 	}
 }

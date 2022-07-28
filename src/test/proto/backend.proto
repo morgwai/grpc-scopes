@@ -1,0 +1,16 @@
+// Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
+syntax = "proto3";
+package pl.morgwai.base.grpc.scopes.tests.grpc;
+
+option java_outer_classname = "BackendProto";
+option java_multiple_files = true;
+
+service Backend {
+	rpc unary(BackendRequest) returns (Empty) {}
+}
+
+message BackendRequest {
+	int32 callId = 1;
+}
+
+message Empty {}
