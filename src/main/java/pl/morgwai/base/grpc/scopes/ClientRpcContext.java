@@ -6,7 +6,6 @@ import java.util.Optional;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import io.grpc.*;
-import pl.morgwai.base.guice.scopes.ContextExposer;
 
 
 
@@ -53,7 +52,7 @@ public class ClientRpcContext extends RpcContext {
 	public void setStatus(Status status) { this.status = status; }
 	Status status;
 
-	final ContextExposer<RpcContext> parentCtx;
+	final RpcContext parentCtx;
 
 
 
@@ -63,7 +62,7 @@ public class ClientRpcContext extends RpcContext {
 	 * then this method will return the context of the parent RPC. Otherwise {@code empty()}.
 	 */
 	public Optional<RpcContext> getParentContext() {
-		return parentCtx == null ? Optional.empty() : Optional.of(parentCtx.getCtx());
+		return Optional.ofNullable(parentCtx);
 	}
 
 
@@ -73,7 +72,7 @@ public class ClientRpcContext extends RpcContext {
 		if (parentCtx == null) {
 			return super.provideIfAbsent(key, provider);
 		} else {
-			return parentCtx.provideIfAbsent(key, provider);
+			return parentCtx.packageProtectedProvideIfAbsent(key, provider);
 		}
 	}
 
@@ -101,6 +100,6 @@ public class ClientRpcContext extends RpcContext {
 	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders, RpcContext parentCtx) {
 		super(requestHeaders);
 		this.rpc = rpc;
-		this.parentCtx = new ContextExposer<>(parentCtx);
+		this.parentCtx = parentCtx;
 	}
 }
