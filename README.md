@@ -2,8 +2,8 @@
 
 RPC and Listener event Guice Scopes for gRPC.<br/>
 <br/>
-**latest release: [8.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/8.0/jar)**
-([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/8.0))
+**latest release: [9.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/9.0/jar)**
+([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/9.0))
 
 
 ## OVERVIEW
