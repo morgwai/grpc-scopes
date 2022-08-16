@@ -55,7 +55,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 				responseObserver.onNext(NewRecordId.newBuilder().setId(entity.getId()).build());
 				responseObserver.onCompleted();
 			} catch (StatusRuntimeException e) {
-				log.fine(e.toString());
+				log.fine("client cancelled");
 			} catch (Throwable t) {
 				log.log(Level.SEVERE, "server error", t);
 				responseObserver.onError(Status.INTERNAL.withCause(t).asException());
@@ -87,7 +87,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 								.build());
 					individualObserver.onCompleted();
 				} catch (StatusRuntimeException e) {
-					log.fine(e.toString());
+					log.fine("client cancelled");
 				} catch (Throwable t) {
 					log.log(Level.SEVERE, "server error", t);
 					individualObserver.onError(Status.INTERNAL.withCause(t).asException());
@@ -96,7 +96,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 					entityManagerProvider.get().close();
 				}
 			}),
-			(error, thisObserver) -> log.fine("client error: " + error),
+			(error, thisObserver) -> log.fine("client cancelled"),
 			responseObserver
 		);
 	}
@@ -123,7 +123,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 				}
 				responseObserver.onCompleted();
 			} catch (StatusRuntimeException e) {
-				log.fine(e.toString());
+				log.fine("client cancelled");
 			} catch (Throwable t) {
 				log.log(Level.SEVERE, "server error", t);
 				responseObserver.onError(Status.INTERNAL.withCause(t).asException());
