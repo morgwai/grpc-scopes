@@ -39,13 +39,15 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 
 
 
-	public Awaitable.WithUnit awaitableOfEnforceTermination() {
+	public Awaitable.WithUnit toAwaitableOfEnforcedTermination() {
+		shutdown();
 		return (timeout, unit) -> enforceTermination(timeout, unit).isEmpty();
 	}
 
 
 
-	public Awaitable.WithUnit awaitableOfAwaitTermination() {
+	public Awaitable.WithUnit toAwaitableOfTermination() {
+		shutdown();
 		return this::awaitTermination;
 	}
 

@@ -200,7 +200,7 @@ public class GrpcModule implements Module {
 			throws InterruptedException {
 		return Awaitable.awaitMultiple(
 				timeoutMillis,
-				ContextTrackingExecutor::awaitableOfEnforceTermination,
+				ContextTrackingExecutor::toAwaitableOfEnforcedTermination,
 				executors);
 	}
 
@@ -215,7 +215,7 @@ public class GrpcModule implements Module {
 		return Awaitable.awaitMultiple(
 				timeout,
 				unit,
-				ContextTrackingExecutor::awaitableOfEnforceTermination,
+				ContextTrackingExecutor::toAwaitableOfEnforcedTermination,
 				executors);
 	}
 
@@ -231,7 +231,7 @@ public class GrpcModule implements Module {
 			throws InterruptedException {
 		return Awaitable.awaitMultiple(
 				timeoutMillis,
-				ContextTrackingExecutor::awaitableOfAwaitTermination,
+				ContextTrackingExecutor::toAwaitableOfEnforcedTermination,
 				executors);
 	}
 
@@ -246,7 +246,7 @@ public class GrpcModule implements Module {
 		return Awaitable.awaitMultiple(
 				timeout,
 				unit,
-				ContextTrackingExecutor::awaitableOfAwaitTermination,
+				ContextTrackingExecutor::toAwaitableOfEnforcedTermination,
 				executors);
 	}
 
