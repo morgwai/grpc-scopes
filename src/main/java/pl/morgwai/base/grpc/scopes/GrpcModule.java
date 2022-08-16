@@ -196,19 +196,6 @@ public class GrpcModule implements Module {
 	 * Enforces termination} of all executors obtained from this module.
 	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
 	 */
-	public List<ContextTrackingExecutor> enforceTerminationOfAllExecutors(long timeoutMillis)
-			throws InterruptedException {
-		return Awaitable.awaitMultiple(
-				timeoutMillis,
-				ContextTrackingExecutor::toAwaitableOfEnforcedTermination,
-				executors);
-	}
-
-	/**
-	 * {@link ContextTrackingExecutor#enforceTermination(long, java.util.concurrent.TimeUnit)
-	 * Enforces termination} of all executors obtained from this module.
-	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
-	 */
 	public List<ContextTrackingExecutor> enforceTerminationOfAllExecutors(
 		long timeout, TimeUnit unit
 	) throws InterruptedException {
@@ -219,45 +206,47 @@ public class GrpcModule implements Module {
 				executors);
 	}
 
-
-
 	/**
 	 * {@link ContextTrackingExecutor#awaitTermination(long, java.util.concurrent.TimeUnit)
 	 * Awaits for termination} of all executors obtained from this module.
 	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
-	 * @see #enforceTerminationOfAllExecutors(long)
-	 */
-	public List<ContextTrackingExecutor> awaitTerminationOfAllExecutors(long timeoutMillis)
-			throws InterruptedException {
-		return Awaitable.awaitMultiple(
-				timeoutMillis,
-				ContextTrackingExecutor::toAwaitableOfEnforcedTermination,
-				executors);
-	}
-
-	/**
-	 * {@link ContextTrackingExecutor#awaitTermination(long, java.util.concurrent.TimeUnit)
-	 * Awaits for termination} of all executors obtained from this module.
-	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
-	 * @see #enforceTerminationOfAllExecutors(long)
+	 * @see #enforceTerminationOfAllExecutors(long, TimeUnit)
 	 */
 	public List<ContextTrackingExecutor> awaitTerminationOfAllExecutors(long timeout, TimeUnit unit)
 			throws InterruptedException {
 		return Awaitable.awaitMultiple(
 				timeout,
 				unit,
-				ContextTrackingExecutor::toAwaitableOfEnforcedTermination,
+				ContextTrackingExecutor::toAwaitableOfTermination,
 				executors);
 	}
 
 	/**
 	 * {@link ContextTrackingExecutor#awaitTermination() Awaits for termination} of all executors
 	 * obtained from this module.
-	 * @see #enforceTerminationOfAllExecutors(long)
-	 * @see #awaitTerminationOfAllExecutors(long)
+	 * @see #enforceTerminationOfAllExecutors(long, TimeUnit)
+	 * @see #awaitTerminationOfAllExecutors(long, TimeUnit)
 	 */
 	public void awaitTerminationOfAllExecutors() throws InterruptedException {
 		for (var executor: executors) executor.awaitTermination();
+	}
+
+	/**
+	 * Creates {@link Awaitable.WithUnit} of
+	 * {@link #enforceTerminationOfAllExecutors(long, TimeUnit)}.
+	 */
+	public Awaitable.WithUnit toAwaitableOfEnforcedTerminationOfAllExecutors() {
+		shutdownAllExecutors();
+		return (timeout, unit) -> enforceTerminationOfAllExecutors(timeout, unit).isEmpty();
+	}
+
+	/**
+	 * Creates {@link Awaitable.WithUnit} of
+	 * {@link #awaitTerminationOfAllExecutors(long, TimeUnit)}.
+	 */
+	public Awaitable.WithUnit toAwaitableOfTerminationOfAllExecutors() {
+		shutdownAllExecutors();
+		return (timeout, unit) -> awaitTerminationOfAllExecutors(timeout, unit).isEmpty();
 	}
 
 

@@ -18,6 +18,7 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.ContextTrackingExecutor;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
+import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 import pl.morgwai.base.logging.JulManualResetLogManager;
 import pl.morgwai.samples.grpc.scopes.data_access.JpaRecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
@@ -89,32 +90,10 @@ public class RecordStorageServer {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				log.info("shutting down");
-				System.out.println("shutting down, timeout 5s");
 				Awaitable.awaitMultiple(
-					5l, TimeUnit.SECONDS,
-					(timeoutMillis) -> {
-						recordStorageServer.shutdown();
-						if (recordStorageServer.awaitTermination(
-								percent(70, timeoutMillis), TimeUnit.MILLISECONDS)) {
-							log.info("gRPC server shutdown completed");
-							grpcModule.shutdownAllExecutors();
-							return true;
-						} else {
-							grpcModule.shutdownAllExecutors();
-							recordStorageServer.shutdownNow();
-							log.warning("gRPC server has NOT shutdown cleanly");
-							return recordStorageServer.awaitTermination(
-									percent(10, timeoutMillis), TimeUnit.MILLISECONDS);
-						}
-					},
-					(timeoutMillis) -> {
-						if (grpcModule.enforceTerminationOfAllExecutors(percent(80, timeoutMillis))
-								.isEmpty()) {
-							return true;
-						}
-						return grpcModule.awaitTerminationOfAllExecutors(percent(20, timeoutMillis))
-								.isEmpty();
-					}
+					5000L,
+					GrpcAwaitable.ofEnforcedTermination(recordStorageServer),
+					grpcModule.toAwaitableOfEnforcedTerminationOfAllExecutors()
 				);
 			} catch (InterruptedException ignored) {}
 			entityManagerFactory.close();
@@ -122,8 +101,6 @@ public class RecordStorageServer {
 			((JulManualResetLogManager) JulManualResetLogManager.getLogManager()).manualReset();
 		}));
 	}
-
-	static long percent(int p, long x) { return x > 1l ? x*p/100l : x; }
 
 
 
