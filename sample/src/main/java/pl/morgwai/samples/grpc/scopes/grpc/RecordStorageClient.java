@@ -53,7 +53,7 @@ public class RecordStorageClient {
 							.build());
 		}
 		requestObserver.onCompleted();
-		storeRecordResponseObserver.awaitCompletion(5000l);
+		storeRecordResponseObserver.awaitCompletion(5000L);
 
 
 
