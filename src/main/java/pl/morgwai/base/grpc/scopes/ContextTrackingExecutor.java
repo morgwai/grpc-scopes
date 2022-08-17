@@ -39,6 +39,23 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 
 
 
+	/**
+	 * Calls {@link #execute(Callable) execute(task)} and if it's rejected, sends
+	 * {@link Status#UNAVAILABLE} to {@code outboundObserver} and returns
+	 * {@link CompletableFuture#failedFuture(Throwable)} with the {@link RejectedExecutionException}
+	 * as the argument.
+	 */
+	public <T> CompletableFuture<T> execute(StreamObserver<?> outboundObserver, Callable<T> task) {
+		try {
+			return execute(task);
+		} catch (RejectedExecutionException e) {
+			outboundObserver.onError(Status.UNAVAILABLE.withCause(e).asException());
+			return CompletableFuture.failedFuture(e);
+		}
+	}
+
+
+
 	public Awaitable.WithUnit toAwaitableOfEnforcedTermination() {
 		shutdown();
 		return (timeout, unit) -> enforceTermination(timeout, unit).isEmpty();
