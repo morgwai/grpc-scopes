@@ -49,7 +49,7 @@ public class ClientRpcContext extends RpcContext {
 	 * most of the RPC lifetime similarly to {@link #getTrailers()}.
 	 */
 	public Optional<Status> getStatus() { return Optional.ofNullable(status); }
-	public void setStatus(Status status) { this.status = status; }
+	void setStatus(Status status) { this.status = status; }
 	Status status;
 
 	final RpcContext parentCtx;
