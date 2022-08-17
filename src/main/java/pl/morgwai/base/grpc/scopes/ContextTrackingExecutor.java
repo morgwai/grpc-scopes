@@ -27,13 +27,13 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 
 	/**
 	 * Calls {@link #execute(Runnable) execute(task)} and if it's rejected, sends
-	 * {@link Status#UNAVAILABLE} to {@code responseObserver}.
+	 * {@link Status#UNAVAILABLE} to {@code outboundObserver}.
 	 */
-	public void execute(StreamObserver<?> responseObserver, Runnable task) {
+	public void execute(StreamObserver<?> outboundObserver, Runnable task) {
 		try {
 			execute(task);
 		} catch (RejectedExecutionException e) {
-			responseObserver.onError(Status.UNAVAILABLE.asException());
+			outboundObserver.onError(Status.UNAVAILABLE.withCause(e).asException());
 		}
 	}
 
