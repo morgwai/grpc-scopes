@@ -25,7 +25,7 @@ public class IntegrationTest {
 
 
 
-	public static final long TIMEOUT_MILLIS = 500l;
+	public static final long TIMEOUT_MILLIS = 1000L;
 
 	ScopedObjectHashServer server;
 	ScopedObjectHashService service;
