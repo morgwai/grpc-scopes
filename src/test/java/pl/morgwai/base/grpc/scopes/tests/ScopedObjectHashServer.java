@@ -101,6 +101,6 @@ public class ScopedObjectHashServer {
 				Integer.parseInt(args[0]), "localhost:" + Integer.parseInt(args[1]));
 		Runtime.getRuntime().addShutdownHook(new Thread(server.grpcServer::shutdown));
 		server.grpcServer.awaitTermination();
-		server.shutdownAndEnforceTermination(500l);
+		server.shutdownAndEnforceTermination(500L);
 	}
 }

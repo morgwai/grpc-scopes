@@ -50,12 +50,12 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 	/**
 	 * Keeps the log of all RPC-scoped instances to check for duplicates.
 	 */
-	Set<RpcScopedService> rpcScopedLog = new HashSet<>();
+	final Set<RpcScopedService> rpcScopedLog = new HashSet<>();
 
 	/**
 	 * Keeps the log of all event-scoped instances to check for duplicates.
 	 */
-	Set<EventScopedService> eventScopedLog = new HashSet<>();
+	final Set<EventScopedService> eventScopedLog = new HashSet<>();
 
 	static final String DUPLICATE_ERROR = "duplicated %2$s scoped object in %1$s";
 	static final String SCOPING_ERROR = "scoping failed in %1$s for scope %2$s";

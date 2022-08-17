@@ -116,7 +116,7 @@ public class ScopedObjectHashClient {
 			if (args.length > 1) numberOfCalls = Integer.parseInt(args[1]);
 			int numberOfMessages = 5;
 			if (args.length > 2) numberOfMessages = Integer.parseInt(args[2]);
-			long timeoutMillis = 500l;
+			long timeoutMillis = 500L;
 			if (args.length > 3) timeoutMillis = Long.parseLong(args[3]);
 			client = new ScopedObjectHashClient(
 					"localhost:" + Integer.parseInt(args[0]), timeoutMillis, new GrpcModule());
@@ -144,14 +144,14 @@ public class ScopedObjectHashClient {
 				} catch (TimeoutException e) {
 					System.err.println("timeout waiting for messages, will wait 100ms more");
 				}
-				if ( ! latch.await(100l, TimeUnit.MILLISECONDS)) throw new TimeoutException();
+				if ( ! latch.await(100L, TimeUnit.MILLISECONDS)) throw new TimeoutException();
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();
 		} finally {
 			if (client != null) {
 				client.shutdown();
-				client.enforceTermination(200l);
+				client.enforceTermination(200L);
 			}
 		}
 	}
