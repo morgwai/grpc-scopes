@@ -7,16 +7,17 @@ import io.grpc.ClientCall.Listener;
 
 
 /**
- * Creates a new {@link ClientRpcContext} for each new RPC ({@link ClientCall}), then also creates
- * and starts tracking a new {@link ListenerEventContext} for each {@link Listener Listener} call.
- * Instance can be obtained from {@link GrpcModule#clientInterceptor}.
+ * Creates a new {@link ClientRpcContext} for each new RPC ({@link ClientCall}) and a new
+ * {@link ListenerEventContext} for each {@link Listener Listener} call.
+ * An Instance can be obtained from {@link GrpcModule#clientInterceptor} or
+ * {@link GrpcModule#nestingClientInterceptor}.
  */
 public class ClientContextInterceptor implements ClientInterceptor {
 
 
 
 	final GrpcModule grpcModule;
-	final boolean nestingRpcContext;
+	final boolean nesting;
 
 
 
@@ -39,7 +40,7 @@ public class ClientContextInterceptor implements ClientInterceptor {
 		@Override
 		public void start(Listener<ResponseT> listener, Metadata requestHeaders) {
 			ClientRpcContext rpcContext;
-			if (nestingRpcContext) {
+			if (nesting) {
 				final var parentEventCtx =
 						grpcModule.listenerEventContextTracker.getCurrentContext();
 				if (parentEventCtx != null) {
@@ -118,8 +119,8 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 
-	ClientContextInterceptor(GrpcModule grpcModule, boolean nestingRpcContext) {
+	ClientContextInterceptor(GrpcModule grpcModule, boolean nesting) {
 		this.grpcModule = grpcModule;
-		this.nestingRpcContext = nestingRpcContext;
+		this.nesting = nesting;
 	}
 }

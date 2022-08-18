@@ -9,7 +9,7 @@ import pl.morgwai.base.guice.scopes.InjectionContext;
 
 
 /**
- * Context of either client or server RPC.
+ * Context of either a client or a server RPC.
  * @see ClientRpcContext
  * @see ServerRpcContext
  */

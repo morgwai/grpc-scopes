@@ -14,8 +14,8 @@ import pl.morgwai.base.guice.scopes.ContextTracker;
 
 /**
  * A {@link pl.morgwai.base.guice.scopes.ContextTrackingExecutor} with additional
- * {@link #execute(StreamObserver, Runnable) execute(responseObserver, task)} method that sends
- * {@link Status#UNAVAILABLE} if the task is rejected.
+ * {@link #execute(StreamObserver, Runnable) execute(responseObserver, task)} methods that send
+ * {@link Status#UNAVAILABLE} if {@code task} is rejected.
  * This can happen due to an overload or a shutdown.
  * <p>
  * Instances can be created using {@link GrpcModule#newContextTrackingExecutor(String, int)

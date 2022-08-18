@@ -13,7 +13,7 @@ import io.grpc.*;
  * Context of a client RPC ({@link ClientCall}).
  * A single instance spans over the lifetime of the response stream.
  * Specifically all methods of {@link io.grpc.ClientCall.Listener} are executed within the same
- * <code>ClientRpcContext</code>.
+ * {@code ClientRpcContext}.
  *
  * @see GrpcModule#rpcScope corresponding <code>Scope</code>
  * @see <a href="https://github.com/grpc/grpc-java/blob/master/stub/src/main/java/io/grpc/stub/

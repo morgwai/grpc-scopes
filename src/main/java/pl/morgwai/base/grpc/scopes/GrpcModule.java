@@ -39,8 +39,8 @@ public class GrpcModule implements Module {
 	/**
 	 * Scopes objects to the {@link ListenerEventContext context of a Listener event} (either
 	 * {@link io.grpc.ServerCall.Listener server} or {@link io.grpc.ClientCall.Listener client}) and
-	 * as a consequence also to the context of the corresponding {@link io.grpc.stub.StreamObserver}
-	 * call.
+	 * as a consequence also to the context of the corresponding user inbound
+	 * {@link io.grpc.stub.StreamObserver} call.
 	 */
 	public final Scope listenerEventScope =
 			new ContextScope<>("LISTENER_EVENT_SCOPE", listenerEventContextTracker);
@@ -64,7 +64,7 @@ public class GrpcModule implements Module {
 
 	/**
 	 * All {@link Channel client Channels} must be intercepted either by this interceptor or by
-	 * {@link #nestingClientInterceptor}. This interceptor will keep child client RPC contexts
+	 * {@link #nestingClientInterceptor}. This interceptor will keep nested client RPC contexts
 	 * separate from their parent server RPC contexts.
 	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
 	 */
@@ -72,9 +72,9 @@ public class GrpcModule implements Module {
 
 	/**
 	 * All {@link Channel client Channels} must be intercepted either by this interceptor or by
-	 * {@link #clientInterceptor}. This interceptor will join together child client RPC contexts
+	 * {@link #clientInterceptor}. This interceptor will join together nested client RPC contexts
 	 * with their parent server RPC contexts, so that all RPC scoped objects will be shared between
-	 * parent and child RPCs.
+	 * parents and their nested RPCs.
 	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
 	 */
 	public final ClientInterceptor nestingClientInterceptor =
@@ -83,11 +83,12 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Contains {@link #rpcScope} and {@link #listenerEventScope}.
+	 * Singleton of {@link #listenerEventScope}.
 	 * {@link #configure(Binder)} binds {@code List<ContextTracker<?>>} to it for use with
 	 * {@link ContextTrackingExecutor#getActiveContexts(List)}.
 	 */
-	public final List<ContextTracker<?>> allTrackers = List.of(listenerEventContextTracker);
+	public final List<ContextTracker<?>> allTrackers =
+			Collections.singletonList(listenerEventContextTracker);
 
 
 

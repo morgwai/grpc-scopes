@@ -8,7 +8,7 @@ import pl.morgwai.base.guice.scopes.TrackableContext;
 
 /**
  * Context of a single call to one of the methods of {@link io.grpc.ClientCall.Listener},
- * {@link io.grpc.ServerCall.Listener} and server listener creation in
+ * {@link io.grpc.ServerCall.Listener} and a server listener creation in
  * {@link io.grpc.ServerCallHandler#startCall(io.grpc.ServerCall, io.grpc.Metadata)
  * ServerCallHandler.startCall(...)}. Each such event is executed within a separate new
  * {@code ListenerEventContext} instance.

@@ -12,7 +12,7 @@ import io.grpc.ServerCall;
  * invocation of a given remote procedure, across all its messages, until the RPC is closed.
  * Specifically {@link io.grpc.ServerCallHandler#startCall(ServerCall, io.grpc.Metadata)
  * ServerCallHandler.startCall(...)} and all methods of the returned
- * {@link io.grpc.ServerCall.Listener} are executed within the same <code>ServerRpcContext</code>.
+ * {@link io.grpc.ServerCall.Listener} are executed within the same {@code ServerRpcContext}.
  *
  * @see GrpcModule#rpcScope corresponding <code>Scope</code>
  * @see <a href="https://javadoc.io/doc/pl.morgwai.base/grpc-utils/latest/pl/morgwai/base/grpc/
