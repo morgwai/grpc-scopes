@@ -75,9 +75,9 @@ public class IntegrationTest {
 			"servers and client should shutdown cleanly",
 			Awaitable.awaitMultiple(
 				TIMEOUT_MILLIS,
-				client.toAwaitableOfEnforceTermination(),
+				client.toAwaitableOfEnforcedTermination(),
 				server::shutdownAndEnforceTermination,
-				backendServer.toAwaitableOfEnforceTermination()
+				backendServer.toAwaitableOfEnforcedTermination()
 			)
 		);
 	}

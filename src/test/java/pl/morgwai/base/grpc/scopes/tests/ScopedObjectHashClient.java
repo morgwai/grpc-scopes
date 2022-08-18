@@ -94,7 +94,7 @@ public class ScopedObjectHashClient {
 
 
 
-	public Awaitable.WithUnit toAwaitableOfEnforceTermination() {
+	public Awaitable.WithUnit toAwaitableOfEnforcedTermination() {
 		return GrpcAwaitable.ofEnforcedTermination(channel);
 	}
 
@@ -141,7 +141,7 @@ public class ScopedObjectHashClient {
 			t.printStackTrace();
 		} finally {
 			if (client != null) {
-				client.toAwaitableOfEnforceTermination().await(200L);
+				client.toAwaitableOfEnforcedTermination().await(200L);
 			}
 		}
 	}

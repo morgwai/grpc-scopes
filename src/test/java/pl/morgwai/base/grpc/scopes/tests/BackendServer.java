@@ -38,7 +38,7 @@ public class BackendServer {
 
 
 
-	public Awaitable.WithUnit toAwaitableOfEnforceTermination() {
+	public Awaitable.WithUnit toAwaitableOfEnforcedTermination() {
 		return GrpcAwaitable.ofEnforcedTermination(grpcServer);
 	}
 
@@ -60,7 +60,7 @@ public class BackendServer {
 		Runtime.getRuntime().addShutdownHook(new Thread(
 			() -> {
 				try {
-					server.toAwaitableOfEnforceTermination().await(500L);
+					server.toAwaitableOfEnforcedTermination().await(500L);
 				} catch (InterruptedException ignored) {}
 			}
 		));
