@@ -87,19 +87,21 @@ public class RecordStorageServer {
 		recordStorageServer.start();
 		log.info("server started on port " + port);
 
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			try {
-				log.info("shutting down");
-				Awaitable.awaitMultiple(
-					5000L,
-					GrpcAwaitable.ofEnforcedTermination(recordStorageServer),
-					grpcModule.toAwaitableOfEnforcedTerminationOfAllExecutors()
-				);
-			} catch (InterruptedException ignored) {}
-			entityManagerFactory.close();
-			log.info("exiting, bye!");
-			((JulManualResetLogManager) JulManualResetLogManager.getLogManager()).manualReset();
-		}));
+		Runtime.getRuntime().addShutdownHook(new Thread(
+			() -> {
+				try {
+					log.info("shutting down");
+					Awaitable.awaitMultiple(
+						5000L,
+						GrpcAwaitable.ofEnforcedTermination(recordStorageServer),
+						grpcModule.toAwaitableOfEnforcedTerminationOfAllExecutors()
+					);
+				} catch (InterruptedException ignored) {}
+				entityManagerFactory.close();
+				log.info("exiting, bye!");
+				((JulManualResetLogManager) JulManualResetLogManager.getLogManager()).manualReset();
+			}
+		));
 	}
 
 

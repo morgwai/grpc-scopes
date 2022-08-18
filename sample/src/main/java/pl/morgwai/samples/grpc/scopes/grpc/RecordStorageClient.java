@@ -68,8 +68,9 @@ public class RecordStorageClient {
 
 
 		managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-		if ( ! managedChannel.isTerminated()) {
+		if ( !managedChannel.isTerminated()) {
 			System.out.println("channel has NOT shutdown cleanly");
+			managedChannel.shutdownNow();
 		}
 	}
 }
