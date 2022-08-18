@@ -71,14 +71,13 @@ public class IntegrationTest {
 
 	@After
 	public void shutdown() throws InterruptedException {
-		client.shutdown();
 		assertTrue(
 			"servers and client should shutdown cleanly",
 			Awaitable.awaitMultiple(
 				TIMEOUT_MILLIS,
-				(timeout) -> client.enforceTermination(timeout),
-				(timeout) -> server.shutdownAndEnforceTermination(timeout),
-				(timeout) -> backendServer.shutdownAndEnforceTermination(timeout)
+				client.toAwaitableOfEnforceTermination(),
+				server::shutdownAndEnforceTermination,
+				backendServer.toAwaitableOfEnforceTermination()
 			)
 		);
 	}

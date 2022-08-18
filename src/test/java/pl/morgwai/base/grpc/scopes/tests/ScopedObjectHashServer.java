@@ -2,7 +2,6 @@
 package pl.morgwai.base.grpc.scopes.tests;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -13,6 +12,7 @@ import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc.BackendStub;
+import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 
 
 
@@ -61,7 +61,7 @@ public class ScopedObjectHashServer {
 
 
 	public int getPort() {
-		return ((InetSocketAddress) grpcServer.getListenSockets().get(0)).getPort();
+		return grpcServer.getPort();
 	}
 
 
@@ -69,26 +69,9 @@ public class ScopedObjectHashServer {
 	public boolean shutdownAndEnforceTermination(long timeoutMillis) throws InterruptedException {
 		return Awaitable.awaitMultiple(
 			timeoutMillis,
-			(timeout, unit) -> {
-				grpcServer.shutdown();
-				final var terminated = grpcServer.awaitTermination(timeout, unit);
-				if ( ! terminated) grpcServer.shutdownNow();
-				grpcModule.shutdownAllExecutors();
-				return terminated;
-			},
-			(timeout, unit) -> {
-				final var terminated =
-						grpcModule.enforceTerminationOfAllExecutors(timeout, unit).isEmpty();
-				backendChannel.shutdown();
-				return terminated;
-			},
-			(timeout, unit) -> {
-				if ( ! backendChannel.awaitTermination(timeout, unit)) {
-					backendChannel.shutdownNow();
-					return  false;
-				}
-				return true;
-			}
+			GrpcAwaitable.ofEnforcedTermination(grpcServer),
+			grpcModule.toAwaitableOfEnforcedTerminationOfAllExecutors(),
+			GrpcAwaitable.ofEnforcedTermination(backendChannel)
 		);
 	}
 
@@ -99,8 +82,13 @@ public class ScopedObjectHashServer {
 		for (final var handler: Logger.getLogger("").getHandlers()) handler.setLevel(Level.FINER);
 		final var server = new ScopedObjectHashServer(
 				Integer.parseInt(args[0]), "localhost:" + Integer.parseInt(args[1]));
-		Runtime.getRuntime().addShutdownHook(new Thread(server.grpcServer::shutdown));
+		Runtime.getRuntime().addShutdownHook(new Thread(
+			() -> {
+				try {
+					server.shutdownAndEnforceTermination(500L);
+				} catch (InterruptedException ignored) {}
+			}
+		));
 		server.grpcServer.awaitTermination();
-		server.shutdownAndEnforceTermination(500L);
 	}
 }

@@ -7,11 +7,13 @@ import io.grpc.*;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
+import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.scopes.tests.grpc.Request;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc.ScopedObjectHashStub;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
+import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 
 
 
@@ -92,19 +94,8 @@ public class ScopedObjectHashClient {
 
 
 
-	public void shutdown() {
-		channel.shutdown();
-	}
-
-
-
-	public boolean enforceTermination(long timeoutMillis) throws InterruptedException {
-		if (channel.awaitTermination(timeoutMillis, TimeUnit.MILLISECONDS)) {
-			return true;
-		} else {
-			channel.shutdownNow();
-			return false;
-		}
+	public Awaitable.WithUnit toAwaitableOfEnforceTermination() {
+		return GrpcAwaitable.ofEnforcedTermination(channel);
 	}
 
 
@@ -150,8 +141,7 @@ public class ScopedObjectHashClient {
 			t.printStackTrace();
 		} finally {
 			if (client != null) {
-				client.shutdown();
-				client.enforceTermination(200L);
+				client.toAwaitableOfEnforceTermination().await(200L);
 			}
 		}
 	}

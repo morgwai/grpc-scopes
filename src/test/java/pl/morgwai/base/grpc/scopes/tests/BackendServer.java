@@ -2,15 +2,15 @@
 package pl.morgwai.base.grpc.scopes.tests;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 
 import io.grpc.Server;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
+import pl.morgwai.base.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc.BackendImplBase;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendRequest;
 import pl.morgwai.base.grpc.scopes.tests.grpc.Empty;
+import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 
 
 
@@ -33,18 +33,13 @@ public class BackendServer {
 
 
 	public int getPort() {
-		return ((InetSocketAddress) grpcServer.getListenSockets().get(0)).getPort();
+		return grpcServer.getPort();
 	}
 
 
 
-	public boolean shutdownAndEnforceTermination(long timeoutMillis) throws InterruptedException {
-		grpcServer.shutdown();
-		try {
-			return grpcServer.awaitTermination(timeoutMillis, TimeUnit.MILLISECONDS);
-		} finally {
-			if ( ! grpcServer.isTerminated()) grpcServer.shutdownNow();
-		}
+	public Awaitable.WithUnit toAwaitableOfEnforceTermination() {
+		return GrpcAwaitable.ofEnforcedTermination(grpcServer);
 	}
 
 
@@ -62,7 +57,13 @@ public class BackendServer {
 
 	public static void main(String[] args) throws Exception {
 		final var server = new BackendServer(Integer.parseInt(args[0]));
-		Runtime.getRuntime().addShutdownHook(new Thread(server.grpcServer::shutdown));
+		Runtime.getRuntime().addShutdownHook(new Thread(
+			() -> {
+				try {
+					server.toAwaitableOfEnforceTermination().await(500L);
+				} catch (InterruptedException ignored) {}
+			}
+		));
 		server.grpcServer.awaitTermination();
 	}
 }
