@@ -17,10 +17,11 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import pl.morgwai.base.grpc.scopes.ContextTrackingExecutor;
-import pl.morgwai.base.grpc.utils.ConcurrentInboundObserver;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordEntity;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageImplBase;
+
+import static pl.morgwai.base.grpc.utils.ConcurrentInboundObserver.newSimpleConcurrentServerRequestObserver;
 
 
 
@@ -73,7 +74,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 			StreamObserver<StoreRecordResponse> basicResponseObserver) {
 		final var responseObserver =
 				(ServerCallStreamObserver<StoreRecordResponse>) basicResponseObserver;
-		return new ConcurrentInboundObserver<>(
+		return newSimpleConcurrentServerRequestObserver(
 			responseObserver,
 			jpaExecutor.getPoolSize() + 1,  // +1 is to account for request message delivery delay
 			(request, individualObserver) -> jpaExecutor.execute(responseObserver, () -> {
@@ -96,8 +97,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 					entityManagerProvider.get().close();
 				}
 			}),
-			(error, thisObserver) -> log.fine("client cancelled"),
-			responseObserver
+			(error, thisObserver) -> log.fine("client cancelled")
 		);
 	}
 
