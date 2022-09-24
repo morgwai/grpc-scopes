@@ -117,7 +117,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 			try {
 				for (var record: dao.findAll()) {
 					synchronized (responseObserver) {
-						while( ! responseObserver.isReady()) responseObserver.wait();
+						while( !responseObserver.isReady()) responseObserver.wait();
 					}
 					responseObserver.onNext(toProto(record));
 				}
@@ -143,7 +143,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 	public static <T> T executeWithinTx(
 			Provider<EntityManager> entityManagerProvider, Callable<T> operation) throws Exception {
 		EntityTransaction tx = entityManagerProvider.get().getTransaction();
-		if ( ! tx.isActive()) tx.begin();
+		if ( !tx.isActive()) tx.begin();
 		try {
 			T result = operation.call();
 			if (tx.getRollbackOnly()) throw new RollbackException("tx marked rollbackOnly");

@@ -161,12 +161,12 @@ public class IntegrationTest {
 			} else {
 				client.unary(callId, responseObserver);
 			}
-			if ( ! callBiFinalized[callId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+			if ( !callBiFinalized[callId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException();
 			}
-			if ( ! serverErrors.isEmpty()) fail(formatError(serverErrors));
+			if ( !serverErrors.isEmpty()) fail(formatError(serverErrors));
 			if (responseObserver.error != null) throw responseObserver.error;
-			if ( ! responseObserver.clientScopingErrors.isEmpty()) {
+			if ( !responseObserver.clientScopingErrors.isEmpty()) {
 				throw responseObserver.clientScopingErrors.get(0);
 			}
 		}
@@ -188,12 +188,12 @@ public class IntegrationTest {
 		var warmupResponseObserver = new ResponseObserver(
 				warmupId, callBiFinalized[warmupId], clientGrpcModule);
 		client.unary(warmupId, warmupResponseObserver);
-		if ( ! callBiFinalized[warmupId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+		if ( !callBiFinalized[warmupId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
 			throw new TimeoutException();
 		}
-		if ( ! serverErrors.isEmpty()) fail(formatError(serverErrors));
+		if ( !serverErrors.isEmpty()) fail(formatError(serverErrors));
 		if (warmupResponseObserver.error != null) throw warmupResponseObserver.error;
-		if ( ! warmupResponseObserver.clientScopingErrors.isEmpty()) {
+		if ( !warmupResponseObserver.clientScopingErrors.isEmpty()) {
 			throw warmupResponseObserver.clientScopingErrors.get(0);
 		}
 
@@ -203,14 +203,14 @@ public class IntegrationTest {
 				new ResponseObserver(cancelledId, callBiFinalized[cancelledId], clientGrpcModule);
 		service.setCancelExpected(true);
 		client.streamingAndCancel(cancelledId, 3, cancelResponseObserver);
-		if ( ! callBiFinalized[cancelledId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+		if ( !callBiFinalized[cancelledId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
 			throw new TimeoutException();
 		}
-		if ( ! serverErrors.isEmpty()) fail(formatError(serverErrors));
+		if ( !serverErrors.isEmpty()) fail(formatError(serverErrors));
 		final var error = cancelResponseObserver.error;
 		if (error == null) fail("cancellation expected");
-		if ( ! ScopedObjectHashService.isCancellation(error)) throw error;
-		if ( ! cancelResponseObserver.clientScopingErrors.isEmpty()) {
+		if ( !ScopedObjectHashService.isCancellation(error)) throw error;
+		if ( !cancelResponseObserver.clientScopingErrors.isEmpty()) {
 			throw cancelResponseObserver.clientScopingErrors.get(0);
 		}
 	}

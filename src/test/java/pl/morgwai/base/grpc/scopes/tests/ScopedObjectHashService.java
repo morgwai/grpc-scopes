@@ -74,7 +74,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 		if (eventScoped != eventScopedProvider.get()) {
 			errors.add(String.format(SCOPING_ERROR, event, "event"));
 		}
-		if ( ! eventScopedLog.add(eventScoped)) {
+		if ( !eventScopedLog.add(eventScoped)) {
 			errors.add(String.format(DUPLICATE_ERROR, event, "event"));
 		}
 	}
@@ -84,7 +84,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 	 */
 	void verifyRpcScopingDuplication(List<String> errors, RpcScopedService rpcScoped, String event)
 	{
-		if ( ! rpcScopedLog.add(rpcScoped)) {
+		if ( !rpcScopedLog.add(rpcScoped)) {
 			errors.add(String.format(DUPLICATE_ERROR, event, "RPC"));
 		}
 	}
@@ -109,7 +109,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 		responseObserver.setOnCancelHandler(() -> {
 			final var eventScoped = eventScopedProvider.get();
 			verifyScoping(errors, rpcScoped, eventScoped, "onCancel");
-			if ( ! cancelExpected) errors.add("onCancel called");
+			if ( !cancelExpected) errors.add("onCancel called");
 			if (finalizationListener != null) {
 				finalizationListener.accept(request.getCallId(), errors);
 			}
@@ -119,7 +119,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 		verifyScoping(errors, rpcScoped, eventScopedProvider.get(), "unary");
 		verifyRpcScopingDuplication(errors, rpcScoped, "unary");
 
-		if ( ! errors.isEmpty()) {
+		if ( !errors.isEmpty()) {
 			responseObserver.onError(Status.INTERNAL.asException());
 		} else {
 			responseObserver.onCompleted();
@@ -161,7 +161,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 		verifyScoping(errors, rpcScoped, eventScopedProvider.get(), "startCall");
 		verifyRpcScopingDuplication(errors, rpcScoped, "streaming");
-		if ( ! errors.isEmpty()) {
+		if ( !errors.isEmpty()) {
 			clientResponseObserver.onError(Status.INTERNAL.asException());
 		} else {
 			clientResponseObserver.onNext(
@@ -176,7 +176,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 				}
 				final var eventScoped = eventScopedProvider.get();
 				verifyScoping(errors, rpcScoped, eventScoped, "backend.onNext");
-				if ( ! errors.isEmpty()) {
+				if ( !errors.isEmpty()) {
 					clientResponseObserver.onError(Status.INTERNAL.asException());
 				} else {
 					clientResponseObserver.onNext(
@@ -200,7 +200,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 				}
 				final var eventScoped = eventScopedProvider.get();
 				verifyScoping(errors, rpcScoped, eventScoped, "backend.onCompleted");
-				if ( ! errors.isEmpty()) {
+				if ( !errors.isEmpty()) {
 					clientResponseObserver.onError(Status.INTERNAL.asException());
 				} else {
 					clientResponseObserver.onNext(
@@ -231,7 +231,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 				}
 				final var eventScoped = eventScopedProvider.get();
 				verifyScoping(errors, rpcScoped, eventScoped, "onNext");
-				if ( ! errors.isEmpty()) {
+				if ( !errors.isEmpty()) {
 					clientResponseObserver.onError(Status.INTERNAL.asException());
 				} else {
 					clientResponseObserver.onNext(
@@ -266,7 +266,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 				}
 				final var eventScoped = eventScopedProvider.get();
 				verifyScoping(errors, rpcScoped, eventScoped, "onCompleted");
-				if ( ! errors.isEmpty()) {
+				if ( !errors.isEmpty()) {
 					clientResponseObserver.onError(Status.INTERNAL.asException());
 				} else {
 					clientResponseObserver.onNext(

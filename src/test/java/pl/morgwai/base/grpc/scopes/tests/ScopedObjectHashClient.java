@@ -52,7 +52,7 @@ public class ScopedObjectHashClient {
 		boolean cancel
 	) throws TimeoutException {
 		final var messagesReceivedLatch = new CountDownLatch(requestCount + 4);
-			// +4: startCall, onReady, backend.onNext, backend.onCompleted
+				// +4: startCall, onReady, backend.onNext, backend.onCompleted
 		final var decoratedResponseObserver = new StreamObserver<ScopedObjectsHashes>() {
 
 			@Override public void onNext(ScopedObjectsHashes value) {
@@ -77,7 +77,7 @@ public class ScopedObjectHashClient {
 		} else {
 			requestObserver.onCompleted();
 		}
-		if ( ! messagesReceived) throw new TimeoutException();
+		if ( !messagesReceived) throw new TimeoutException();
 	}
 
 	public void streaming(
@@ -135,7 +135,7 @@ public class ScopedObjectHashClient {
 				} catch (TimeoutException e) {
 					System.err.println("timeout waiting for messages, will wait 100ms more");
 				}
-				if ( ! latch.await(100L, TimeUnit.MILLISECONDS)) throw new TimeoutException();
+				if ( !latch.await(100L, TimeUnit.MILLISECONDS)) throw new TimeoutException();
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();
