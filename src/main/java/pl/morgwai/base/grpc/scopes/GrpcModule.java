@@ -88,7 +88,7 @@ public class GrpcModule implements Module {
 	 * {@link ContextTrackingExecutor#getActiveContexts(List)}.
 	 */
 	public final List<ContextTracker<?>> allTrackers =
-			Collections.singletonList(listenerEventContextTracker);
+			List.of(listenerEventContextTracker);
 
 
 
