@@ -7,22 +7,21 @@ import java.util.function.BiConsumer;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-
-import pl.morgwai.base.util.concurrent.Awaitable;
 import pl.morgwai.base.guice.scopes.ContextTracker;
+import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
+import pl.morgwai.base.util.concurrent.Awaitable;
 
 
 
 /**
- * A {@link pl.morgwai.base.guice.scopes.ContextTrackingExecutor} with additional
- * {@link #execute(StreamObserver, Runnable) execute(responseObserver, task)} methods that send
- * {@link Status#UNAVAILABLE} if {@code task} is rejected.
- * This can happen due to an overload or a shutdown.
+ * A {@link ContextTrackingExecutor} with additional {@link #execute(StreamObserver, Runnable)
+ * execute(responseObserver, task)} methods that send {@link Status#UNAVAILABLE} if {@code task} is
+ * rejected.
  * <p>
  * Instances can be created using {@link GrpcModule#newContextTrackingExecutor(String, int)
  * GrpcModule.newContextTrackingExecutor(...)} helper methods family.</p>
  */
-public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.ContextTrackingExecutor {
+public class GrpcContextTrackingExecutor extends ContextTrackingExecutor {
 
 
 
@@ -71,13 +70,13 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 
 
 
-	ContextTrackingExecutor(String name, int poolSize, List<ContextTracker<?>> trackers) {
+	GrpcContextTrackingExecutor(String name, int poolSize, List<ContextTracker<?>> trackers) {
 		super(name, poolSize, trackers);
 	}
 
 
 
-	ContextTrackingExecutor(
+	GrpcContextTrackingExecutor(
 		String name,
 		int poolSize,
 		List<ContextTracker<?>> trackers,
@@ -88,30 +87,31 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 
 
 
-	ContextTrackingExecutor(
+	GrpcContextTrackingExecutor(
 		String name,
 		int poolSize,
 		List<ContextTracker<?>> trackers,
 		BlockingQueue<Runnable> workQueue,
-		BiConsumer<Object, ? super ContextTrackingExecutor> rejectionHandler
+		BiConsumer<Object, ? super GrpcContextTrackingExecutor> rejectionHandler
 	) {
 		super(
 			name,
 			poolSize,
 			trackers,
 			workQueue,
-			(task, executor) -> rejectionHandler.accept(task, (ContextTrackingExecutor) executor)
+			(task, executor) ->
+					rejectionHandler.accept(task, (GrpcContextTrackingExecutor) executor)
 		);
 	}
 
 
 
-	ContextTrackingExecutor(
+	GrpcContextTrackingExecutor(
 		String name,
 		int poolSize,
 		List<ContextTracker<?>> trackers,
 		BlockingQueue<Runnable> workQueue,
-		BiConsumer<Object, ? super ContextTrackingExecutor> rejectionHandler,
+		BiConsumer<Object, ? super GrpcContextTrackingExecutor> rejectionHandler,
 		ThreadFactory threadFactory
 	) {
 		super(
@@ -119,14 +119,15 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 			poolSize,
 			trackers,
 			workQueue,
-			(task, executor) -> rejectionHandler.accept(task, (ContextTrackingExecutor) executor),
+			(task, executor) ->
+					rejectionHandler.accept(task, (GrpcContextTrackingExecutor) executor),
 			threadFactory
 		);
 	}
 
 
 
-	ContextTrackingExecutor(
+	GrpcContextTrackingExecutor(
 		String name,
 		int poolSize,
 		List<ContextTracker<?>> trackers,

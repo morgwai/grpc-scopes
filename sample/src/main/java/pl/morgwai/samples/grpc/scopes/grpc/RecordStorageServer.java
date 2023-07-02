@@ -16,7 +16,7 @@ import io.grpc.ServerInterceptors;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 
 import pl.morgwai.base.util.concurrent.Awaitable;
-import pl.morgwai.base.grpc.scopes.ContextTrackingExecutor;
+import pl.morgwai.base.grpc.scopes.GrpcContextTrackingExecutor;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 import pl.morgwai.base.jul.JulManualResetLogManager;
@@ -46,7 +46,7 @@ public class RecordStorageServer {
 	final Server recordStorageServer;
 
 	final EntityManagerFactory entityManagerFactory;
-	final ContextTrackingExecutor jpaExecutor;
+	final GrpcContextTrackingExecutor jpaExecutor;
 	static final String PERSISTENCE_UNIT_NAME = "RecordDb";  // same as in persistence.xml
 	static final int JDBC_CONNECTION_POOL_SIZE = 3;  // same as in persistence.xml
 
@@ -70,7 +70,7 @@ public class RecordStorageServer {
 				.toProvider(entityManagerFactory::createEntityManager)
 				.in(grpcModule.listenerEventScope);
 			binder.bind(EntityManagerFactory.class).toInstance(entityManagerFactory);
-			binder.bind(ContextTrackingExecutor.class).toInstance(jpaExecutor);
+			binder.bind(GrpcContextTrackingExecutor.class).toInstance(jpaExecutor);
 			binder.bind(RecordDao.class).to(JpaRecordDao.class).in(Scopes.SINGLETON);
 		};
 		final var injector = Guice.createInjector(grpcModule, jpaModule);

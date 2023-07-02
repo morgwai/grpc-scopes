@@ -16,7 +16,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
-import pl.morgwai.base.grpc.scopes.ContextTrackingExecutor;
+import pl.morgwai.base.grpc.scopes.GrpcContextTrackingExecutor;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordEntity;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageImplBase;
@@ -31,7 +31,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 	@Inject RecordDao dao;
-	@Inject ContextTrackingExecutor jpaExecutor;
+	@Inject GrpcContextTrackingExecutor jpaExecutor;
 	@Inject Provider<EntityManager> entityManagerProvider;
 
 
