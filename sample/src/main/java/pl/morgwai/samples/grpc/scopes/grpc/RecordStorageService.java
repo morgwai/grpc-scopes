@@ -21,7 +21,8 @@ import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordEntity;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageImplBase;
 
-import static pl.morgwai.base.grpc.utils.ConcurrentInboundObserver.newSimpleConcurrentServerRequestObserver;
+import static pl.morgwai.base.grpc.utils.ConcurrentInboundObserver
+		.newSimpleConcurrentServerRequestObserver;
 
 
 
