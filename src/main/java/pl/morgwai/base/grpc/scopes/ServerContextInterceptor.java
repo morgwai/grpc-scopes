@@ -31,8 +31,8 @@ public class ServerContextInterceptor implements ServerInterceptor {
 			return new ListenerWrapper<>(listener, rpcContext);
 		} catch (RuntimeException e) {
 			throw e;
-		} catch (Exception e) {
-			return null;  // dead code: result of wrapping handler.startCall(...) with a Callable
+		} catch (Exception neverHappens) {  // result of wrapping startCall(...) with a Callable
+			throw new RuntimeException(neverHappens);
 		}
 	}
 
