@@ -3,13 +3,14 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.BiConsumer;
 
 import com.google.inject.*;
 import com.google.inject.Module;
 
 import io.grpc.*;
 
-import pl.morgwai.base.concurrent.Awaitable;
+import pl.morgwai.base.util.concurrent.Awaitable;
 import pl.morgwai.base.guice.scopes.*;
 
 
@@ -152,7 +153,7 @@ public class GrpcModule implements Module {
 		int poolSize,
 		BlockingQueue<Runnable> workQueue
 	) {
-		var executor = new ContextTrackingExecutor(name, poolSize, workQueue, allTrackers);
+		var executor = new ContextTrackingExecutor(name, poolSize, allTrackers, workQueue);
 		executors.add(executor);
 		return executor;
 	}
@@ -171,10 +172,25 @@ public class GrpcModule implements Module {
 		String name,
 		int poolSize,
 		BlockingQueue<Runnable> workQueue,
+		BiConsumer<Object, ContextTrackingExecutor> rejectionHandler
+	) {
+		var executor = new ContextTrackingExecutor(
+				name, poolSize, allTrackers, workQueue, rejectionHandler);
+		executors.add(executor);
+		return executor;
+	}
+
+
+
+	public ContextTrackingExecutor newContextTrackingExecutor(
+		String name,
+		int poolSize,
+		BlockingQueue<Runnable> workQueue,
+		BiConsumer<Object, ContextTrackingExecutor> rejectionHandler,
 		ThreadFactory threadFactory
 	) {
-		var executor =
-				new ContextTrackingExecutor(name, poolSize, workQueue, threadFactory, allTrackers);
+		var executor = new ContextTrackingExecutor(
+				name, poolSize, allTrackers, workQueue, rejectionHandler, threadFactory);
 		executors.add(executor);
 		return executor;
 	}
@@ -194,10 +210,10 @@ public class GrpcModule implements Module {
 	 */
 	public ContextTrackingExecutor newContextTrackingExecutor(
 		String name,
-		ExecutorService backingExecutor,
-		int poolSize
+		int poolSize,
+		ExecutorService backingExecutor
 	) {
-		var executor = new ContextTrackingExecutor(name, backingExecutor, poolSize, allTrackers);
+		var executor = new ContextTrackingExecutor(name, poolSize, allTrackers, backingExecutor);
 		executors.add(executor);
 		return executor;
 	}

@@ -3,11 +3,12 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.function.BiConsumer;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
-import pl.morgwai.base.concurrent.Awaitable;
+import pl.morgwai.base.util.concurrent.Awaitable;
 import pl.morgwai.base.guice.scopes.ContextTracker;
 
 
@@ -77,31 +78,60 @@ public class ContextTrackingExecutor extends pl.morgwai.base.guice.scopes.Contex
 
 
 	ContextTrackingExecutor(
-			String name,
-			int poolSize,
-			BlockingQueue<Runnable> workQueue,
-			List<ContextTracker<?>> trackers) {
-		super(name, poolSize, workQueue, trackers);
+		String name,
+		int poolSize,
+		List<ContextTracker<?>> trackers,
+		BlockingQueue<Runnable> workQueue
+	) {
+		super(name, poolSize, trackers, workQueue);
 	}
 
 
 
 	ContextTrackingExecutor(
-			String name,
-			int poolSize,
-			BlockingQueue<Runnable> workQueue,
-			ThreadFactory threadFactory,
-			List<ContextTracker<?>> trackers) {
-		super(name, poolSize, workQueue, threadFactory, trackers);
+		String name,
+		int poolSize,
+		List<ContextTracker<?>> trackers,
+		BlockingQueue<Runnable> workQueue,
+		BiConsumer<Object, ? super ContextTrackingExecutor> rejectionHandler
+	) {
+		super(
+			name,
+			poolSize,
+			trackers,
+			workQueue,
+			(task, executor) -> rejectionHandler.accept(task, (ContextTrackingExecutor) executor)
+		);
 	}
 
 
 
 	ContextTrackingExecutor(
-			String name,
-			ExecutorService backingExecutor,
-			int poolSize,
-			List<ContextTracker<?>> trackers) {
-		super(name, backingExecutor, poolSize, trackers);
+		String name,
+		int poolSize,
+		List<ContextTracker<?>> trackers,
+		BlockingQueue<Runnable> workQueue,
+		BiConsumer<Object, ? super ContextTrackingExecutor> rejectionHandler,
+		ThreadFactory threadFactory
+	) {
+		super(
+			name,
+			poolSize,
+			trackers,
+			workQueue,
+			(task, executor) -> rejectionHandler.accept(task, (ContextTrackingExecutor) executor),
+			threadFactory
+		);
+	}
+
+
+
+	ContextTrackingExecutor(
+		String name,
+		int poolSize,
+		List<ContextTracker<?>> trackers,
+		ExecutorService backingExecutor
+	) {
+		super(name, poolSize, trackers, backingExecutor);
 	}
 }

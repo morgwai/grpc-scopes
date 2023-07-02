@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 import com.google.inject.Guice;
 import io.grpc.*;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
-import pl.morgwai.base.concurrent.Awaitable;
+import pl.morgwai.base.util.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc.BackendStub;
