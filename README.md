@@ -142,7 +142,7 @@ class MyClass {
 ```
 
 ### Dependency management
-Dependencies of this jar on [guice](https://search.maven.org/artifact/com.google.inject/guice), [slf4j-api](https://search.maven.org/artifact/org.slf4j/slf4j-api) and [grpc](https://search.maven.org/search?q=g:io.grpc) are declared as optional, so that apps can use any versions of these deps with compatible API.
+Dependencies of this jar on [guice](https://search.maven.org/artifact/com.google.inject/guice) and [grpc](https://search.maven.org/search?q=g:io.grpc) are declared as optional, so that apps can use any versions of these deps with compatible API.
 
 
 ## EXAMPLES
