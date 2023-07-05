@@ -1,7 +1,7 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 plugins {
 	id 'application'
-	id 'com.google.protobuf' version '0.8.17'
+	id 'com.google.protobuf' version '0.9.3'
 }
 
 java {
@@ -26,4 +26,3 @@ sourceSets {
 		}
 	}
 }
-

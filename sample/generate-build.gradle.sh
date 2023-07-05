@@ -2,8 +2,9 @@
 # Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 rm -f build.gradle settings.gradle &&
 
-./gradlew init --type pom --dsl groovy &&
-sed -n -e '/^dependencies {/,/^}/p' <build.gradle |head -n -1 >dependencies.txt &&
+echo 'no' | ./gradlew init --type pom --dsl groovy &&
+sed -n -e '/^dependencies {/,/^}/p' <build.gradle |head -n -1 \
+    |sed -e 's#^[[:space:]]*api#    implementation#' >dependencies.txt &&
 grep -E 'compileOnly|providedCompile' <dependencies.txt |sed -e 's#compileOnly#testImplementation#' \
     -e 's#providedCompile#testImplementation#' >testDependencies.txt &&
 echo '// Generated from build.gradle.header and pom.xml using generate-build.gradle.sh' \
