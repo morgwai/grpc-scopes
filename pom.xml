@@ -41,7 +41,7 @@
 		<guice.scopes.version>6.5</guice.scopes.version>
 		<utils.version>1.15</utils.version>
 		<guice.version>5.1.0</guice.version>
-		<grpc.version>1.48.1</grpc.version>
+		<grpc.version>1.53.0</grpc.version>
 		<protobuf.version>3.19.2</protobuf.version>
 	</properties>
 
