@@ -21,9 +21,10 @@ public class ServerContextInterceptor implements ServerInterceptor {
 
 	@Override
 	public <RequestT, ResponseT> Listener<RequestT> interceptCall(
-			ServerCall<RequestT, ResponseT> call,
-			Metadata headers,
-			ServerCallHandler<RequestT, ResponseT> handler) {
+		ServerCall<RequestT, ResponseT> call,
+		Metadata headers,
+		ServerCallHandler<RequestT, ResponseT> handler
+	) {
 		final ServerRpcContext rpcContext = new ServerRpcContext(call, headers);
 		try {
 			final var listener = grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
@@ -58,22 +59,32 @@ public class ServerContextInterceptor implements ServerInterceptor {
 
 
 
-		// below just delegate within ctxs all Listener method calls to wrappedListener
+		// below just delegate methods to wrappedListener methods called within ctxs
 
 		@Override public void onMessage(RequestT message) {
 			executeWithinCtxs(() -> wrappedListener.onMessage(message));
 		}
 
-		@Override public void onReady() { executeWithinCtxs(wrappedListener::onReady); }
+		@Override public void onReady() {
+			executeWithinCtxs(wrappedListener::onReady);
+		}
 
-		@Override public void onHalfClose() { executeWithinCtxs(wrappedListener::onHalfClose); }
+		@Override public void onHalfClose() {
+			executeWithinCtxs(wrappedListener::onHalfClose);
+		}
 
-		@Override public void onCancel() { executeWithinCtxs(wrappedListener::onCancel); }
+		@Override public void onCancel() {
+			executeWithinCtxs(wrappedListener::onCancel);
+		}
 
-		@Override public void onComplete() { executeWithinCtxs(wrappedListener::onComplete); }
+		@Override public void onComplete() {
+			executeWithinCtxs(wrappedListener::onComplete);
+		}
 	}
 
 
 
-	ServerContextInterceptor(GrpcModule grpcModule) { this.grpcModule = grpcModule; }
+	ServerContextInterceptor(GrpcModule grpcModule) {
+		this.grpcModule = grpcModule;
+	}
 }

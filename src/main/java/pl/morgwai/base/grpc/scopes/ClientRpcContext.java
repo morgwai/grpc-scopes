@@ -89,17 +89,21 @@ public class ClientRpcContext extends RpcContext {
 
 
 
-	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders) {
-		super(requestHeaders);
-		this.rpc = rpc;
-		parentCtx = null;
-	}
-
-
-
+	/**
+	 * Constructor for nested ctxs (see {@link GrpcModule#nestingClientInterceptor}).
+	 */
 	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders, RpcContext parentCtx) {
 		super(requestHeaders);
 		this.rpc = rpc;
 		this.parentCtx = parentCtx;
+	}
+
+
+
+	/**
+	 * Constructor for NON-nested ctxs (see {@link GrpcModule#clientInterceptor}).
+	 */
+	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders) {
+		this(rpc, requestHeaders, null);
 	}
 }

@@ -23,8 +23,11 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 	@Override
 	public <RequestT, ResponseT> ClientCall<RequestT, ResponseT> interceptCall(
-			MethodDescriptor<RequestT, ResponseT> method, CallOptions callOptions, Channel next) {
-		return new RpcWrapper<>(next.newCall(method, callOptions));
+		MethodDescriptor<RequestT, ResponseT> method,
+		CallOptions callOptions,
+		Channel channel
+	) {
+		return new RpcWrapper<>(channel.newCall(method, callOptions));
 	}
 
 
@@ -59,14 +62,21 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 		// below just delegate all ClientCall method calls to wrappedRpc
 
-		@Override
-		public void cancel(String message, Throwable cause) { wrappedRpc.cancel(message, cause); }
+		@Override public void cancel(String message, Throwable cause) {
+			wrappedRpc.cancel(message, cause);
+		}
 
-		@Override public void request(int numMessages) { wrappedRpc.request(numMessages); }
+		@Override public void request(int numMessages) {
+			wrappedRpc.request(numMessages);
+		}
 
-		@Override public void halfClose() { wrappedRpc.halfClose(); }
+		@Override public void halfClose() {
+			wrappedRpc.halfClose();
+		}
 
-		@Override public void sendMessage(RequestT message) { wrappedRpc.sendMessage(message); }
+		@Override public void sendMessage(RequestT message) {
+			wrappedRpc.sendMessage(message);
+		}
 	}
 
 

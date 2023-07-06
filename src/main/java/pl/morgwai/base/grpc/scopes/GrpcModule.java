@@ -68,17 +68,18 @@ public class GrpcModule implements Module {
 
 	/**
 	 * All {@link Channel client Channels} must be intercepted either by this interceptor or by
-	 * {@link #nestingClientInterceptor}. This interceptor will keep nested client RPC contexts
-	 * separate from their parent server RPC contexts.
+	 * {@link #nestingClientInterceptor}. This interceptor will keep client RPC contexts separate
+	 * even if the client calls were made within some enclosing RPC contexts.
 	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
 	 */
 	public final ClientInterceptor clientInterceptor = new ClientContextInterceptor(this, false);
 
 	/**
 	 * All {@link Channel client Channels} must be intercepted either by this interceptor or by
-	 * {@link #clientInterceptor}. This interceptor will join together nested client RPC contexts
-	 * with their parent server RPC contexts, so that all RPC scoped objects will be shared between
-	 * parents and their nested RPCs.
+	 * {@link #clientInterceptor}. If a client call was made within a context of some enclosing
+	 * "parent" call (server call or a previous chained client call), this interceptor will join
+	 * together such nested client RPC context with its parent RPC context, so that they will share
+	 * all RPC scoped objects.
 	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
 	 */
 	public final ClientInterceptor nestingClientInterceptor =
