@@ -23,6 +23,8 @@ import static org.junit.Assert.*;
 
 public class IntegrationTest {
 
+	// TODO: test multi-layer nesting
+
 
 
 	public static final long TIMEOUT_MILLIS = 1000L;

@@ -27,7 +27,7 @@ public abstract class RpcContext extends InjectionContext {
 	 * (see {@link ClientRpcContext#provideIfAbsent(Key, Provider)}).
 	 */
 	<T> T packageProtectedProvideIfAbsent(Key<T> key, Provider<T> provider) {
-		return super.provideIfAbsent(key, provider);
+		return provideIfAbsent(key, provider);
 	}
 
 
