@@ -23,8 +23,49 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 
 
 
+	static class MockListener<ResponseT> extends Listener<ResponseT> {
+
+		ContextVerifier ctxVerifier;
+
+
+
+		@Override public void onHeaders(Metadata responseHeaders) {
+			capturedResponseHeaders = responseHeaders;
+			ctxVerifier.verifyCtxs();
+		}
+
+		Metadata capturedResponseHeaders;
+
+
+
+		@Override public void onMessage(ResponseT message) {
+			capturedMessage = message;
+			ctxVerifier.verifyCtxs();
+		}
+
+		ResponseT capturedMessage;
+
+
+
+		@Override public void onClose(Status status, Metadata trailers) {
+			capturedStatus = status;
+			capturedTrailers = trailers;
+			ctxVerifier.verifyCtxs();
+		}
+
+		Status capturedStatus;
+		Metadata capturedTrailers;
+
+
+
+		@Override public void onReady() {
+			ctxVerifier.verifyCtxs();
+		}
+	}
+
+
+
 	final GrpcModule grpcModule = new GrpcModule();
-	ClientContextInterceptor interceptor;
 
 	final MockListener<Integer> mockListener = new MockListener<>();
 	final Metadata requestHeaders = new Metadata();
@@ -32,8 +73,7 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 	final CallOptions options = CallOptions.DEFAULT;
 	@SuppressWarnings("deprecation")
 	final MethodDescriptor<String, Integer> methodDescriptor = MethodDescriptor.create(
-		MethodType.UNARY, "testMethod", new StubMarshaller<>(), new StubMarshaller<>()
-	);
+			MethodType.UNARY, "testMethod", new StubMarshaller<>(), new StubMarshaller<>());
 
 	@Mock final Channel mockChannel = mock(Channel.class);
 	@Mock final ClientCall<String, Integer> mockRpc = mock(ClientCall.class);
@@ -50,237 +90,159 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 
 
 
-	void testStandAloneCall(boolean nesting) {
-		interceptor = nesting
-				? (ClientContextInterceptor) grpcModule.nestingClientInterceptor
-				: (ClientContextInterceptor) grpcModule.clientInterceptor;
+	void testBasicIntercepting(ClientInterceptor interceptor) {
 
+		// create and start a mock RPC, capture created Listener and ctx
 		final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
 		rpc.start(mockListener, requestHeaders);
 		final var decoratedListener = (ListenerWrapper<Integer>) listenerCapture.getValue();
+		final var rpcCtx = decoratedListener.rpcContext;
 
-		mockListener.ctxVerifier = new ContextVerifier(grpcModule, decoratedListener.rpcContext);
-		assertSame("RPC should be stored into rpcCtx",
-				mockRpc, decoratedListener.rpcContext.getRpc());
-		assertTrue("there should be no parentCtx",
-				decoratedListener.rpcContext.getParentContext().isEmpty());
+		// basic verifications
+		mockListener.ctxVerifier = new ContextVerifier(grpcModule, rpcCtx);
+		assertSame("RPC should be stored into rpcCtx", mockRpc, rpcCtx.getRpc());
+		assertTrue("there should be no parentCtx", rpcCtx.getParentContext().isEmpty());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
+		// verify onHeaders(...)
 		final var responseHeaders = new Metadata();
 		decoratedListener.onHeaders(responseHeaders);
 		assertSame("response headers should not be modified",
 				responseHeaders, mockListener.capturedResponseHeaders);
 		assertSame("response headers should be stored into rpcCtx",
-				responseHeaders, decoratedListener.rpcContext.getResponseHeaders());
+				responseHeaders, rpcCtx.getResponseHeaders());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
+		// verify onMessage(...)
 		final Integer message = 666;
 		decoratedListener.onMessage(message);
 		assertSame("messages should not be modified", message, mockListener.capturedMessage);
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
+		// verify onClose(...)
 		final var status = Status.OK;
 		final var trailers = new Metadata();
 		decoratedListener.onClose(status, trailers);
 		assertSame("status should not be modified", status, mockListener.capturedStatus);
-		assertSame("status should be stored into rpcCtx",
-				status, decoratedListener.rpcContext.getStatus().get());
+		assertSame("status should be stored into rpcCtx", status, rpcCtx.getStatus().get());
 		assertSame("trailers should not be modified", trailers, mockListener.capturedTrailers);
 		assertSame("trailers should be stored into rpcCtx",
-				trailers, decoratedListener.rpcContext.getTrailers().get());
+				trailers, rpcCtx.getTrailers().get());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
+		// verify onReady()
 		decoratedListener.onReady();
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
+
 		verifyAll();
 	}
 
-	@Test public void testStandAloneCallWithNestingInterceptor() { testStandAloneCall(true); }
+	@Test public void testBasicInterceptingWithNestingInterceptor() {
+		testBasicIntercepting(grpcModule.nestingClientInterceptor);
+	}
 
-	@Test public void testStandAloneCallWithStandardInterceptor() { testStandAloneCall(false); }
-
-
-
-	final Integer inheritedObject = 666;
-	final Integer anotherObject = 69;
-	final Key<Integer> inheritedObjectKey = Key.get(Integer.class, Names.named("inherited"));
-	final ServerRpcContext serverRpcContext = new ServerRpcContext(null, null);
-	final ClientRpcContext standAloneClientRpcContext = new ClientRpcContext(null, null);
-	final ClientRpcContext nestedClientRpcContext =
-			new ClientRpcContext(null, null, serverRpcContext);
+	@Test public void testBasicInterceptingWithStandardInterceptor() {
+		testBasicIntercepting(grpcModule.clientInterceptor);
+	}
 
 
 
-	void testNestedCall(boolean nesting, RpcContext parentRpcCtx, RpcContext rootRpcCtx) {
-		interceptor = nesting
-				? (ClientContextInterceptor) grpcModule.nestingClientInterceptor
-				: (ClientContextInterceptor) grpcModule.clientInterceptor;
-		rootRpcCtx.packageProtectedProvideIfAbsent(inheritedObjectKey, () -> inheritedObject);
+	void testCtxNesting(boolean nesting, RpcContext parentRpcCtx) {
+		final var interceptor = nesting
+				? grpcModule.nestingClientInterceptor
+				: grpcModule.clientInterceptor;
+		final var rootRpcCtx =  // parent of the parent if exists, otherwise just the parent itself
+				(parentRpcCtx instanceof ClientRpcContext
+						&& ((ClientRpcContext) parentRpcCtx).getParentContext().isPresent())
+				? ((ClientRpcContext) parentRpcCtx).getParentContext().get()
+				: parentRpcCtx;
+		final Integer rootProvidedObject = 666;
+		final var key = Key.get(Integer.class, Names.named("testKey"));
+		rootRpcCtx.packageProtectedProvideIfAbsent(key, () -> rootProvidedObject);
 
+		// create and start a child RPC within the parent RPC ctx, capture the created child RPC ctx
 		grpcModule.newListenerEventContext(parentRpcCtx).executeWithinSelf(
 			() -> {
 				final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
 				rpc.start(mockListener, requestHeaders);
 			}
 		);
-		final var decoratedListener = (ListenerWrapper<Integer>) listenerCapture.getValue();
+		final var childRpcCtx = ((ListenerWrapper<Integer>) listenerCapture.getValue()).rpcContext;
 
+		// verify sharing/isolation of an RPC-scoped object between a child and its parent
+		final Integer childProvidedObject = 69;
 		if (nesting) {
-			assertSame("parentCtx should be properly set",
-					decoratedListener.rpcContext.getParentContext().get(), parentRpcCtx);
-			assertSame("child RPC should inherit RPC scoped objects from the parent",
-					inheritedObject,
-					decoratedListener.rpcContext.provideIfAbsent(
-							inheritedObjectKey, () -> anotherObject));
+			assertSame("parent ctx should be properly linked",
+					childRpcCtx.getParentContext().get(), parentRpcCtx);
+			assertSame("child RPC should share RPC-scoped objects with the parent",
+					rootProvidedObject,
+					childRpcCtx.provideIfAbsent(key, () -> childProvidedObject));
 		} else {
-			assertTrue("there should be no parentCtx",
-					decoratedListener.rpcContext.getParentContext().isEmpty());
-			assertNotSame("child RPC should NOT inherit RPC scoped objects from the parent",
-					inheritedObject,
-					decoratedListener.rpcContext.provideIfAbsent(
-							inheritedObjectKey, () -> anotherObject));
+			assertTrue("parent ctx should NOT be linked", childRpcCtx.getParentContext().isEmpty());
+			assertSame("child RPC should NOT share RPC-scoped objects with the parent",
+					childProvidedObject,
+					childRpcCtx.provideIfAbsent(key, () -> childProvidedObject));
 		}
+
+		// remove an RPC-scoped object from ctx via the child and verify the parent and root ctx
+		childRpcCtx.removeScopedObject(key);
+		final var yetAnotherObject = 3;
+		if (nesting) {
+			assertNotSame("RPC-scoped object should be removed from the parent ctx",
+					rootProvidedObject,
+					parentRpcCtx.packageProtectedProvideIfAbsent(key, () -> yetAnotherObject));
+			assertNotSame("RPC-scoped object should be removed from the root ctx",
+					rootProvidedObject,
+					rootRpcCtx.packageProtectedProvideIfAbsent(key, () -> yetAnotherObject));
+		} else {
+			assertSame("object scoped to the root RPC should NOT be removed",
+					rootProvidedObject,
+					rootRpcCtx.packageProtectedProvideIfAbsent(key, () -> yetAnotherObject));
+			assertSame("object scoped to the parent RPC should NOT be removed",
+					rootProvidedObject,
+					parentRpcCtx.packageProtectedProvideIfAbsent(key, () -> yetAnotherObject));
+			assertNotSame("object scoped to the child RPC should be removed",
+					childProvidedObject,
+					childRpcCtx.provideIfAbsent(key, () -> yetAnotherObject));
+		}
+
 		verifyAll();
 	}
 
+	final ServerRpcContext serverRpcContext = new ServerRpcContext(null, null);
+
 	@Test public void testCallNestedInServerCallWithNestingInterceptor() {
-		testNestedCall(true, serverRpcContext, serverRpcContext);
+		testCtxNesting(true, serverRpcContext);
 	}
 
 	@Test public void testCallNestedInServerCallWithStandardInterceptor() {
-		testNestedCall(false, serverRpcContext, serverRpcContext);
+		testCtxNesting(false, serverRpcContext);
 	}
 
+	final ClientRpcContext standAloneClientRpcContext = new ClientRpcContext(null, null);
+
 	@Test public void testChainedCallWithNestingInterceptor() {
-		testNestedCall(true, standAloneClientRpcContext, standAloneClientRpcContext);
+		testCtxNesting(true, standAloneClientRpcContext);
 	}
 
 	@Test public void testChainedCallWithStandardInterceptor() {
-		testNestedCall(false, standAloneClientRpcContext, standAloneClientRpcContext);
+		testCtxNesting(false, standAloneClientRpcContext);
 	}
 
+	final ClientRpcContext nestedClientRpcContext =
+			new ClientRpcContext(null, null, serverRpcContext);
+
 	@Test public void testChainedCallNestedInServerCallWithNestingInterceptor() {
-		testNestedCall(true, nestedClientRpcContext, nestedClientRpcContext.parentCtx);
+		testCtxNesting(true, nestedClientRpcContext);
 	}
 
 	@Test public void testChainedCallNestedInServerCallWithStandardInterceptor() {
-		testNestedCall(false, nestedClientRpcContext, nestedClientRpcContext.parentCtx);
-	}
-
-
-
-	void testRemove(boolean nesting, RpcContext parentRpcCtx, RpcContext rootRpcCtx) {
-		interceptor = nesting
-				? (ClientContextInterceptor) grpcModule.nestingClientInterceptor
-				: (ClientContextInterceptor) grpcModule.clientInterceptor;
-		rootRpcCtx.packageProtectedProvideIfAbsent(inheritedObjectKey, () -> inheritedObject);
-
-		grpcModule.newListenerEventContext(parentRpcCtx).executeWithinSelf(
-			() -> {
-				final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
-				rpc.start(mockListener, requestHeaders);
-			}
-		);
-		final var decoratedListener = (ListenerWrapper<Integer>) listenerCapture.getValue();
-
-		final Integer childObject = 3;
-		decoratedListener.rpcContext.provideIfAbsent(inheritedObjectKey, () -> childObject);
-		decoratedListener.rpcContext.removeScopedObject(inheritedObjectKey);
-		if (nesting) {
-			assertNotSame("inherited object should be removed from the parent RPC ctx",
-					inheritedObject,
-					parentRpcCtx.packageProtectedProvideIfAbsent(
-							inheritedObjectKey, () -> anotherObject));
-			assertNotSame("inherited object should be removed from the root RPC ctx",
-					inheritedObject,
-					rootRpcCtx.packageProtectedProvideIfAbsent(
-							inheritedObjectKey, () -> anotherObject));
-		} else {
-			assertSame("object scoped to the root RPC should NOT be removed",
-					inheritedObject,
-					rootRpcCtx.packageProtectedProvideIfAbsent(
-							inheritedObjectKey, () -> anotherObject));
-			assertSame("object scoped to the parent RPC should NOT be removed",
-					inheritedObject,
-					parentRpcCtx.packageProtectedProvideIfAbsent(
-							inheritedObjectKey, () -> anotherObject));
-			assertNotSame("object scoped to the child RPC should be removed",
-					childObject,
-					decoratedListener.rpcContext.provideIfAbsent(
-							inheritedObjectKey, () -> anotherObject));
-		}
-		verifyAll();
-	}
-
-	@Test public void testRemoveInNestedCallWithNestingInterceptor() {
-		testRemove(true, serverRpcContext, serverRpcContext);
-	}
-
-	@Test public void testRemoveInNestedCallWithStandardInterceptor() {
-		testRemove(false, serverRpcContext, serverRpcContext);
-	}
-
-	@Test public void testRemoveInChainedCallWithNestingInterceptor() {
-		testRemove(true, standAloneClientRpcContext, standAloneClientRpcContext);
-	}
-
-	@Test public void testRemoveInChainedCallWithStandardInterceptor() {
-		testRemove(false, standAloneClientRpcContext, standAloneClientRpcContext);
-	}
-
-	@Test public void testRemoveInChainedCallNestedInServerCallWithNestingInterceptor() {
-		testRemove(true, nestedClientRpcContext, nestedClientRpcContext.parentCtx);
-	}
-
-	@Test public void testRemoveInChainedCallNestedInServerCallWithStandardInterceptor() {
-		testRemove(false, nestedClientRpcContext, nestedClientRpcContext.parentCtx);
-	}
-
-
-
-	static class MockListener<ResponseT> extends Listener<ResponseT> {
-
-		ContextVerifier ctxVerifier;
-
-
-
-		Metadata capturedResponseHeaders;
-
-		@Override public void onHeaders(Metadata responseHeaders) {
-			capturedResponseHeaders = responseHeaders;
-			ctxVerifier.verifyCtxs();
-		}
-
-
-
-		ResponseT capturedMessage;
-
-		@Override public void onMessage(ResponseT message) {
-			capturedMessage = message;
-			ctxVerifier.verifyCtxs();
-		}
-
-
-
-		Status capturedStatus;
-		Metadata capturedTrailers;
-
-		@Override public void onClose(Status status, Metadata trailers) {
-			capturedStatus = status;
-			capturedTrailers = trailers;
-			ctxVerifier.verifyCtxs();
-		}
-
-
-
-		@Override public void onReady() {
-			ctxVerifier.verifyCtxs();
-		}
+		testCtxNesting(false, nestedClientRpcContext);
 	}
 
 
