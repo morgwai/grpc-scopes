@@ -21,14 +21,14 @@ public class ServerContextInterceptor implements ServerInterceptor {
 
 	@Override
 	public <RequestT, ResponseT> Listener<RequestT> interceptCall(
-		ServerCall<RequestT, ResponseT> call,
+		ServerCall<RequestT, ResponseT> rpc,
 		Metadata headers,
 		ServerCallHandler<RequestT, ResponseT> handler
 	) {
-		final ServerRpcContext rpcContext = new ServerRpcContext(call, headers);
+		final ServerRpcContext rpcContext = new ServerRpcContext(rpc, headers);
 		try {
 			final var listener = grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
-					() -> handler.startCall(call, headers));
+					() -> handler.startCall(rpc, headers));
 			return new ListenerWrapper<>(listener, rpcContext);
 		} catch (RuntimeException e) {
 			throw e;

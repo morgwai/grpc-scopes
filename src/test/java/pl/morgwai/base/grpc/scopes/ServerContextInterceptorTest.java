@@ -31,7 +31,7 @@ public class ServerContextInterceptorTest extends EasyMockSupport {
 		final var decoratedListener = interceptor.interceptCall(
 			mockRpc,
 			requestHeaders,
-			(call, headers) -> {
+			(rpc, headers) -> {
 				final var eventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
 				assertNotNull("event context should be started", eventCtx);
 				final var rpcCtx = eventCtx.getRpcContext();
@@ -78,7 +78,7 @@ public class ServerContextInterceptorTest extends EasyMockSupport {
 			interceptor.interceptCall(
 				mockRpc,
 				new Metadata(),
-				(call, headers) -> { throw thrown; }
+				(rpc, headers) -> { throw thrown; }
 			);
 			fail("RuntimeException expected");
 		} catch (RuntimeException caught) {
