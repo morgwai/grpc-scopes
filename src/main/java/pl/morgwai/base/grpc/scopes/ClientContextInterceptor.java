@@ -42,20 +42,12 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 		@Override
 		public void start(Listener<ResponseT> listener, Metadata requestHeaders) {
-			ClientRpcContext rpcContext;
-			if (nesting) {
-				final var parentEventCtx =
-						grpcModule.listenerEventContextTracker.getCurrentContext();
-				if (parentEventCtx != null) {
-					rpcContext = new ClientRpcContext(
-							wrappedRpc, requestHeaders, parentEventCtx.getRpcContext());
-				} else {
-					rpcContext = new ClientRpcContext(wrappedRpc, requestHeaders);
-				}
-			} else {
-				rpcContext = new ClientRpcContext(wrappedRpc, requestHeaders);
-			}
-			wrappedRpc.start(new ListenerWrapper<>(listener, rpcContext), requestHeaders);
+			final var parentEventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
+			final var rpcCtx  = (nesting && parentEventCtx != null)
+					? new ClientRpcContext(
+							wrappedRpc, requestHeaders, parentEventCtx.getRpcContext())
+					: new ClientRpcContext(wrappedRpc, requestHeaders);
+			wrappedRpc.start(new ListenerWrapper<>(listener, rpcCtx), requestHeaders);
 		}
 
 
