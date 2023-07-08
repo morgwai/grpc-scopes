@@ -8,7 +8,7 @@ RPC and Listener event Guice Scopes for gRPC.<br/>
 
 ## OVERVIEW
 
-Provides `rpcScope` and `listenerEventScope` Guice Scopes for both client and server apps. Scopes are built using [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes) which automatically transfers them to a new thread when dispatching using `ContextTrackingExecutor` (see below).<br/>
+Provides `rpcScope` and `listenerEventScope` Guice Scopes for both client and server apps. Scopes are built using [guice-context-scopes lib](https://github.com/morgwai/guice-context-scopes) which automatically transfers them to a new thread when dispatching using `GrpcContextTrackingExecutor` (see below).<br/>
 Oversimplifying, in case of streaming requests on servers and streaming responses on clients, `listenerEventScope` spans over processing of a single message from the stream, while `rpcScope` spans over the whole RPC. Oversimplifying again, in case of unary requests, these 2 Scopes have roughly the same span.<br/>
 See [DZone article](https://dzone.com/articles/combining-grpc-with-guice) for extended high-level explanation.<br/>
 <br/>
@@ -53,7 +53,7 @@ Instances should usually be created using helper methods from the above `GrpcMod
 1. Create an instance of `GrpcModule` and pass it to other modules.
 1. Other modules can use `GrpcModule.rpcScope` and `GrpcModule.listenerEventScope` to scope their bindings: `bind(MyComponent.class).to(MyComponentImpl.class).in(grpcModule.rpcScope);`
 1. All gRPC service instances added to server must be intercepted with `GrpcModule.serverInterceptor` like the following: `.addService(ServerInterceptors.intercept(myService, grpcModule.contextInterceptor /* more interceptors here... */))`
-1. All client `Channel`s must be intercepted with `GrpcModule.clientInterceptor` like the following: `ClientInterceptors.intercept(channel, grpcModule.clientInterceptor)`
+1. All client `Channel`s must be intercepted with `GrpcModule.clientInterceptor` or `GrpcModule.nestingClientInterceptor` like the following: `ClientInterceptors.intercept(channel, grpcModule.clientInterceptor)`
 
 
 Server sample:
@@ -109,7 +109,7 @@ public class MyClient {
             .usePlaintext()
             .build();
         final var channel = ClientInterceptors.intercept(
-                managedChannel, grpcModule.clientInterceptor);
+                managedChannel, grpcModule.nestingClientInterceptor);
         final var stub = MyServiceGrpc.newStub(channel);
 
         makeAnRpcCall(stub, args);
@@ -142,7 +142,7 @@ class MyClass {
 ```
 
 ### Dependency management
-Dependencies of this jar on [guice](https://search.maven.org/artifact/com.google.inject/guice) and [grpc](https://search.maven.org/search?q=g:io.grpc) are declared as optional, so that apps can use any versions of these deps with compatible API.
+Dependencies of this jar on [guice](https://search.maven.org/artifact/com.google.inject/guice) and [grpc](https://search.maven.org/search?q=g:io.grpc) are declared as optional, so that apps can use any versions of these deps with a compatible API.
 
 
 ## EXAMPLES
