@@ -92,7 +92,7 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 
 	void testBasicIntercepting(ClientInterceptor interceptor) {
 
-		// create and start a mock RPC, capture created Listener and ctx
+		// intercept and start a mock RPC, capture created Listener and ctx
 		final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
 		rpc.start(mockListener, requestHeaders);
 		final var decoratedListener = (ListenerWrapper<Integer>) listenerCapture.getValue();
@@ -115,6 +115,11 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
+		// verify onReady()
+		decoratedListener.onReady();
+		assertNull("event context should not be leaked",
+				grpcModule.listenerEventContextTracker.getCurrentContext());
+
 		// verify onMessage(...)
 		final Integer message = 666;
 		decoratedListener.onMessage(message);
@@ -123,19 +128,15 @@ public class ClientContextInterceptorTest extends EasyMockSupport {
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
 		// verify onClose(...)
+		assertTrue("status should be empty before onClose", rpcCtx.getStatus().isEmpty());
+		assertTrue("trailers should be empty before onClose", rpcCtx.getTrailers().isEmpty());
 		final var status = Status.OK;
 		final var trailers = new Metadata();
 		decoratedListener.onClose(status, trailers);
 		assertSame("status should not be modified", status, mockListener.capturedStatus);
 		assertSame("status should be stored into rpcCtx", status, rpcCtx.getStatus().get());
 		assertSame("trailers should not be modified", trailers, mockListener.capturedTrailers);
-		assertSame("trailers should be stored into rpcCtx",
-				trailers, rpcCtx.getTrailers().get());
-		assertNull("event context should not be leaked",
-				grpcModule.listenerEventContextTracker.getCurrentContext());
-
-		// verify onReady()
-		decoratedListener.onReady();
+		assertSame("trailers should be stored into rpcCtx", trailers, rpcCtx.getTrailers().get());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
