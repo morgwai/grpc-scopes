@@ -25,6 +25,23 @@ public class ServerContextInterceptorTest extends EasyMockSupport {
 
 
 	@Test
+	public void testInterceptCallWithRuntimeException() {
+		final var thrown = new RuntimeException("thrown");
+		try {
+			interceptor.interceptCall(
+				mockRpc,
+				new Metadata(),
+				(rpc, headers) -> { throw thrown; }
+			);
+			fail("RuntimeException thrown by the handler should be propagated");
+		} catch (RuntimeException caught) {
+			assertSame("caught exception should be the same as thrown", thrown, caught);
+		}
+	}
+
+
+
+	@Test
 	public void testInterceptCall() {
 		final var requestHeaders = new Metadata();
 		final MockListener mockListener = new MockListener();
@@ -71,35 +88,18 @@ public class ServerContextInterceptorTest extends EasyMockSupport {
 
 
 
-	@Test
-	public void testInterceptCallWithRuntimeException() {
-		final var thrown = new RuntimeException();
-		try {
-			interceptor.interceptCall(
-				mockRpc,
-				new Metadata(),
-				(rpc, headers) -> { throw thrown; }
-			);
-			fail("RuntimeException expected");
-		} catch (RuntimeException caught) {
-			assertSame("thrown exception should be caught", thrown, caught);
-		}
-	}
-
-
-
 	static class MockListener extends Listener<Integer> {
 
 		ContextVerifier ctxVerifier;
 
 
 
-		Integer capturedMessage;
-
 		@Override public void onMessage(Integer message) {
 			capturedMessage = message;
 			ctxVerifier.verifyCtxs();
 		}
+
+		Integer capturedMessage;
 
 
 
