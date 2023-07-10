@@ -4,24 +4,23 @@ package pl.morgwai.samples.grpc.scopes.grpc;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import javax.persistence.*;
 
-import com.google.inject.Guice;
 import com.google.inject.Module;
-import com.google.inject.Scopes;
+import com.google.inject.*;
+import com.google.inject.name.Names;
 import io.grpc.Server;
 import io.grpc.ServerInterceptors;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
-
-import pl.morgwai.base.util.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.GrpcContextTrackingExecutor;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 import pl.morgwai.base.jul.JulManualResetLogManager;
+import pl.morgwai.base.util.concurrent.Awaitable;
 import pl.morgwai.samples.grpc.scopes.data_access.JpaRecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
+
+import static pl.morgwai.samples.grpc.scopes.grpc.RecordStorageService.JPA_EXECUTOR_NAME;
 
 
 
@@ -48,30 +47,40 @@ public class RecordStorageServer {
 	final EntityManagerFactory entityManagerFactory;
 	final GrpcContextTrackingExecutor jpaExecutor;
 	static final String PERSISTENCE_UNIT_NAME = "RecordDb";  // same as in persistence.xml
-	static final int JDBC_CONNECTION_POOL_SIZE = 3;  // same as in persistence.xml
+	static final int JPA_EXECUTOR_THREADPOOL_SIZE = 3;// corresponding to hibernate.c3p0.maxPoolSize
+			// in persistence.xml. Here exactly the same, as non of the operations is likely to
+			// benefit from cache usage.
 
 
 
 	RecordStorageServer(
-			int port,
-			int maxConnectionIdleSeconds,
-			int maxConnectionAgeSeconds,
-			int maxConnectionAgeGraceSeconds) throws Exception {
+		int port,
+		int maxConnectionIdleSeconds,
+		int maxConnectionAgeSeconds,
+		int maxConnectionAgeGraceSeconds
+	) throws Exception {
 		final var grpcModule = new GrpcModule();
 
 		entityManagerFactory = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
 		jpaExecutor = grpcModule.newContextTrackingExecutor(
-				PERSISTENCE_UNIT_NAME + "JpaExecutor", JDBC_CONNECTION_POOL_SIZE);
-		log.info("entity manager factory " + PERSISTENCE_UNIT_NAME
-				+ " and its JPA executor created successfully");
+			PERSISTENCE_UNIT_NAME + JPA_EXECUTOR_NAME,
+			JPA_EXECUTOR_THREADPOOL_SIZE
+		);
+		log.info("entity manager factory " + PERSISTENCE_UNIT_NAME + " and its associated "
+				+ jpaExecutor.getName() + " created successfully");
 
 		final Module jpaModule = (binder) -> {
 			binder.bind(EntityManager.class)
 				.toProvider(entityManagerFactory::createEntityManager)
 				.in(grpcModule.listenerEventScope);
-			binder.bind(EntityManagerFactory.class).toInstance(entityManagerFactory);
-			binder.bind(GrpcContextTrackingExecutor.class).toInstance(jpaExecutor);
-			binder.bind(RecordDao.class).to(JpaRecordDao.class).in(Scopes.SINGLETON);
+			binder.bind(EntityManagerFactory.class)
+				.toInstance(entityManagerFactory);
+			binder.bind(GrpcContextTrackingExecutor.class)
+				.annotatedWith(Names.named(JPA_EXECUTOR_NAME))
+				.toInstance(jpaExecutor);
+			binder.bind(RecordDao.class)
+				.to(JpaRecordDao.class)
+				.in(Scopes.SINGLETON);
 		};
 		final var injector = Guice.createInjector(grpcModule, jpaModule);
 

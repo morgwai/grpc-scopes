@@ -15,15 +15,14 @@ public class RecordEntity implements Serializable {
 
 
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	public Long getId() { return id; }
+	@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
 	Long id;
 	public static final String ID = "id";
-	public Long getId() { return id; }
 
+	public String getContent() { return content; }
 	String content;
 	public static final String CONTENT = "content";
-	public String getContent() { return content; }
 
 
 
@@ -39,25 +38,26 @@ public class RecordEntity implements Serializable {
 	public boolean equals(Object other) {
 		if (this == other) return true;
 		if (other == null) return false;
-		if (other.getClass() != RecordEntity.class) return false;
-		RecordEntity otherRecord = (RecordEntity) other;
-		return (id == null ? otherRecord.getId() == null : id.equals(otherRecord.getId()))
-			&& (content == null ?
-					otherRecord.getContent() == null : content.equals(otherRecord.getContent()));
+		if (other.getClass() != this.getClass()) return false;
+		final var otherRecord = (RecordEntity) other;
+		return (
+			(
+				id == null
+					? otherRecord.getId() == null
+					: id.equals(otherRecord.getId())
+			) && (
+				content == null
+					? otherRecord.getContent() == null
+					: content.equals(otherRecord.getContent())
+			)
+		);
 	}
 
 
-
-	// boilerplate only below
 
 	public RecordEntity() {}
 
 	public RecordEntity(String content) {
-		this.content = content;
-	}
-
-	public RecordEntity(long id, String content) {
-		this.id = id;
 		this.content = content;
 	}
 

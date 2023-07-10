@@ -2,6 +2,7 @@
 package pl.morgwai.samples.grpc.scopes.grpc;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import io.grpc.*;
 
@@ -40,17 +41,17 @@ public class RecordStorageClient {
 
 		System.out.println();
 		System.out.println("store multiple");
+		final Consumer<StoreRecordResponse> storeRecordResponseHandler = (response) ->
+				System.out.println(response.getRequestId()+ " -> " + response.getRecordId());
 		final var storeRecordResponseObserver =
-				new BlockingResponseObserver<StoreRecordRequest, StoreRecordResponse>(
-			response -> System.out.println(response.getRequestId()+ " -> " + response.getRecordId())
-		);
+				new BlockingResponseObserver<>(storeRecordResponseHandler);
 		final var requestObserver = connector.storeMultiple(storeRecordResponseObserver);
 		for (int i = 2; i <= 5; i++) {
 			requestObserver.onNext(
 					StoreRecordRequest.newBuilder()
-							.setRequestId(i)
-							.setContent("record-" + i)
-							.build());
+						.setRequestId(i)
+						.setContent("record-" + i)
+						.build());
 		}
 		requestObserver.onCompleted();
 		storeRecordResponseObserver.awaitCompletion(5000L);

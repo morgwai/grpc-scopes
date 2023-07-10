@@ -11,7 +11,7 @@ start the server: `java -jar target/grpc-scopes-sample-1.0-SNAPSHOT-executable.j
 
 run the client in another terminal: `java -cp target/grpc-scopes-sample-1.0-SNAPSHOT-executable.jar pl.morgwai.samples.grpc.scopes.grpc.RecordStorageClient`
 
-to stop the server press `CTRL`+`C` on its console
+to stop the server press `CTRL`+`C` on its console or otherwise send `SIGINT` to its process.
 
 
 ## MAIN FILES

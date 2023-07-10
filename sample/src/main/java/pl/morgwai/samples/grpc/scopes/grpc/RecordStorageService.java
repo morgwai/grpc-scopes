@@ -5,17 +5,15 @@ import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
-import javax.persistence.RollbackException;
+import javax.persistence.*;
 
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.name.Named;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-
 import pl.morgwai.base.grpc.scopes.GrpcContextTrackingExecutor;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordEntity;
@@ -30,8 +28,9 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
+	static final String JPA_EXECUTOR_NAME = "JpaExecutor";
+	@Inject @Named(JPA_EXECUTOR_NAME) GrpcContextTrackingExecutor jpaExecutor;
 	@Inject RecordDao dao;
-	@Inject GrpcContextTrackingExecutor jpaExecutor;
 	@Inject Provider<EntityManager> entityManagerProvider;
 
 
@@ -137,19 +136,20 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
-	protected <T> T executeWithinTx(Callable<T> operation) throws Exception {
-		return executeWithinTx(entityManagerProvider, operation);
+	void executeWithinTx(Callable<Void> operation) throws Exception {
+		executeWithinTx(entityManagerProvider, operation);
 	}
 
-	public static <T> T executeWithinTx(
-			Provider<EntityManager> entityManagerProvider, Callable<T> operation) throws Exception {
+	static void executeWithinTx(
+		Provider<EntityManager> entityManagerProvider,
+		Callable<Void> operation
+	) throws Exception {
 		EntityTransaction tx = entityManagerProvider.get().getTransaction();
 		if ( !tx.isActive()) tx.begin();
 		try {
-			T result = operation.call();
+			operation.call();
 			if (tx.getRollbackOnly()) throw new RollbackException("tx marked rollbackOnly");
 			tx.commit();
-			return result;
 		} catch (Throwable t) {
 			if (tx.isActive()) tx.rollback();
 			throw t;
