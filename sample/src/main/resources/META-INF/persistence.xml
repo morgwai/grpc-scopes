@@ -20,8 +20,8 @@
 					value="drop-and-create"/>
 			<property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect" />
 			<property name="hibernate.show_sql" value="true" />
-			<!-- WARN: this uses hibernate internal connection pool, not suitable for production -->
-			<property name="hibernate.connection.pool_size" value="3" />
+			<property name="hibernate.c3p0.maxPoolSize" value="3" />
+			<property name="hibernate.c3p0.maxStatementsPerConnection" value="5" />
 		</properties>
 	</persistence-unit>
 </persistence>
