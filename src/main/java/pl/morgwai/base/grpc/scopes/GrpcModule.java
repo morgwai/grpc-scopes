@@ -147,8 +147,8 @@ public class GrpcModule implements Module {
 	 * <p>
 	 * The default {@link RejectedExecutionHandler} throws a
 	 * {@link DetailedRejectedExecutionException} if {@code workQueue} is full or the executor is
-	 * shutting down. It
-	 * should usually be handled by sending {@link io.grpc.Status#UNAVAILABLE} to the client.</p>
+	 * shutting down. It should usually be handled by sending {@link io.grpc.Status#UNAVAILABLE} to
+	 * the client.</p>
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,
@@ -231,9 +231,7 @@ public class GrpcModule implements Module {
 
 
 
-	/**
-	 * Shutdowns all executors obtained from this module.
-	 */
+	/** Shutdowns all executors obtained from this module. */
 	public void shutdownAllExecutors() {
 		for (var executor: executors) executor.shutdown();
 	}
@@ -250,10 +248,11 @@ public class GrpcModule implements Module {
 		TimeUnit unit
 	) throws InterruptedException {
 		return Awaitable.awaitMultiple(
-				timeout,
-				unit,
-				GrpcContextTrackingExecutor::toAwaitableOfEnforcedTermination,
-				executors);
+			timeout,
+			unit,
+			GrpcContextTrackingExecutor::toAwaitableOfEnforcedTermination,
+			executors
+		);
 	}
 
 	/**
