@@ -56,16 +56,28 @@ public class GrpcContextTrackingExecutor extends ContextTrackingExecutor {
 
 
 
+	/**
+	 * Creates an {@link Awaitable.WithUnit} of {@link #shutdown()} and
+	 * {@link #enforceTermination(long, TimeUnit)}.
+	 */
 	public Awaitable.WithUnit toAwaitableOfEnforcedTermination() {
-		shutdown();
-		return (timeout, unit) -> enforceTermination(timeout, unit).isEmpty();
+		return (timeout, unit) -> {
+			shutdown();
+			return enforceTermination(timeout, unit).isEmpty();
+		};
 	}
 
 
 
+	/**
+	 * Creates an {@link Awaitable.WithUnit} of {@link #shutdown()} and
+	 * {@link #awaitTermination(long, TimeUnit)}.
+	 */
 	public Awaitable.WithUnit toAwaitableOfTermination() {
-		shutdown();
-		return this::awaitTermination;
+		return (timeout, unit) -> {
+			shutdown();
+			return awaitTermination(timeout, unit);
+		};
 	}
 
 
