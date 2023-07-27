@@ -32,6 +32,8 @@ public class RecordStorageService extends RecordStorageImplBase {
 	@Inject @Named(JPA_EXECUTOR_NAME) GrpcContextTrackingExecutor jpaExecutor;
 	@Inject RecordDao dao;
 	@Inject Provider<EntityManager> entityManagerProvider;
+	static final String CONCURRENCY_LEVEL = "concurrencyLevel";
+	@Inject @Named(CONCURRENCY_LEVEL) Integer concurrencyLevel;
 
 
 
@@ -76,7 +78,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 				(ServerCallStreamObserver<StoreRecordResponse>) basicResponseObserver;
 		return newSimpleConcurrentServerRequestObserver(
 			responseObserver,
-			jpaExecutor.getPoolSize() + 1,  // +1 is to account for request message delivery delay
+			concurrencyLevel,
 			(request, individualObserver) -> jpaExecutor.execute(responseObserver, () -> {
 				try {
 					final RecordEntity entity = process(request);

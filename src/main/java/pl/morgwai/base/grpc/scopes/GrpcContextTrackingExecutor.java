@@ -9,7 +9,8 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import pl.morgwai.base.guice.scopes.ContextTracker;
 import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
-import pl.morgwai.base.util.concurrent.Awaitable;
+import pl.morgwai.base.util.concurrent.NamingThreadFactory;
+import pl.morgwai.base.util.concurrent.TaskTrackingExecutor.TaskTrackingExecutorDecorator;
 
 
 
@@ -21,7 +22,12 @@ import pl.morgwai.base.util.concurrent.Awaitable;
  * Instances can be created using {@link GrpcModule#newContextTrackingExecutor(String, int)
  * GrpcModule.newContextTrackingExecutor(...)} helper methods family.</p>
  */
-public class GrpcContextTrackingExecutor extends ContextTrackingExecutor {
+public class GrpcContextTrackingExecutor extends TaskTrackingExecutorDecorator {
+
+
+
+	public String getName() { return name; }
+	final String name;
 
 
 
@@ -39,112 +45,123 @@ public class GrpcContextTrackingExecutor extends ContextTrackingExecutor {
 
 
 
-	/**
-	 * Calls {@link #execute(Callable) execute(task)} and if it's rejected, sends
-	 * {@link Status#UNAVAILABLE} to {@code outboundObserver} and returns
-	 * {@link CompletableFuture#failedFuture(Throwable)} with the {@link RejectedExecutionException}
-	 * as the argument.
-	 */
-	public <T> CompletableFuture<T> execute(StreamObserver<?> outboundObserver, Callable<T> task) {
-		try {
-			return execute(task);
-		} catch (RejectedExecutionException e) {
-			outboundObserver.onError(Status.UNAVAILABLE.withCause(e).asException());
-			return CompletableFuture.failedFuture(e);
-		}
+	GrpcContextTrackingExecutor(
+		String name,
+		List<ContextTracker<?>> trackers,
+		ThreadPoolExecutor backingExecutor
+	) {
+		this(name, trackers, (ExecutorService) backingExecutor);
+		decorateRejectedExecutionHandler(backingExecutor);
+		ContextTrackingExecutor.decorateRejectedExecutionHandler(backingExecutor);
 	}
-
-
-
-	/**
-	 * Creates an {@link Awaitable.WithUnit} of {@link #shutdown()} and
-	 * {@link #enforceTermination(long, TimeUnit)}.
-	 */
-	public Awaitable.WithUnit toAwaitableOfEnforcedTermination() {
-		return (timeout, unit) -> {
-			shutdown();
-			return enforceTermination(timeout, unit).isEmpty();
-		};
-	}
-
-
-
-	/**
-	 * Creates an {@link Awaitable.WithUnit} of {@link #shutdown()} and
-	 * {@link #awaitTermination(long, TimeUnit)}.
-	 */
-	public Awaitable.WithUnit toAwaitableOfTermination() {
-		return (timeout, unit) -> {
-			shutdown();
-			return awaitTermination(timeout, unit);
-		};
-	}
-
-
-
-	GrpcContextTrackingExecutor(String name, int poolSize, List<ContextTracker<?>> trackers) {
-		super(name, poolSize, trackers);
-	}
-
-
 
 	GrpcContextTrackingExecutor(
 		String name,
-		int poolSize,
 		List<ContextTracker<?>> trackers,
-		BlockingQueue<Runnable> workQueue
+		ExecutorService backingExecutor
 	) {
-		super(name, poolSize, trackers, workQueue);
+		super(new ContextTrackingExecutor(trackers, backingExecutor));
+		this.name = name;
 	}
 
-
-
-	GrpcContextTrackingExecutor(
-		String name,
-		int poolSize,
-		List<ContextTracker<?>> trackers,
-		BlockingQueue<Runnable> workQueue,
-		BiConsumer<Object, ? super GrpcContextTrackingExecutor> rejectionHandler
-	) {
-		super(
+	GrpcContextTrackingExecutor(String name, List<ContextTracker<?>> trackers, int poolSize) {
+		this(
 			name,
-			poolSize,
 			trackers,
-			workQueue,
-			(task, executor) ->
-					rejectionHandler.accept(task, (GrpcContextTrackingExecutor) executor)
+			new ThreadPoolExecutor(
+				poolSize, poolSize, 0L, TimeUnit.SECONDS,
+				new LinkedBlockingQueue<>(),
+				new NamingThreadFactory(name)
+			)
 		);
 	}
 
-
+	GrpcContextTrackingExecutor(
+		String name,
+		List<ContextTracker<?>> trackers,
+		int poolSize,
+		BlockingQueue<Runnable> workQueue
+	) {
+		this(
+			name,
+			trackers,
+			new ThreadPoolExecutor(
+				poolSize, poolSize, 0L, TimeUnit.SECONDS,
+				workQueue,
+				new NamingThreadFactory(name)
+			)
+		);
+	}
 
 	GrpcContextTrackingExecutor(
 		String name,
-		int poolSize,
 		List<ContextTracker<?>> trackers,
+		int poolSize,
 		BlockingQueue<Runnable> workQueue,
-		BiConsumer<Object, ? super GrpcContextTrackingExecutor> rejectionHandler,
+		BiConsumer<? super Runnable, ? super GrpcContextTrackingExecutor> rejectionHandler
+	) {
+		this(
+			name,
+			trackers,
+			poolSize,
+			workQueue,
+			new RejectionHandler(rejectionHandler),
+			new NamingThreadFactory(name)
+		);
+	}
+
+	GrpcContextTrackingExecutor(
+		String name,
+		List<ContextTracker<?>> trackers,
+		int poolSize,
+		BlockingQueue<Runnable> workQueue,
+		BiConsumer<? super Runnable, ? super GrpcContextTrackingExecutor> rejectionHandler,
 		ThreadFactory threadFactory
 	) {
-		super(
+		this(
 			name,
-			poolSize,
 			trackers,
+			poolSize,
 			workQueue,
-			(task, executor) ->
-					rejectionHandler.accept(task, (GrpcContextTrackingExecutor) executor),
+			new RejectionHandler(rejectionHandler),
 			threadFactory
 		);
 	}
 
+	private static class RejectionHandler implements RejectedExecutionHandler {
 
+		GrpcContextTrackingExecutor executor;
+		final BiConsumer<? super Runnable, ? super GrpcContextTrackingExecutor> handler;
 
-	GrpcContextTrackingExecutor(
+		RejectionHandler(BiConsumer<? super Runnable, ? super GrpcContextTrackingExecutor> handler)
+		{
+			this.handler = handler;
+		}
+
+		@Override
+		public void rejectedExecution(Runnable rejectedTask, ThreadPoolExecutor backingExecutor) {
+			handler.accept(rejectedTask, executor);
+		}
+	}
+
+	private GrpcContextTrackingExecutor(
 		String name,
-		int poolSize,
 		List<ContextTracker<?>> trackers,
-		ExecutorService backingExecutor
+		int poolSize,
+		BlockingQueue<Runnable> workQueue,
+		RejectionHandler rejectionHandler,
+		ThreadFactory threadFactory
 	) {
-		super(name, poolSize, trackers, backingExecutor);
+		this(
+			name,
+			trackers,
+			new ThreadPoolExecutor(
+				poolSize, poolSize, 0L, TimeUnit.SECONDS,
+				workQueue,
+				threadFactory,
+				rejectionHandler
+			)
+		);
+		rejectionHandler.executor = this;
 	}
 }

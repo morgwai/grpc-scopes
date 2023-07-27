@@ -20,6 +20,7 @@ import pl.morgwai.base.util.concurrent.Awaitable;
 import pl.morgwai.samples.grpc.scopes.data_access.JpaRecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 
+import static pl.morgwai.samples.grpc.scopes.grpc.RecordStorageService.CONCURRENCY_LEVEL;
 import static pl.morgwai.samples.grpc.scopes.grpc.RecordStorageService.JPA_EXECUTOR_NAME;
 
 
@@ -81,6 +82,10 @@ public class RecordStorageServer {
 			binder.bind(RecordDao.class)
 				.to(JpaRecordDao.class)
 				.in(Scopes.SINGLETON);
+			binder.bind(Integer.class)
+				.annotatedWith(Names.named(CONCURRENCY_LEVEL))
+				.toInstance(JPA_EXECUTOR_THREADPOOL_SIZE + 1);
+				// +1 is to account for request message delivery delay
 		};
 		final var injector = Guice.createInjector(grpcModule, jpaModule);
 

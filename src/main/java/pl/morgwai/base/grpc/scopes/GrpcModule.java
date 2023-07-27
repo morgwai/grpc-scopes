@@ -11,8 +11,6 @@ import com.google.inject.Module;
 import io.grpc.*;
 
 import io.grpc.stub.StreamObserver;
-import pl.morgwai.base.guice.scopes.ContextTrackingExecutor.DetailedRejectedExecutionException;
-import pl.morgwai.base.guice.scopes.ContextTrackingExecutor.NamedThreadFactory;
 import pl.morgwai.base.util.concurrent.Awaitable;
 import pl.morgwai.base.guice.scopes.*;
 
@@ -49,14 +47,19 @@ public class GrpcModule implements Module {
 	public final Scope listenerEventScope =
 			new ContextScope<>("LISTENER_EVENT_SCOPE", listenerEventContextTracker);
 
-
-
 	/**
 	 * Scopes objects to the context of an RPC (either {@link ServerRpcContext} or
 	 * {@link ClientRpcContext}).
 	 */
 	public final Scope rpcScope = new InducedContextScope<>(
 			"RPC_SCOPE", listenerEventContextTracker, ListenerEventContext::getRpcContext);
+
+	/**
+	 * Singleton of {@link #listenerEventScope}.
+	 * {@link #configure(Binder)} binds {@code List<ContextTracker<?>>} to it for use with
+	 * {@link ContextTrackingExecutor#getActiveContexts(List)}.
+	 */
+	public final List<ContextTracker<?>> allTrackers = List.of(listenerEventContextTracker);
 
 
 
@@ -88,18 +91,9 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Singleton of {@link #listenerEventScope}.
-	 * {@link #configure(Binder)} binds {@code List<ContextTracker<?>>} to it for use with
-	 * {@link GrpcContextTrackingExecutor#getActiveContexts(List)}.
-	 */
-	public final List<ContextTracker<?>> allTrackers = List.of(listenerEventContextTracker);
-
-
-
-	/**
 	 * Binds  {@link #listenerEventContextTracker} and both contexts for injection.
 	 * Binds {@code List<ContextTracker<?>>} to {@link #allTrackers} that contains all trackers for
-	 * use with {@link GrpcContextTrackingExecutor#getActiveContexts(List)}.
+	 * use with {@link ContextTrackingExecutor#getActiveContexts(List)}.
 	 */
 	@Override
 	public void configure(Binder binder) {
@@ -117,6 +111,7 @@ public class GrpcModule implements Module {
 
 
 
+	/** List of all executors created by this module. */
 	public List<GrpcContextTrackingExecutor> getExecutors() {
 		return Collections.unmodifiableList(executors);
 	}
@@ -127,49 +122,42 @@ public class GrpcModule implements Module {
 
 	/**
 	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor} that uses an
-	 * unbound {@link LinkedBlockingQueue} and a new {@link NamedThreadFactory}.
+	 * unbound {@link LinkedBlockingQueue} and a new
+	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * To avoid {@link OutOfMemoryError}s, an external mechanism that limits maximum number of tasks
 	 * (such as a load balancer or a frontend proxy) should be used.</p>
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(String name, int poolSize) {
-		var executor = new GrpcContextTrackingExecutor(name, poolSize, allTrackers);
+		final var executor = new GrpcContextTrackingExecutor(name, allTrackers, poolSize);
 		executors.add(executor);
 		return executor;
 	}
 
-
-
 	/**
 	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor} that uses
 	 * {@code workQueue}, the default {@link RejectedExecutionHandler} and a new
-	 * {@link NamedThreadFactory} named after this executor.
+	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
-	 * The default {@link RejectedExecutionHandler} throws a
-	 * {@link DetailedRejectedExecutionException} if {@code workQueue} is full or the executor is
-	 * shutting down. It should usually be handled by sending {@link io.grpc.Status#UNAVAILABLE} to
-	 * the client.</p>
+	 * The default {@link RejectedExecutionHandler} throws a {@link RejectedExecutionException} if
+	 * {@code workQueue} is full or the executor is shutting down. It should usually be handled by
+	 * sending {@link io.grpc.Status#UNAVAILABLE} to the client.</p>
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,
 		int poolSize,
 		BlockingQueue<Runnable> workQueue
 	) {
-		var executor = new GrpcContextTrackingExecutor(name, poolSize, allTrackers, workQueue);
+		final var executor =
+				new GrpcContextTrackingExecutor(name, allTrackers, poolSize, workQueue);
 		executors.add(executor);
 		return executor;
 	}
 
-
-
 	/**
 	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor} that uses
-	 * {@code workQueue}, {@code rejectionHandler} and a new {@link NamedThreadFactory} named after
-	 * this executor.
-	 * <p>
-	 * The first param of {@code rejectionHandler} is a rejected task: either {@link Runnable} or
-	 * {@link Callable} depending whether {@link GrpcContextTrackingExecutor#execute(Runnable)} or
-	 * {@link GrpcContextTrackingExecutor#execute(Callable)} was used.</p>
+	 * {@code workQueue}, {@code rejectionHandler} and a new
+	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * In order for {@link GrpcContextTrackingExecutor#execute(StreamObserver, Runnable)} to work
 	 * properly, the {@code rejectionHandler} must throw a {@link RejectedExecutionException}.</p>
@@ -178,53 +166,51 @@ public class GrpcModule implements Module {
 		String name,
 		int poolSize,
 		BlockingQueue<Runnable> workQueue,
-		BiConsumer<Object, ? super GrpcContextTrackingExecutor> rejectionHandler
+		BiConsumer<? super Runnable, ? super GrpcContextTrackingExecutor> rejectionHandler
 	) {
-		var executor = new GrpcContextTrackingExecutor(
-				name, poolSize, allTrackers, workQueue, rejectionHandler);
+		final var executor = new GrpcContextTrackingExecutor(
+				name, allTrackers, poolSize, workQueue, rejectionHandler);
 		executors.add(executor);
 		return executor;
 	}
 
-
-
 	/**
 	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor} that uses
 	 * {@code workQueue}, {@code rejectionHandler} and {@code threadFactory}.
-	 * @see #newContextTrackingExecutor(String, int, BlockingQueue, BiConsumer)
+	 * @see #newContextTrackingExecutor(String, int, BlockingQueue, BiConsumer) fot notes on
+	 *     <code>rejectionHandler</code>.
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,
 		int poolSize,
 		BlockingQueue<Runnable> workQueue,
-		BiConsumer<Object, GrpcContextTrackingExecutor> rejectionHandler,
+		BiConsumer<? super Runnable, GrpcContextTrackingExecutor> rejectionHandler,
 		ThreadFactory threadFactory
 	) {
-		var executor = new GrpcContextTrackingExecutor(
-				name, poolSize, allTrackers, workQueue, rejectionHandler, threadFactory);
+		final var executor = new GrpcContextTrackingExecutor(
+				name, allTrackers, poolSize, workQueue, rejectionHandler, threadFactory);
 		executors.add(executor);
 		return executor;
 	}
 
-
-
-	/**
-	 * Constructs an instance backed by {@code backingExecutor}. A {@link RejectedExecutionHandler}
-	 * of the {@code backingExecutor} will receive a {@link Runnable} that consists of several
-	 * layers of wrappers around the original task, use
-	 * {@link pl.morgwai.base.guice.scopes.ContextTrackingExecutor#unwrapRejectedTask(Runnable)} to
-	 * obtain the original task.
-	 * @param poolSize informative only: to be returned by
-	 *     {@link pl.morgwai.base.guice.scopes.ContextTrackingExecutor#getPoolSize()}.
-	 * @see #newContextTrackingExecutor(String, int, BlockingQueue, BiConsumer)
-	 */
+	/** Constructs an instance backed by {@code backingExecutor}. */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,
-		int poolSize,
 		ExecutorService backingExecutor
 	) {
 		final var executor =
-				new GrpcContextTrackingExecutor(name, poolSize, allTrackers, backingExecutor);
+				new GrpcContextTrackingExecutor(name, allTrackers, backingExecutor);
+		executors.add(executor);
+		return executor;
+	}
+
+	/** Constructs an instance backed by {@code backingExecutor}. */
+	public GrpcContextTrackingExecutor newContextTrackingExecutor(
+		String name,
+		ThreadPoolExecutor backingExecutor
+	) {
+		final var executor =
+			new GrpcContextTrackingExecutor(name, allTrackers, backingExecutor);
 		executors.add(executor);
 		return executor;
 	}
@@ -236,11 +222,9 @@ public class GrpcModule implements Module {
 		for (var executor: executors) executor.shutdown();
 	}
 
-
-
 	/**
-	 * {@link GrpcContextTrackingExecutor#enforceTermination(long, java.util.concurrent.TimeUnit)
-	 * Enforces termination} of all executors obtained from this module.
+	 * {@link GrpcContextTrackingExecutor#toAwaitableOfEnforcedTermination() Enforces termination}
+	 * of all executors obtained from this module.
 	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
 	 */
 	public List<GrpcContextTrackingExecutor> enforceTerminationOfAllExecutors(
@@ -256,10 +240,9 @@ public class GrpcModule implements Module {
 	}
 
 	/**
-	 * {@link GrpcContextTrackingExecutor#awaitTermination(long, java.util.concurrent.TimeUnit)
-	 * Awaits for termination} of all executors obtained from this module.
+	 * {@link GrpcContextTrackingExecutor#toAwaitableOfTermination() Awaits for termination} of all
+	 * executors obtained from this module.
 	 * @return an empty list if all executors were terminated, list of unterminated otherwise.
-	 * @see #enforceTerminationOfAllExecutors(long, TimeUnit)
 	 */
 	public List<GrpcContextTrackingExecutor> awaitTerminationOfAllExecutors(
 		long timeout,
@@ -276,8 +259,6 @@ public class GrpcModule implements Module {
 	/**
 	 * {@link GrpcContextTrackingExecutor#awaitTermination() Awaits for termination} of all
 	 * executors obtained from this module.
-	 * @see #enforceTerminationOfAllExecutors(long, TimeUnit)
-	 * @see #awaitTerminationOfAllExecutors(long, TimeUnit)
 	 */
 	public void awaitTerminationOfAllExecutors() throws InterruptedException {
 		for (var executor: executors) executor.awaitTermination();
