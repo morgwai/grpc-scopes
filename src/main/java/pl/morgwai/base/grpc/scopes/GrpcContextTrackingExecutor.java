@@ -45,6 +45,13 @@ public class GrpcContextTrackingExecutor extends TaskTrackingExecutorDecorator {
 
 
 
+	@Override
+	public String toString() {
+		return "GrpcContextTrackingExecutor { name=\"" + name + "\" }";
+	}
+
+
+
 	GrpcContextTrackingExecutor(
 		String name,
 		List<ContextTracker<?>> trackers,
