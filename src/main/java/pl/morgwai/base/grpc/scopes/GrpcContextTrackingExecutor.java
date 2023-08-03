@@ -68,7 +68,18 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 
 
 
-	/** See {@link GrpcModule#newContextTrackingExecutor(String, int, BlockingQueue)}. */
+	/** See {@link GrpcModule#newContextTrackingExecutor(String, int, int)}. */
+	public GrpcContextTrackingExecutor(
+		String name,
+		List<ContextTracker<?>> trackers,
+		int poolSize,
+		int queueSize
+	) {
+		this(name, trackers, poolSize, new LinkedBlockingQueue<>(queueSize));
+	}
+
+
+
 	public GrpcContextTrackingExecutor(
 		String name,
 		List<ContextTracker<?>> trackers,
@@ -95,25 +106,31 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 			name,
 			trackers,
 			poolSize,
+			poolSize,
+			0L,
+			TimeUnit.SECONDS,
 			workQueue,
-			rejectionHandler,
-			new NamingThreadFactory(name)
+			new NamingThreadFactory(name),
+			rejectionHandler
 		);
 	}
 
 	/**
-	 * See {@link GrpcModule#newContextTrackingExecutor(String, int, BlockingQueue,
-	 * RejectedExecutionHandler, ThreadFactory)}.
+	 * See {@link GrpcModule#newContextTrackingExecutor(String, int, int, long, TimeUnit,
+	 * BlockingQueue, ThreadFactory, RejectedExecutionHandler)}.
 	 */
 	public GrpcContextTrackingExecutor(
 		String name,
 		List<ContextTracker<?>> trackers,
-		int poolSize,
+		int corePoolSize,
+		int maxPoolSize,
+		long keepAliveTime,
+		TimeUnit unit,
 		BlockingQueue<Runnable> workQueue,
-		RejectedExecutionHandler rejectionHandler,
-		ThreadFactory threadFactory
+		ThreadFactory threadFactory,
+		RejectedExecutionHandler handler
 	) {
-		super(poolSize, poolSize, 0L, TimeUnit.DAYS, workQueue, threadFactory, rejectionHandler);
+		super(corePoolSize, maxPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
 		this.name = name;
 		this.trackers = trackers;
 	}

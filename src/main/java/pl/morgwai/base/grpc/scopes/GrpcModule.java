@@ -120,8 +120,7 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor} that uses an
-	 * unbound {@link LinkedBlockingQueue} and a new
+	 * Constructs a fixed size executor that uses an unbound {@link LinkedBlockingQueue} and a new
 	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * To avoid {@link OutOfMemoryError}s, an external mechanism that limits maximum number of tasks
@@ -134,29 +133,28 @@ public class GrpcModule implements Module {
 	}
 
 	/**
-	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor} that uses
-	 * {@code workQueue}, the default {@link RejectedExecutionHandler} and a new
+	 * Constructs a fixed size executor that uses a {@link LinkedBlockingQueue} of size
+	 * {@code queueSize}, the default {@link RejectedExecutionHandler} and a new
 	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * The default {@link RejectedExecutionHandler} throws a {@link RejectedExecutionException} if
-	 * {@code workQueue} is full or the executor is shutting down. It should usually be handled by
+	 * the queue is full or the executor is shutting down. It should usually be handled by
 	 * sending {@link io.grpc.Status#UNAVAILABLE} to the client.</p>
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,
 		int poolSize,
-		BlockingQueue<Runnable> workQueue
+		int queueSize
 	) {
 		final var executor =
-				new GrpcContextTrackingExecutor(name, allTrackers, poolSize, workQueue);
+				new GrpcContextTrackingExecutor(name, allTrackers, poolSize, queueSize);
 		executors.add(executor);
 		return executor;
 	}
 
 	/**
-	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor} that uses
-	 * {@code workQueue}, {@code rejectionHandler} and a new
-	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
+	 * Constructs a fixed size executor that uses {@code workQueue}, {@code rejectionHandler} and a
+	 * new {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * {@code rejectionHandler} will receive a task wrapped with a {@link ContextBoundTask}.</p>
 	 * <p>
@@ -176,20 +174,32 @@ public class GrpcModule implements Module {
 	}
 
 	/**
-	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor} that uses
-	 * {@code workQueue}, {@code rejectionHandler} and {@code threadFactory}.
+	 * See {@link ThreadPoolExecutor#ThreadPoolExecutor(int, int, long, TimeUnit, BlockingQueue,
+	 * ThreadFactory, RejectedExecutionHandler)}.
 	 * @see #newContextTrackingExecutor(String, int, BlockingQueue, RejectedExecutionHandler) for
 	 *     notes on <code>rejectionHandler</code>.
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,
-		int poolSize,
+		int corePoolSize,
+		int maxPoolSize,
+		long keepAliveTime,
+		TimeUnit unit,
 		BlockingQueue<Runnable> workQueue,
-		RejectedExecutionHandler rejectionHandler,
-		ThreadFactory threadFactory
+		ThreadFactory threadFactory,
+		RejectedExecutionHandler handler
 	) {
 		final var executor = new GrpcContextTrackingExecutor(
-				name, allTrackers, poolSize, workQueue, rejectionHandler, threadFactory);
+			name,
+			allTrackers,
+			corePoolSize,
+			maxPoolSize,
+			keepAliveTime,
+			unit,
+			workQueue,
+			threadFactory,
+			handler
+		);
 		executors.add(executor);
 		return executor;
 	}
