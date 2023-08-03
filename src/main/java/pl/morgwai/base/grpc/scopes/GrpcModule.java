@@ -3,7 +3,6 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.BiConsumer;
 
 import com.google.inject.*;
 import com.google.inject.Module;
@@ -57,7 +56,7 @@ public class GrpcModule implements Module {
 	/**
 	 * Singleton of {@link #listenerEventScope}.
 	 * {@link #configure(Binder)} binds {@code List<ContextTracker<?>>} to it for use with
-	 * {@link ContextTrackingExecutor#getActiveContexts(List)}.
+	 * {@link ContextTracker#getActiveContexts(List)}.
 	 */
 	public final List<ContextTracker<?>> allTrackers = List.of(listenerEventContextTracker);
 
@@ -93,7 +92,7 @@ public class GrpcModule implements Module {
 	/**
 	 * Binds  {@link #listenerEventContextTracker} and both contexts for injection.
 	 * Binds {@code List<ContextTracker<?>>} to {@link #allTrackers} that contains all trackers for
-	 * use with {@link ContextTrackingExecutor#getActiveContexts(List)}.
+	 * use with {@link ContextTracker#getActiveContexts(List)}.
 	 */
 	@Override
 	public void configure(Binder binder) {
@@ -159,6 +158,8 @@ public class GrpcModule implements Module {
 	 * {@code workQueue}, {@code rejectionHandler} and a new
 	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
+	 * {@code rejectionHandler} will receive a task wrapped with a {@link ContextBoundTask}.</p>
+	 * <p>
 	 * In order for {@link GrpcContextTrackingExecutor#execute(StreamObserver, Runnable)} to work
 	 * properly, the {@code rejectionHandler} must throw a {@link RejectedExecutionException}.</p>
 	 */
@@ -166,7 +167,7 @@ public class GrpcModule implements Module {
 		String name,
 		int poolSize,
 		BlockingQueue<Runnable> workQueue,
-		BiConsumer<? super Runnable, ? super GrpcContextTrackingExecutor> rejectionHandler
+		RejectedExecutionHandler rejectionHandler
 	) {
 		final var executor = new GrpcContextTrackingExecutor(
 				name, allTrackers, poolSize, workQueue, rejectionHandler);
@@ -177,40 +178,18 @@ public class GrpcModule implements Module {
 	/**
 	 * Constructs an instance backed by a new fixed size {@link ThreadPoolExecutor} that uses
 	 * {@code workQueue}, {@code rejectionHandler} and {@code threadFactory}.
-	 * @see #newContextTrackingExecutor(String, int, BlockingQueue, BiConsumer) fot notes on
-	 *     <code>rejectionHandler</code>.
+	 * @see #newContextTrackingExecutor(String, int, BlockingQueue, RejectedExecutionHandler) for
+	 *     notes on <code>rejectionHandler</code>.
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,
 		int poolSize,
 		BlockingQueue<Runnable> workQueue,
-		BiConsumer<? super Runnable, GrpcContextTrackingExecutor> rejectionHandler,
+		RejectedExecutionHandler rejectionHandler,
 		ThreadFactory threadFactory
 	) {
 		final var executor = new GrpcContextTrackingExecutor(
 				name, allTrackers, poolSize, workQueue, rejectionHandler, threadFactory);
-		executors.add(executor);
-		return executor;
-	}
-
-	/** Constructs an instance backed by {@code backingExecutor}. */
-	public GrpcContextTrackingExecutor newContextTrackingExecutor(
-		String name,
-		ExecutorService backingExecutor
-	) {
-		final var executor =
-				new GrpcContextTrackingExecutor(name, allTrackers, backingExecutor);
-		executors.add(executor);
-		return executor;
-	}
-
-	/** Constructs an instance backed by {@code backingExecutor}. */
-	public GrpcContextTrackingExecutor newContextTrackingExecutor(
-		String name,
-		ThreadPoolExecutor backingExecutor
-	) {
-		final var executor =
-			new GrpcContextTrackingExecutor(name, allTrackers, backingExecutor);
 		executors.add(executor);
 		return executor;
 	}
