@@ -146,4 +146,25 @@ public class GrpcContextTrackingExecutorTest extends EasyMockSupport {
 			taskBlockingLatch.countDown();
 		}
 	}
+
+
+
+	@Test
+	public void testContextTracking() throws InterruptedException {
+		final AssertionError[] asyncError = {null};
+		final var taskFinished = new CountDownLatch(1);
+
+		eventContext.executeWithinSelf(() -> testSubject.execute(() -> {
+			try {
+				assertSame("context should be transferred when passing task to executor",
+						eventContext, grpcModule.listenerEventContextTracker.getCurrentContext());
+			} catch (AssertionError e) {
+				asyncError[0] = e;
+			} finally {
+				taskFinished.countDown();
+			}
+		}));
+		assertTrue("task should complete", taskFinished.await(20L, TimeUnit.MILLISECONDS));
+		if (asyncError[0] != null) throw asyncError[0];
+	}
 }
