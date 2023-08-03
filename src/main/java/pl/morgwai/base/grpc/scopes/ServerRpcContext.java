@@ -14,7 +14,7 @@ import io.grpc.ServerCall;
  * ServerCallHandler.startCall(...)} and all methods of the returned
  * {@link io.grpc.ServerCall.Listener} are executed within the same {@code ServerRpcContext}.
  *
- * @see GrpcModule#rpcScope corresponding <code>Scope</code>
+ * @see GrpcModule#rpcScope corresponding Scope
  * @see <a href="https://javadoc.io/doc/pl.morgwai.base/grpc-utils/latest/pl/morgwai/base/grpc/
 utils/GrpcServerFlow.html">a simplified overview of relation between methods of
  * Listener and user's request observer</a>

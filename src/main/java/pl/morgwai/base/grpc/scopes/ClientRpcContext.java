@@ -15,7 +15,7 @@ import io.grpc.*;
  * Specifically all methods of {@link io.grpc.ClientCall.Listener} are executed within the same
  * {@code ClientRpcContext}.
  *
- * @see GrpcModule#rpcScope corresponding <code>Scope</code>
+ * @see GrpcModule#rpcScope corresponding Scope
  * @see <a href="https://github.com/grpc/grpc-java/blob/master/stub/src/main/java/io/grpc/stub/
 ClientCalls.java">ClientCalls source for detailed info</a>
  */
@@ -89,9 +89,7 @@ public class ClientRpcContext extends RpcContext {
 
 
 
-	/**
-	 * Constructor for nested ctxs (see {@link GrpcModule#nestingClientInterceptor}).
-	 */
+	/** Constructor for nested ctxs (see {@link GrpcModule#nestingClientInterceptor}). */
 	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders, RpcContext parentCtx) {
 		super(requestHeaders);
 		this.rpc = rpc;
@@ -100,9 +98,7 @@ public class ClientRpcContext extends RpcContext {
 
 
 
-	/**
-	 * Constructor for NON-nested ctxs (see {@link GrpcModule#clientInterceptor}).
-	 */
+	/** Constructor for NON-nested ctxs (see {@link GrpcModule#clientInterceptor}). */
 	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders) {
 		this(rpc, requestHeaders, null);
 	}

@@ -30,8 +30,7 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Allows tracking of the
-	 * {@link ListenerEventContext context of a Listener event}.
+	 * Allows tracking of the {@link ListenerEventContext context of a Listener event}.
 	 * @see #listenerEventScope
 	 */
 	public final ContextTracker<ListenerEventContext> listenerEventContextTracker =
@@ -71,7 +70,7 @@ public class GrpcModule implements Module {
 	/**
 	 * All {@link Channel client Channels} must be intercepted either by this interceptor or by
 	 * {@link #nestingClientInterceptor}. This interceptor will keep client RPC contexts separate
-	 * even if the client calls were made within some enclosing RPC contexts.
+	 * even if they were made within some enclosing RPC contexts.
 	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
 	 */
 	public final ClientInterceptor clientInterceptor = new ClientContextInterceptor(this, false);
@@ -120,7 +119,8 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Constructs a fixed size executor that uses an unbound {@link LinkedBlockingQueue} and a new
+	 * Constructs a fixed size, context tracking executor that uses an unbound
+	 * {@link LinkedBlockingQueue} and a new
 	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * To avoid {@link OutOfMemoryError}s, an external mechanism that limits maximum number of tasks
@@ -133,8 +133,8 @@ public class GrpcModule implements Module {
 	}
 
 	/**
-	 * Constructs a fixed size executor that uses a {@link LinkedBlockingQueue} of size
-	 * {@code queueSize}, the default {@link RejectedExecutionHandler} and a new
+	 * Constructs a fixed size, context tracking executor that uses a {@link LinkedBlockingQueue} of
+	 * size {@code queueSize}, the default {@link RejectedExecutionHandler} and a new
 	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * The default {@link RejectedExecutionHandler} throws a {@link RejectedExecutionException} if
@@ -153,8 +153,9 @@ public class GrpcModule implements Module {
 	}
 
 	/**
-	 * Constructs a fixed size executor that uses {@code workQueue}, {@code rejectionHandler} and a
-	 * new {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
+	 * Constructs a fixed size, context tracking executor that uses {@code workQueue},
+	 * {@code rejectionHandler} and a new
+	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * {@code rejectionHandler} will receive a task wrapped with a {@link ContextBoundTask}.</p>
 	 * <p>
@@ -174,10 +175,12 @@ public class GrpcModule implements Module {
 	}
 
 	/**
-	 * See {@link ThreadPoolExecutor#ThreadPoolExecutor(int, int, long, TimeUnit, BlockingQueue,
-	 * ThreadFactory, RejectedExecutionHandler)}.
-	 * @see #newContextTrackingExecutor(String, int, BlockingQueue, RejectedExecutionHandler) for
-	 *     notes on <code>rejectionHandler</code>.
+	 * Constructs a context tracking executor.
+	 * @see ThreadPoolExecutor#ThreadPoolExecutor(int, int, long, TimeUnit, BlockingQueue,
+	 *     ThreadFactory, RejectedExecutionHandler) ThreadPoolExecutor constructor docs for param
+	 *     details
+	 * @see #newContextTrackingExecutor(String, int, BlockingQueue, RejectedExecutionHandler)
+	 *     notes on <code>rejectionHandler</code>
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,

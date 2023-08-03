@@ -13,7 +13,7 @@ import pl.morgwai.base.guice.scopes.TrackableContext;
  * ServerCallHandler.startCall(...)}. Each such event is executed within a separate new
  * {@code ListenerEventContext} instance.
  *
- * @see GrpcModule#listenerEventScope corresponding <code>Scope</code>
+ * @see GrpcModule#listenerEventScope corresponding Scope
  * @see <a href="https://javadoc.io/doc/pl.morgwai.base/grpc-utils/latest/pl/morgwai/base/grpc/
 utils/GrpcServerFlow.html">a simplified overview of relation between methods of
  * Listener and user's request observer</a>
