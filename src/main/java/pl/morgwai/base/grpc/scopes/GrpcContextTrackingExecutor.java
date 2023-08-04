@@ -42,7 +42,7 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 
 	@Override
 	public void execute(Runnable task) {
-		super.execute(new ContextBoundTask(task, ContextTracker.getActiveContexts(trackers)));
+		super.execute(new ContextBoundTask(ContextTracker.getActiveContexts(trackers), task));
 	}
 
 
