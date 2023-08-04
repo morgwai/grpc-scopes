@@ -46,6 +46,9 @@ Contains the above `Scope`s, `ContextTracker`s, some helper methods and gRPC int
 A `ThreadPoolExecutor` that upon dispatching a task, automatically transfers the current `RpcContext` and `ListenerEventContext` to the worker thread.<br/>
 Instances should usually be created using helper methods from the above `GrpcModule` and configured for named instance injection in user modules.
 
+### [ContextBinder](https://github.com/morgwai/guice-context-scopes/blob/master/src/main/java/pl/morgwai/base/guice/scopes/ContextBinder.java)
+Binds tasks and callbacks (`Runnable`s, `Consumer`s and `BiConsumer`s) to contexts that were active at the time of binding. This can be used to transfer `Context`s **almost** fully automatically when it's not possible to use `GrpcContextTrackingExecutor` when switching threads (for example when providing callbacks as arguments to async functions). See a usage sample below.
+
 
 ## USAGE
 
@@ -54,8 +57,7 @@ Instances should usually be created using helper methods from the above `GrpcMod
 1. All gRPC service instances added to server must be intercepted with `GrpcModule.serverInterceptor` like the following: `.addService(ServerInterceptors.intercept(myService, grpcModule.contextInterceptor /* more interceptors here... */))`
 1. All client `Channel`s must be intercepted with `GrpcModule.clientInterceptor` or `GrpcModule.nestingClientInterceptor` like the following: `ClientInterceptors.intercept(channel, grpcModule.clientInterceptor)`
 
-
-Server sample:
+### Server sample
 ```java
 public class MyServer {
 
@@ -97,7 +99,7 @@ public class MyServer {
 }
 ```
 
-Client sample:
+### Client sample
 ```java
 public class MyClient {
 
@@ -120,21 +122,18 @@ public class MyClient {
 }
 ```
 
-In cases when it's not possible to avoid thread switching without the use of `GrpcContextTrackingExecutor` (for example when passing callbacks to some async calls), static helper methods `ContextTracker.getActiveContexts(List<ContextTracker<?>>)` and `TrackableContext.executeWithinAll(List<TrackableContext>, Runnable)` can be used to manually transfer all active `Context`s:
+### Transferring contexts to callbacks with `ContextBinder`
 ```java
 class MyComponent {
 
-	@Inject List<ContextTracker<?>> allTrackers;
+    @Inject ContextBinder ctxBinder;
 
-	void methodThatCallsSomeAsyncMethod(/* ... */) {
-		// other code here...
-		final var activeCtxs = ContextTracker.getActiveContexts(allTrackers);
-		someAsyncMethod(arg1, /* ... */ argN, (callbackParam) ->
-			TrackableContext.executeWithinAll(activeCtxs, () -> {
-				// callback code here...
-			})
-		);
-	}
+    void methodThatCallsSomeAsyncMethod(/* ... */) {
+        // other code here...
+        someAsyncMethod(arg1, /* ... */ argN, ctxBinder.bindToContext((callbackParam) -> {
+            // callback code here...
+        }));
+    }
 }
 ```
 

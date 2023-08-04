@@ -94,7 +94,7 @@ public class GrpcContextTrackingExecutorTest extends EasyMockSupport {
 		assertTrue("rejectedTask should be a ContextBoundTask",
 				rejectedTask instanceof ContextBoundTask);
 		assertSame("rejectedTask should be overloadingTask",
-				overloadingTask, ((ContextBoundTask) rejectedTask).getWrappedTask());
+				overloadingTask, ((ContextBoundTask) rejectedTask).getBoundCallback());
 		final var capturedError = outboundObserver.capturedError;
 		assertTrue("argument passed to onError(...) should be a StatusException",
 				capturedError instanceof StatusException
@@ -139,9 +139,9 @@ public class GrpcContextTrackingExecutorTest extends EasyMockSupport {
 			assertTrue("unexecutedTask should be a ContextBoundTask",
 					unexecutedTask instanceof ContextBoundTask);
 			assertSame("runningTask should be blockingTask",
-					blockingTask, ((ContextBoundTask) runningTask).getWrappedTask());
+					blockingTask, ((ContextBoundTask) runningTask).getBoundCallback());
 			assertSame("unexecutedTask should be queuedTask",
-					queuedTask, ((ContextBoundTask) unexecutedTask).getWrappedTask());
+					queuedTask, ((ContextBoundTask) unexecutedTask).getBoundCallback());
 		} finally {
 			taskBlockingLatch.countDown();
 		}

@@ -105,6 +105,7 @@ public class GrpcModule implements Module {
 
 		TypeLiteral<List<ContextTracker<?>>> trackersType = new TypeLiteral<>() {};
 		binder.bind(trackersType).toInstance(allTrackers);
+		binder.bind(ContextBinder.class).toInstance(new ContextBinder(allTrackers));
 	}
 
 
