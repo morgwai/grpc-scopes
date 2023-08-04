@@ -10,7 +10,7 @@ import com.google.inject.Module;
 import io.grpc.*;
 
 import io.grpc.stub.StreamObserver;
-import pl.morgwai.base.util.concurrent.Awaitable;
+import pl.morgwai.base.utils.concurrent.Awaitable;
 import pl.morgwai.base.guice.scopes.*;
 
 
@@ -121,7 +121,7 @@ public class GrpcModule implements Module {
 	/**
 	 * Constructs a fixed size, context tracking executor that uses an unbound
 	 * {@link LinkedBlockingQueue} and a new
-	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
+	 * {@link pl.morgwai.base.utils.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * To avoid {@link OutOfMemoryError}s, an external mechanism that limits maximum number of tasks
 	 * (such as a load balancer or a frontend proxy) should be used.</p>
@@ -135,7 +135,7 @@ public class GrpcModule implements Module {
 	/**
 	 * Constructs a fixed size, context tracking executor that uses a {@link LinkedBlockingQueue} of
 	 * size {@code queueSize}, the default {@link RejectedExecutionHandler} and a new
-	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
+	 * {@link pl.morgwai.base.utils.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * The default {@link RejectedExecutionHandler} throws a {@link RejectedExecutionException} if
 	 * the queue is full or the executor is shutting down. It should usually be handled by
@@ -155,7 +155,7 @@ public class GrpcModule implements Module {
 	/**
 	 * Constructs a fixed size, context tracking executor that uses {@code workQueue},
 	 * {@code rejectionHandler} and a new
-	 * {@link pl.morgwai.base.util.concurrent.NamingThreadFactory} named after this executor.
+	 * {@link pl.morgwai.base.utils.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
 	 * {@code rejectionHandler} will receive a task wrapped with a {@link ContextBoundTask}.</p>
 	 * <p>

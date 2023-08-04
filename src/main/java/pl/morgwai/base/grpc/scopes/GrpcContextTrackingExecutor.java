@@ -8,8 +8,8 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import pl.morgwai.base.guice.scopes.ContextBoundTask;
 import pl.morgwai.base.guice.scopes.ContextTracker;
-import pl.morgwai.base.util.concurrent.NamingThreadFactory;
-import pl.morgwai.base.util.concurrent.TaskTrackingThreadPoolExecutor;
+import pl.morgwai.base.utils.concurrent.NamingThreadFactory;
+import pl.morgwai.base.utils.concurrent.TaskTrackingThreadPoolExecutor;
 
 
 

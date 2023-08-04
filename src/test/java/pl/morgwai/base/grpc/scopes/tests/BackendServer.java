@@ -6,7 +6,7 @@ import java.io.IOException;
 import io.grpc.Server;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
-import pl.morgwai.base.util.concurrent.Awaitable;
+import pl.morgwai.base.utils.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc.BackendImplBase;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendRequest;
 import pl.morgwai.base.grpc.scopes.tests.grpc.Empty;

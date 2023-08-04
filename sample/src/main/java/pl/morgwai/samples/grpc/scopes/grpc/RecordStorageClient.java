@@ -11,7 +11,7 @@ import io.grpc.*;
 
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.utils.BlockingResponseObserver;
-import pl.morgwai.base.util.concurrent.Awaitable;
+import pl.morgwai.base.utils.concurrent.Awaitable;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageBlockingStub;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageStub;
 

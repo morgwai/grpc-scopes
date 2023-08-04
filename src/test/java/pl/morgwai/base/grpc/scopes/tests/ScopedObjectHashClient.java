@@ -7,7 +7,7 @@ import io.grpc.*;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
-import pl.morgwai.base.util.concurrent.Awaitable;
+import pl.morgwai.base.utils.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.scopes.tests.grpc.Request;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc;

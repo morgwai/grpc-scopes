@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import io.grpc.stub.StreamObserver;
 import org.junit.*;
 
-import pl.morgwai.base.util.concurrent.Awaitable;
+import pl.morgwai.base.utils.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.tests.*;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
 

@@ -16,7 +16,7 @@ import pl.morgwai.base.grpc.scopes.GrpcContextTrackingExecutor;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
 import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 import pl.morgwai.base.jul.JulManualResetLogManager;
-import pl.morgwai.base.util.concurrent.Awaitable;
+import pl.morgwai.base.utils.concurrent.Awaitable;
 import pl.morgwai.samples.grpc.scopes.data_access.JpaRecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 
