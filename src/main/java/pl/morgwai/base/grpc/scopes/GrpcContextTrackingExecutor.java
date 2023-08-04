@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import pl.morgwai.base.guice.scopes.ContextBoundTask;
+import pl.morgwai.base.guice.scopes.ContextBoundRunnable;
 import pl.morgwai.base.guice.scopes.ContextTracker;
 import pl.morgwai.base.utils.concurrent.NamingThreadFactory;
 import pl.morgwai.base.utils.concurrent.TaskTrackingThreadPoolExecutor;
@@ -14,8 +14,8 @@ import pl.morgwai.base.utils.concurrent.TaskTrackingThreadPoolExecutor;
 
 
 /**
- * A {@link TaskTrackingThreadPoolExecutor} that wraps tasks with {@link ContextBoundTask} decorator
- * to automatically transfer contexts.
+ * A {@link TaskTrackingThreadPoolExecutor} that wraps tasks with {@link ContextBoundRunnable}
+ * decorator to automatically transfer contexts.
  * <p>
  * Instances should usually be created using
  * {@link GrpcModule#newContextTrackingExecutor(String, int)
@@ -42,7 +42,7 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 
 	@Override
 	public void execute(Runnable task) {
-		super.execute(new ContextBoundTask(ContextTracker.getActiveContexts(trackers), task));
+		super.execute(new ContextBoundRunnable(ContextTracker.getActiveContexts(trackers), task));
 	}
 
 
@@ -77,8 +77,6 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 	) {
 		this(name, trackers, poolSize, new LinkedBlockingQueue<>(queueSize));
 	}
-
-
 
 	public GrpcContextTrackingExecutor(
 		String name,

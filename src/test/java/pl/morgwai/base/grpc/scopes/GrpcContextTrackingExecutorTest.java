@@ -9,7 +9,7 @@ import io.grpc.stub.StreamObserver;
 import org.easymock.EasyMockSupport;
 import org.easymock.Mock;
 import org.junit.*;
-import pl.morgwai.base.guice.scopes.ContextBoundTask;
+import pl.morgwai.base.guice.scopes.ContextBoundRunnable;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
@@ -91,10 +91,10 @@ public class GrpcContextTrackingExecutorTest extends EasyMockSupport {
 		}
 		assertSame("rejectingExecutor should be testSubject",
 				testSubject, rejectingExecutor);
-		assertTrue("rejectedTask should be a ContextBoundTask",
-				rejectedTask instanceof ContextBoundTask);
+		assertTrue("rejectedTask should be a ContextBoundRunnable",
+				rejectedTask instanceof ContextBoundRunnable);
 		assertSame("rejectedTask should be overloadingTask",
-				overloadingTask, ((ContextBoundTask) rejectedTask).getBoundCallback());
+				overloadingTask, ((ContextBoundRunnable) rejectedTask).getBoundClosure());
 		final var capturedError = outboundObserver.capturedError;
 		assertTrue("argument passed to onError(...) should be a StatusException",
 				capturedError instanceof StatusException
@@ -134,14 +134,14 @@ public class GrpcContextTrackingExecutorTest extends EasyMockSupport {
 					1, aftermath.unexecutedTasks.size());
 			final var runningTask = aftermath.runningTasks.get(0);
 			final var unexecutedTask = aftermath.unexecutedTasks.get(0);
-			assertTrue("runningTask should be a ContextBoundTask",
-					runningTask instanceof ContextBoundTask);
-			assertTrue("unexecutedTask should be a ContextBoundTask",
-					unexecutedTask instanceof ContextBoundTask);
+			assertTrue("runningTask should be a ContextBoundRunnable",
+					runningTask instanceof ContextBoundRunnable);
+			assertTrue("unexecutedTask should be a ContextBoundRunnable",
+					unexecutedTask instanceof ContextBoundRunnable);
 			assertSame("runningTask should be blockingTask",
-					blockingTask, ((ContextBoundTask) runningTask).getBoundCallback());
+					blockingTask, ((ContextBoundRunnable) runningTask).getBoundClosure());
 			assertSame("unexecutedTask should be queuedTask",
-					queuedTask, ((ContextBoundTask) unexecutedTask).getBoundCallback());
+					queuedTask, ((ContextBoundRunnable) unexecutedTask).getBoundClosure());
 		} finally {
 			taskBlockingLatch.countDown();
 		}

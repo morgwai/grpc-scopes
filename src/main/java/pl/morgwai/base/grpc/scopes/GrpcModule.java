@@ -158,7 +158,7 @@ public class GrpcModule implements Module {
 	 * {@code rejectionHandler} and a new
 	 * {@link pl.morgwai.base.utils.concurrent.NamingThreadFactory} named after this executor.
 	 * <p>
-	 * {@code rejectionHandler} will receive a task wrapped with a {@link ContextBoundTask}.</p>
+	 * {@code rejectionHandler} will receive a task wrapped with a {@link ContextBoundRunnable}.</p>
 	 * <p>
 	 * In order for {@link GrpcContextTrackingExecutor#execute(StreamObserver, Runnable)} to work
 	 * properly, the {@code rejectionHandler} must throw a {@link RejectedExecutionException}.</p>
