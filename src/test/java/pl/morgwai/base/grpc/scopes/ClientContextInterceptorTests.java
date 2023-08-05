@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 
 
 
-public class ClientContextInterceptorTest extends EasyMockSupport {
+public class ClientContextInterceptorTests extends EasyMockSupport {
 
 
 

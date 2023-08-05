@@ -21,7 +21,7 @@ import static org.junit.Assert.*;
 
 
 
-public class IntegrationTest {
+public class IntegrationTests {
 
 	// TODO: test multi-layer nesting
 
@@ -241,13 +241,13 @@ public class IntegrationTest {
 
 	static Level LOG_LEVEL = Level.WARNING;
 
-	static final Logger log = Logger.getLogger(IntegrationTest.class.getName());
+	static final Logger log = Logger.getLogger(IntegrationTests.class.getName());
 
 	@BeforeClass
 	public static void setupLogging() {
 		try {
 			LOG_LEVEL = Level.parse(System.getProperty(
-					IntegrationTest.class.getPackageName() + ".level"));
+					IntegrationTests.class.getPackageName() + ".level"));
 		} catch (Exception ignored) {}
 		log.setLevel(LOG_LEVEL);
 		ScopedObjectHashService.setLogLevel(LOG_LEVEL);

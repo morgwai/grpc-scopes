@@ -16,7 +16,7 @@ import static org.junit.Assert.assertEquals;
 
 
 
-public class GrpcContextTrackingExecutorTest extends EasyMockSupport {
+public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 
 
 
