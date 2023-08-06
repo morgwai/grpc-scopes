@@ -64,32 +64,31 @@ Binds tasks and callbacks (`Runnable`s, `Consumer`s and `BiConsumer`s) to contex
 public class MyServer {
 
     final Server grpcServer;
-    final Thread shutdownHook = new Thread(() -> {/* shutdown code here... */});
 
     public MyServer(int port /* more params here... */) throws Exception {
         final var grpcModule = new GrpcModule();
-        final var myModule = (binder) -> {
+        final Module myModule = (binder) -> {
             binder.bind(MyComponent.class)
-                    .to(MyComponentImpl.class)
-                    .in(grpcModule.rpcScope);
+                .to(MyComponentImpl.class)
+                .in(grpcModule.rpcScope);
             // more bindings here
         };
         // more modules here
 
         final var injector = Guice.createInjector(grpcModule, myModule /* more modules here... */);
-
         final var myService = injector.getInstance(MyService.class);
+                // myService will get Provider<MyComponent> injected
         // more services here...
 
         grpcServer = ServerBuilder
             .forPort(port)
             .directExecutor()
             .addService(ServerInterceptors.intercept(
-                myService, grpcModule.serverInterceptor /* more interceptors here... */))
+                    myService, grpcModule.serverInterceptor /* more interceptors here... */))
             // more services here...
             .build();
 
-        Runtime.getRuntime().addShutdownHook(shutdownHook);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {/* shutdown code here... */}));
         grpcServer.start();
     }
 
@@ -106,21 +105,54 @@ public class MyServer {
 public class MyClient {
 
     public static void main(String[] args) throws Exception {
-        final var grpcModule = new GrpcModule();
-        final var managedChannel = ManagedChannelBuilder
-            .forTarget(TARGET)
-            .usePlaintext()
-            .build();
-        final var channel = ClientInterceptors.intercept(
-                managedChannel, grpcModule.nestingClientInterceptor);
-        final var stub = MyServiceGrpc.newStub(channel);
+        final var entityManagerFactory = createEntityManagerFactory(args[0]);
+        final ManagedChannel managedChannel;
+        try {
+            managedChannel = ManagedChannelBuilder
+                .forTarget(args[1])
+                .usePlaintext()
+                .build();
+        } catch (Throwable t) {
+            entityManagerFactory.close();
+            throw t;
+        }
+        try {
+            final var grpcModule = new GrpcModule();
+            final var channel = ClientInterceptors.intercept(
+                    managedChannel, grpcModule.nestingClientInterceptor);
+            final var stub = MyServiceGrpc.newStub(channel);
+    
+            final Module myModule = (binder) -> {
+                binder.bind(EntityManagerFactory.class)
+                    .toInstance(entityManagerFactory);
+                binder.bind(EntityManager.class)
+                    .toProvider(entityManagerFactory::createEntityManager)
+                    .in(grpcModule.listenerEventScope);
+                binder.bind(MyDao.class)
+                    .to(MyJpaDao.class)
+                    .in(Scopes.SINGLETON);
+                // more bindings here
+            };
+            // more modules here
 
-        makeAnRpcCall(stub, args);
+            final var injector = Guice.createInjector(
+                    grpcModule, myModule /* more modules here... */);
+            final var myResponseObserver = injector.getInstance(MyResponseObserver.class);
+                    // myResponseObserver will get MyDao injected
 
-        shutdown(managedChannel);
+            stub.myUnaryRequestStreamingResponseProcedure(args[2], myResponseObserver);
+            myResponseObserver.awaitCompletion(30, TimeUnit.MINUTES);
+        } finally {
+            entityManagerFactory.close();
+            managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+            if ( !managedChannel.isTerminated()) {
+                System.err.println("channel has NOT shutdown cleanly");
+                managedChannel.shutdownNow();
+            }
+        }
     }
 
-    // ...
+    // more code here...
 }
 ```
 
