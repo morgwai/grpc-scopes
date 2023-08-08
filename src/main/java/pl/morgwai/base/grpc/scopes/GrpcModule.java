@@ -89,20 +89,22 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Binds  {@link #listenerEventContextTracker} and both contexts for injection.
-	 * Binds {@code List<ContextTracker<?>>} to {@link #allTrackers} that contains all trackers for
-	 * use with {@link ContextTracker#getActiveContexts(List)}.
+	 * Creates infrastructure bindings. Binds the following:
+	 * <ul>
+	 *   <li>Their respective types to {@link #listenerEventContextTracker} and both contexts</li>
+	 *   <li>{@code List<ContextTracker<?>>} to {@link #allTrackers}</li>
+	 *   <li>{@link ContextBinder} to {@code new ContextBinder(allTrackers)}</li>
+	 * </ul>
 	 */
 	@Override
 	public void configure(Binder binder) {
-		TypeLiteral<ContextTracker<ListenerEventContext>> messageContextTrackerType =
+		TypeLiteral<ContextTracker<ListenerEventContext>> listenerEventContextTrackerType =
 				new TypeLiteral<>() {};
-		binder.bind(messageContextTrackerType).toInstance(listenerEventContextTracker);
+		binder.bind(listenerEventContextTrackerType).toInstance(listenerEventContextTracker);
 		binder.bind(ListenerEventContext.class).toProvider(
 				listenerEventContextTracker::getCurrentContext);
 		binder.bind(RpcContext.class).toProvider(
 				() -> listenerEventContextTracker.getCurrentContext().getRpcContext());
-
 		TypeLiteral<List<ContextTracker<?>>> trackersType = new TypeLiteral<>() {};
 		binder.bind(trackersType).toInstance(allTrackers);
 		binder.bind(ContextBinder.class).toInstance(new ContextBinder(allTrackers));
@@ -277,7 +279,7 @@ public class GrpcModule implements Module {
 
 
 
-	// For internal use by interceptors.
+	/** For internal use by interceptors. */
 	ListenerEventContext newListenerEventContext(RpcContext rpcContext) {
 		return new ListenerEventContext(rpcContext, listenerEventContextTracker);
 	}
