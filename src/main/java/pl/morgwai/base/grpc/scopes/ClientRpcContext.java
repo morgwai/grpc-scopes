@@ -52,18 +52,13 @@ public class ClientRpcContext extends RpcContext {
 	void setStatus(Status status) { this.status = status; }
 	Status status;
 
-	final RpcContext parentCtx;
-
-
-
 	/**
 	 * If this RPC was issued as a nested child in the context of another RPC and
 	 * {@link GrpcModule#nestingClientInterceptor} was used to intercept the given {@link Channel},
 	 * then this method will return the context of the parent RPC. Otherwise {@code empty()}.
 	 */
-	public Optional<RpcContext> getParentContext() {
-		return Optional.ofNullable(parentCtx);
-	}
+	public Optional<RpcContext> getParentContext() { return Optional.ofNullable(parentCtx); }
+	final RpcContext parentCtx;
 
 
 
