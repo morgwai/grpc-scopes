@@ -5,9 +5,8 @@ plugins {
 	id 'com.google.protobuf' version '0.8.17'
 }
 
-java {
-	sourceCompatibility = JavaVersion.VERSION_11
-	targetCompatibility = JavaVersion.VERSION_11
+tasks.withType(JavaCompile).configureEach {
+    options.release = 11
 }
 
 repositories {
@@ -31,4 +30,3 @@ sourceSets {
 		}
 	}
 }
-
