@@ -175,6 +175,7 @@ public class IntegrationTests {
 	}
 
 
+
 	/**
 	 * First issues a "warmup" unary call to populate scoped object logs, then issues a streaming
 	 * call that is cancelled after 3 request messages.
