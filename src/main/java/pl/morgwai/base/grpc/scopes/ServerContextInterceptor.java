@@ -19,6 +19,12 @@ public class ServerContextInterceptor implements ServerInterceptor {
 
 
 
+	ServerContextInterceptor(GrpcModule grpcModule) {
+		this.grpcModule = grpcModule;
+	}
+
+
+
 	@Override
 	public <RequestT, ResponseT> Listener<RequestT> interceptCall(
 		ServerCall<RequestT, ResponseT> rpc,
@@ -29,7 +35,7 @@ public class ServerContextInterceptor implements ServerInterceptor {
 		try {
 			final var listener = grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
 					() -> handler.startCall(rpc, headers));
-			return new ListenerWrapper<>(listener, rpcContext);
+			return new ListenerProxy<>(listener, rpcContext);
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception neverHappens) {  // result of wrapping startCall(...) with a Callable
@@ -39,14 +45,18 @@ public class ServerContextInterceptor implements ServerInterceptor {
 
 
 
-	class ListenerWrapper<RequestT> extends Listener<RequestT> {
+	/**
+	 * Executes each method of the wrapped {@link Listener} within a new
+	 * {@link ListenerEventContext}.
+	 */
+	class ListenerProxy<RequestT> extends Listener<RequestT> {
 
 		final Listener<RequestT> wrappedListener;
 		final ServerRpcContext rpcContext;
 
 
 
-		ListenerWrapper(Listener<RequestT> listenerToWrap, ServerRpcContext rpcContext) {
+		ListenerProxy(Listener<RequestT> listenerToWrap, ServerRpcContext rpcContext) {
 			this.wrappedListener = listenerToWrap;
 			this.rpcContext = rpcContext;
 		}
@@ -80,11 +90,5 @@ public class ServerContextInterceptor implements ServerInterceptor {
 		@Override public void onComplete() {
 			executeWithinCtxs(wrappedListener::onComplete);
 		}
-	}
-
-
-
-	ServerContextInterceptor(GrpcModule grpcModule) {
-		this.grpcModule = grpcModule;
 	}
 }
