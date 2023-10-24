@@ -21,22 +21,37 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 
+	ClientContextInterceptor(GrpcModule grpcModule, boolean nesting) {
+		this.grpcModule = grpcModule;
+		this.nesting = nesting;
+	}
+
+
+
 	@Override
 	public <RequestT, ResponseT> ClientCall<RequestT, ResponseT> interceptCall(
 		MethodDescriptor<RequestT, ResponseT> method,
 		CallOptions callOptions,
 		Channel channel
 	) {
-		return new RpcWrapper<>(channel.newCall(method, callOptions));
+		return new RpcProxy<>(channel.newCall(method, callOptions));
 	}
 
 
 
-	class RpcWrapper<RequestT, ResponseT> extends ClientCall<RequestT, ResponseT> {
+	/**
+	 * Upon {@link #start(Listener, Metadata) start of the wrapped RPC} creates its
+	 * {@link ClientRpcContext Context} and wraps its {@link Listener} with a {@link ListenerProxy}.
+	 */
+	class RpcProxy<RequestT, ResponseT> extends ClientCall<RequestT, ResponseT> {
 
 		final ClientCall<RequestT, ResponseT> wrappedRpc;
 
-		RpcWrapper(ClientCall<RequestT, ResponseT> rpc) { wrappedRpc = rpc; }
+
+
+		RpcProxy(ClientCall<RequestT, ResponseT> rpcToWrap) {
+			this.wrappedRpc = rpcToWrap;
+		}
 
 
 
@@ -47,7 +62,7 @@ public class ClientContextInterceptor implements ClientInterceptor {
 					? new ClientRpcContext(
 							wrappedRpc, requestHeaders, parentEventCtx.getRpcContext())
 					: new ClientRpcContext(wrappedRpc, requestHeaders);
-			wrappedRpc.start(new ListenerWrapper<>(listener, rpcCtx), requestHeaders);
+			wrappedRpc.start(new ListenerProxy<>(listener, rpcCtx), requestHeaders);
 		}
 
 
@@ -73,14 +88,18 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 
-	class ListenerWrapper<ResponseT> extends Listener<ResponseT> {
+	/**
+	 * Executes each method of the wrapped {@link Listener} within a new
+	 * {@link ListenerEventContext}.
+	 */
+	class ListenerProxy<ResponseT> extends Listener<ResponseT> {
 
 		final Listener<ResponseT> wrappedListener;
 		final ClientRpcContext rpcContext;
 
 
 
-		ListenerWrapper(Listener<ResponseT> listenerToWrap, ClientRpcContext rpcContext) {
+		ListenerProxy(Listener<ResponseT> listenerToWrap, ClientRpcContext rpcContext) {
 			this.wrappedListener = listenerToWrap;
 			this.rpcContext = rpcContext;
 		}
@@ -117,12 +136,5 @@ public class ClientContextInterceptor implements ClientInterceptor {
 			rpcContext.setTrailers(trailers);
 			executeWithinCtxs(() -> wrappedListener.onClose(status, trailers));
 		}
-	}
-
-
-
-	ClientContextInterceptor(GrpcModule grpcModule, boolean nesting) {
-		this.grpcModule = grpcModule;
-		this.nesting = nesting;
 	}
 }

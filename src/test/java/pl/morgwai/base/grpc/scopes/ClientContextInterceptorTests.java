@@ -11,7 +11,7 @@ import io.grpc.MethodDescriptor.MethodType;
 import org.easymock.*;
 import org.junit.Before;
 import org.junit.Test;
-import pl.morgwai.base.grpc.scopes.ClientContextInterceptor.ListenerWrapper;
+import pl.morgwai.base.grpc.scopes.ClientContextInterceptor.ListenerProxy;
 import pl.morgwai.base.grpc.scopes.tests.ContextVerifier;
 
 import static org.easymock.EasyMock.*;
@@ -95,7 +95,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		// intercept and start a mock RPC, capture created Listener and ctx
 		final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
 		rpc.start(mockListener, requestHeaders);
-		final var decoratedListener = (ListenerWrapper<Integer>) listenerCapture.getValue();
+		final var decoratedListener = (ListenerProxy<Integer>) listenerCapture.getValue();
 		final var rpcCtx = decoratedListener.rpcContext;
 
 		// basic verifications
@@ -173,7 +173,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 				rpc.start(mockListener, requestHeaders);
 			}
 		);
-		final var childRpcCtx = ((ListenerWrapper<Integer>) listenerCapture.getValue()).rpcContext;
+		final var childRpcCtx = ((ListenerProxy<Integer>) listenerCapture.getValue()).rpcContext;
 
 		// verify sharing/isolation of an RPC-scoped object between a child and its parent
 		final Integer childProvidedObject = 69;
