@@ -14,7 +14,7 @@ Oversimplifying again, in case of unary inbound, these 2 Scopes have roughly the
 See [this DZone article](https://dzone.com/articles/combining-grpc-with-guice) for extended high-level explanation.<br/>
 <br/>
 Technically:
-* A `ServerCall.Listener` creation in `ServerCallHandler.startCall(...)`, a call to any of `ServerCall.Listener`'s methods, a call to any of `ClientCall.Listener`'s methods, each run within **a separate instance** of [ListenerEventContext](src/main/java/pl/morgwai/base/grpc/scopes/ListenerEventContext.java).
+* A `ServerCall.Listener` creation in `ServerCallHandler.startCall(...)`, a call to any of `ServerCall.Listener`'s methods, a call to any of `ClientCall.Listener`'s methods, each run within **a separate instance** of [ListenerEventContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ListenerEventContext.html).
   * For servers this means that:
     * all callbacks to request `StreamObserver`s returned by methods implementing RPC procedures
     * methods implementing RPC procedures themselves
@@ -26,13 +26,13 @@ Technically:
     * all invocations of callbacks registered via `ClientCallStreamObserver`
     
     have "separate `listenerEventScope`s".
-* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within **the same instance** of [ServerRpcContext](src/main/java/pl/morgwai/base/grpc/scopes/ServerRpcContext.java). This means that:
+* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within **the same instance** of [ServerRpcContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ServerRpcContext.html). This means that:
   * a single given call to a method implementing RPC procedure
   * all callbacks to the request `StreamObserver` returned by this given call
   * all callbacks to handlers registered via this call's `ServerCallStreamObserver`
   
   all share "the same `rpcScope`".
-* Each method call to a single given instance of `ClientCall.Listener` run within **the same instance** of [ClientRpcContext](src/main/java/pl/morgwai/base/grpc/scopes/ClientRpcContext.java). This means that:
+* Each method call to a single given instance of `ClientCall.Listener` run within **the same instance** of [ClientRpcContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ClientRpcContext.html). This means that:
   * all callbacks to the response `StreamObserver` supplied as an argument to this given call of the stub sRPC method
   * all callbacks to handlers registered via this call's `ClientCallStreamObserver`
   
@@ -41,14 +41,14 @@ Technically:
 
 ## MAIN USER CLASSES
 
-### [GrpcModule](src/main/java/pl/morgwai/base/grpc/scopes/GrpcModule.java)
+### [GrpcModule](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/GrpcModule.html)
 Contains the above `Scope`s, `ContextTracker`s, some helper methods and gRPC interceptors that start the above contexts.
 
-### [GrpcContextTrackingExecutor](src/main/java/pl/morgwai/base/grpc/scopes/GrpcContextTrackingExecutor.java)
+### [GrpcContextTrackingExecutor](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/GrpcContextTrackingExecutor.html)
 A `ThreadPoolExecutor` that upon dispatching a task, automatically transfers the current `RpcContext` and `ListenerEventContext` to the worker thread.<br/>
 Instances should usually be created using helper methods from the above `GrpcModule` and configured for named instance injection in user modules.
 
-### [ContextBinder](https://github.com/morgwai/guice-context-scopes/blob/master/src/main/java/pl/morgwai/base/guice/scopes/ContextBinder.java)
+### [ContextBinder](https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/latest/pl/morgwai/base/guice/scopes/ContextBinder.html)
 Binds tasks and callbacks (`Runnable`s, `Consumer`s and `BiConsumer`s) to contexts that were active at the time of binding. This can be used to transfer `Context`s **almost** fully automatically when it's not possible to use `GrpcContextTrackingExecutor` when switching threads (for example when providing callbacks as arguments to async functions). See a usage sample below.
 
 
