@@ -59,6 +59,14 @@ public class GrpcModule implements Module {
 	 */
 	public final List<ContextTracker<?>> allTrackers = List.of(listenerEventContextTracker);
 
+	/** {@code ContextBinder} created with {@link #allTrackers}. */
+	public final ContextBinder contextBinder = new ContextBinder(allTrackers);
+
+	/** Calls {@link ContextTracker#getActiveContexts(List) getActiveContexts(allTrackers)}. */
+	public List<TrackableContext<?>> getActiveContexts() {
+		return ContextTracker.getActiveContexts(allTrackers);
+	}
+
 
 
 	/**
@@ -93,7 +101,7 @@ public class GrpcModule implements Module {
 	 * <ul>
 	 *   <li>Their respective types to {@link #listenerEventContextTracker} and both contexts</li>
 	 *   <li>{@code List<ContextTracker<?>>} to {@link #allTrackers}</li>
-	 *   <li>{@link ContextBinder} to {@code new ContextBinder(allTrackers)}</li>
+	 *   <li>{@link ContextBinder} to {@link #contextBinder}</li>
 	 * </ul>
 	 */
 	@Override
@@ -107,7 +115,7 @@ public class GrpcModule implements Module {
 				() -> listenerEventContextTracker.getCurrentContext().getRpcContext());
 		TypeLiteral<List<ContextTracker<?>>> trackersType = new TypeLiteral<>() {};
 		binder.bind(trackersType).toInstance(allTrackers);
-		binder.bind(ContextBinder.class).toInstance(new ContextBinder(allTrackers));
+		binder.bind(ContextBinder.class).toInstance(contextBinder);
 	}
 
 
