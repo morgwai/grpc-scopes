@@ -6,8 +6,7 @@ import java.util.concurrent.*;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import pl.morgwai.base.guice.scopes.ContextBoundRunnable;
-import pl.morgwai.base.guice.scopes.ContextTracker;
+import pl.morgwai.base.guice.scopes.*;
 import pl.morgwai.base.utils.concurrent.NamingThreadFactory;
 import pl.morgwai.base.utils.concurrent.TaskTrackingThreadPoolExecutor;
 
@@ -28,21 +27,20 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 	public String getName() { return name; }
 	final String name;
 
-	final List<ContextTracker<?>> trackers;
+	final ContextBinder ctxBinder;
 
 
 
 	/** See {@link GrpcModule#newContextTrackingExecutor(String, int)}. */
-	public GrpcContextTrackingExecutor(String name, List<ContextTracker<?>> trackers, int poolSize)
-	{
-		this(name, trackers, poolSize, new LinkedBlockingQueue<>());
+	public GrpcContextTrackingExecutor(String name, ContextBinder ctxBinder, int poolSize) {
+		this(name, ctxBinder, poolSize, new LinkedBlockingQueue<>());
 	}
 
 
 
 	@Override
 	public void execute(Runnable task) {
-		super.execute(new ContextBoundRunnable(ContextTracker.getActiveContexts(trackers), task));
+		super.execute(ctxBinder.bindToContext(task));
 	}
 
 
@@ -68,31 +66,73 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 
 
 
-	/** See {@link GrpcModule#newContextTrackingExecutor(String, int, int)}. */
+	/**
+	 * See {@link GrpcModule#newContextTrackingExecutor(String, int)}.
+	 * @deprecated use {@link #GrpcContextTrackingExecutor(String, ContextBinder, int)} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	public GrpcContextTrackingExecutor(String name, List<ContextTracker<?>> trackers, int poolSize)
+	{
+		this(name, new ContextBinder(trackers), poolSize);
+	}
+
+	/**
+	 * See {@link GrpcModule#newContextTrackingExecutor(String, int, int)}.
+	 * @deprecated use {@link #GrpcContextTrackingExecutor(String, ContextBinder, int, int)}
+	 * instead.
+	 */
+	@Deprecated(forRemoval = true)
 	public GrpcContextTrackingExecutor(
 		String name,
 		List<ContextTracker<?>> trackers,
 		int poolSize,
 		int queueSize
 	) {
-		this(name, trackers, poolSize, new LinkedBlockingQueue<>(queueSize));
+		this(name, new ContextBinder(trackers), poolSize, queueSize);
 	}
 
+	/** See {@link GrpcModule#newContextTrackingExecutor(String, int, int)}. */
+	public GrpcContextTrackingExecutor(
+		String name,
+		ContextBinder ctxBinder,
+		int poolSize,
+		int queueSize
+	) {
+		this(name, ctxBinder, poolSize, new LinkedBlockingQueue<>(queueSize));
+	}
+
+	/**
+	 * @deprecated use
+	 * {@link #GrpcContextTrackingExecutor(String, ContextBinder, int, BlockingQueue)} instead.
+	 */
+	@Deprecated(forRemoval = true)
 	public GrpcContextTrackingExecutor(
 		String name,
 		List<ContextTracker<?>> trackers,
 		int poolSize,
 		BlockingQueue<Runnable> workQueue
 	) {
+		this(name, new ContextBinder(trackers), poolSize, workQueue);
+	}
+
+	public GrpcContextTrackingExecutor(
+		String name,
+		ContextBinder ctxBinder,
+		int poolSize,
+		BlockingQueue<Runnable> workQueue
+	) {
 		super(poolSize, poolSize, 0L, TimeUnit.DAYS, workQueue, new NamingThreadFactory(name));
 		this.name = name;
-		this.trackers = trackers;
+		this.ctxBinder = ctxBinder;
 	}
 
 	/**
 	 * See {@link GrpcModule#newContextTrackingExecutor(String, int, BlockingQueue,
 	 * RejectedExecutionHandler)}.
+	 * @deprecated use {@link #GrpcContextTrackingExecutor(String, ContextBinder, int,
+	 * BlockingQueue, RejectedExecutionHandler)} instead.
 	 */
+	@Deprecated(forRemoval = true)
 	public GrpcContextTrackingExecutor(
 		String name,
 		List<ContextTracker<?>> trackers,
@@ -102,7 +142,27 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 	) {
 		this(
 			name,
-			trackers,
+			new ContextBinder(trackers),
+			poolSize,
+			workQueue,
+			rejectionHandler
+		);
+	}
+
+	/**
+	 * See {@link GrpcModule#newContextTrackingExecutor(String, int, BlockingQueue,
+	 * RejectedExecutionHandler)}.
+	 */
+	public GrpcContextTrackingExecutor(
+		String name,
+		ContextBinder ctxBinder,
+		int poolSize,
+		BlockingQueue<Runnable> workQueue,
+		RejectedExecutionHandler rejectionHandler
+	) {
+		this(
+			name,
+			ctxBinder,
 			poolSize,
 			poolSize,
 			0L,
@@ -116,7 +176,10 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 	/**
 	 * See {@link GrpcModule#newContextTrackingExecutor(String, int, int, long, TimeUnit,
 	 * BlockingQueue, ThreadFactory, RejectedExecutionHandler)}.
+	 * @deprecated use {@link #GrpcContextTrackingExecutor(String, ContextBinder, int, int, long,
+	 * TimeUnit, BlockingQueue, ThreadFactory, RejectedExecutionHandler)} instead.
 	 */
+	@Deprecated(forRemoval = true)
 	public GrpcContextTrackingExecutor(
 		String name,
 		List<ContextTracker<?>> trackers,
@@ -128,8 +191,36 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 		ThreadFactory threadFactory,
 		RejectedExecutionHandler handler
 	) {
+		this(
+			name,
+			new ContextBinder(trackers),
+			corePoolSize,
+			maxPoolSize,
+			keepAliveTime,
+			unit,
+			workQueue,
+			threadFactory,
+			handler
+		);
+	}
+
+	/**
+	 * See {@link GrpcModule#newContextTrackingExecutor(String, int, int, long, TimeUnit,
+	 * BlockingQueue, ThreadFactory, RejectedExecutionHandler)}.
+	 */
+	public GrpcContextTrackingExecutor(
+		String name,
+		ContextBinder ctxBinder,
+		int corePoolSize,
+		int maxPoolSize,
+		long keepAliveTime,
+		TimeUnit unit,
+		BlockingQueue<Runnable> workQueue,
+		ThreadFactory threadFactory,
+		RejectedExecutionHandler handler
+	) {
 		super(corePoolSize, maxPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
 		this.name = name;
-		this.trackers = trackers;
+		this.ctxBinder = ctxBinder;
 	}
 }

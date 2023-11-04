@@ -138,7 +138,7 @@ public class GrpcModule implements Module {
 	 * (such as a load balancer or a frontend proxy) should be used.</p>
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(String name, int poolSize) {
-		final var executor = new GrpcContextTrackingExecutor(name, allTrackers, poolSize);
+		final var executor = new GrpcContextTrackingExecutor(name, contextBinder, poolSize);
 		executors.add(executor);
 		return executor;
 	}
@@ -158,7 +158,7 @@ public class GrpcModule implements Module {
 		int queueSize
 	) {
 		final var executor =
-				new GrpcContextTrackingExecutor(name, allTrackers, poolSize, queueSize);
+				new GrpcContextTrackingExecutor(name, contextBinder, poolSize, queueSize);
 		executors.add(executor);
 		return executor;
 	}
@@ -180,7 +180,7 @@ public class GrpcModule implements Module {
 		RejectedExecutionHandler rejectionHandler
 	) {
 		final var executor = new GrpcContextTrackingExecutor(
-				name, allTrackers, poolSize, workQueue, rejectionHandler);
+				name, contextBinder, poolSize, workQueue, rejectionHandler);
 		executors.add(executor);
 		return executor;
 	}
@@ -205,7 +205,7 @@ public class GrpcModule implements Module {
 	) {
 		final var executor = new GrpcContextTrackingExecutor(
 			name,
-			allTrackers,
+			contextBinder,
 			corePoolSize,
 			maxPoolSize,
 			keepAliveTime,
