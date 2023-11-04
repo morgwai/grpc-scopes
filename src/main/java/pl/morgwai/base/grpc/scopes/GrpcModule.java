@@ -43,14 +43,14 @@ public class GrpcModule implements Module {
 	 * {@link io.grpc.stub.StreamObserver} call.
 	 */
 	public final Scope listenerEventScope =
-			new ContextScope<>("LISTENER_EVENT_SCOPE", listenerEventContextTracker);
+			new ContextScope<>("listenerEventScope", listenerEventContextTracker);
 
 	/**
 	 * Scopes objects to the context of an RPC (either {@link ServerRpcContext} or
 	 * {@link ClientRpcContext}).
 	 */
 	public final Scope rpcScope = new InducedContextScope<>(
-			"RPC_SCOPE", listenerEventContextTracker, ListenerEventContext::getRpcContext);
+			"rpcScope", listenerEventContextTracker, ListenerEventContext::getRpcContext);
 
 	/**
 	 * Singleton of {@link #listenerEventScope}.
