@@ -59,7 +59,7 @@
 		<dependency>
 			<groupId>pl.morgwai.base</groupId>
 			<artifactId>grpc-scopes</artifactId>
-			<version>11.4</version>
+			<version>11.5-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>pl.morgwai.base</groupId>
