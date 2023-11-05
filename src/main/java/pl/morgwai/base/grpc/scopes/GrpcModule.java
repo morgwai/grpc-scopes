@@ -16,28 +16,29 @@ import pl.morgwai.base.guice.scopes.*;
 
 
 /**
- * gRPC Guice {@link Scope}s, {@link ContextTracker}s and some helper methods.
+ * gRPC Guice {@link Scope}s, {@link ContextTracker}s, {@code Interceptor}s and some helper methods.
  * <p>
- * <b>NO STATIC:</b> by a common convention, objects such as <code>Scope</code>s are usually stored
- * on <code>static</code> vars. Global context however has a lot of drawbacks. Instead, create just
- * 1 {@code GrpcModule} instance in your app initialization code (for example on a local var in your
- * <code>main</code> method) and then use its member scopes ({@link #rpcScope},
- * {@link #listenerEventScope}) in your Guice {@link Module}s and {@link #serverInterceptor}
- * to configure your bindings.</p>
+ * Usually a single app-wide instance is created at the app startup.<br/>
+ * In case of servers, gRPC {@link BindableService services} should be
+ * {@link ServerInterceptors#intercept(BindableService, ServerInterceptor...) intercepted} with
+ * {@link #serverInterceptor}.<br/>
+ * In case of clients, gRPC {@link Channel}s should be
+ * {@link ClientInterceptors#intercept(Channel, ClientInterceptor...) intercepted} with either
+ * {@link #clientInterceptor} or {@link #nestingClientInterceptor}.</p>
  */
 public class GrpcModule implements Module {
 
 
 
 	/**
-	 * Allows tracking of the {@link ListenerEventContext context of a Listener event}.
+	 * Allows tracking of {@link ListenerEventContext Contexts of a Listener events}.
 	 * @see #listenerEventScope
 	 */
 	public final ContextTracker<ListenerEventContext> listenerEventContextTracker =
 			new ContextTracker<>();
 
 	/**
-	 * Scopes objects to the {@link ListenerEventContext context of a Listener event} (either
+	 * Scopes objects to the {@link ListenerEventContext Context of a Listener event} (either
 	 * {@link io.grpc.ServerCall.Listener server} or {@link io.grpc.ClientCall.Listener client}) and
 	 * as a consequence also to the context of the corresponding user inbound
 	 * {@link io.grpc.stub.StreamObserver} call.
@@ -46,16 +47,15 @@ public class GrpcModule implements Module {
 			new ContextScope<>("listenerEventScope", listenerEventContextTracker);
 
 	/**
-	 * Scopes objects to the context of an RPC (either {@link ServerRpcContext} or
+	 * Scopes objects to the {@code Context} of an RPC (either {@link ServerRpcContext} or
 	 * {@link ClientRpcContext}).
 	 */
 	public final Scope rpcScope = new InducedContextScope<>(
 			"rpcScope", listenerEventContextTracker, ListenerEventContext::getRpcContext);
 
 	/**
-	 * Singleton of {@link #listenerEventScope}.
-	 * {@link #configure(Binder)} binds {@code List<ContextTracker<?>>} to it for use with
-	 * {@link ContextTracker#getActiveContexts(List)}.
+	 * Singleton of {@link #listenerEventContextTracker}.
+	 * Type {@code List<ContextTracker<?>>} is bound to it in {@link #configure(Binder)} method.
 	 */
 	public final List<ContextTracker<?>> allTrackers = List.of(listenerEventContextTracker);
 
@@ -70,57 +70,67 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * All gRPC services must be intercepted by this interceptor.
-	 * @see io.grpc.ServerInterceptors#intercept(io.grpc.BindableService, java.util.List)
+	 * All gRPC {@link BindableService Services} must be
+	 * {@link ServerInterceptors#intercept(BindableService, ServerInterceptor...) intercepted} by
+	 * this {@code Interceptor}.
 	 */
 	public final ServerInterceptor serverInterceptor = new ServerContextInterceptor(this);
 
 	/**
-	 * All {@link Channel client Channels} must be intercepted either by this interceptor or by
-	 * {@link #nestingClientInterceptor}. This interceptor will keep client RPC contexts separate
-	 * even if they were made within some enclosing RPC contexts.
-	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
-	 */
-	public final ClientInterceptor clientInterceptor = new ClientContextInterceptor(this, false);
-
-	/**
-	 * All {@link Channel client Channels} must be intercepted either by this interceptor or by
-	 * {@link #clientInterceptor}. If a client call was made within a context of some enclosing
-	 * "parent" call (server call or a previous chained client call), this interceptor will join
-	 * together such nested client RPC context with its parent RPC context, so that they will share
-	 * all RPC scoped objects.
-	 * @see ClientInterceptors#intercept(Channel, ClientInterceptor...)
+	 * All {@link Channel client Channels} must be
+	 * {@link ClientInterceptors#intercept(Channel, ClientInterceptor...) intercepted} either by
+	 * this {@code Interceptor} or by {@link #clientInterceptor}. If a client call was made within
+	 * a {@link RpcContext Context} of some enclosing "parent" call (server call or a previous
+	 * chained client call), this {@code Interceptor} will join together
+	 * {@link ClientRpcContext Context of such call} with its parent {@link RpcContext}, so that
+	 * they will share all {@link #rpcScope RPC-scoped} objects.
 	 */
 	public final ClientInterceptor nestingClientInterceptor =
 			new ClientContextInterceptor(this, true);
 
+	/**
+	 * All {@link Channel client Channels} must be
+	 * {@link ClientInterceptors#intercept(Channel, ClientInterceptor...) intercepted} either by
+	 * this {@code Interceptor} or by {@link #nestingClientInterceptor}. This {@code Interceptor}
+	 * will keep {@link ClientRpcContext}s separate even if they were made within some enclosing
+	 * {@link RpcContext}s.
+	 */
+	public final ClientInterceptor clientInterceptor = new ClientContextInterceptor(this, false);
+
 
 
 	/**
-	 * Creates infrastructure bindings. Binds the following:
+	 * Creates infrastructure bindings.
+	 * Specifically binds the following:
 	 * <ul>
+	 *   <li>{@code List<ContextTracker<?>>} to {@code  allTrackers}</li>
+	 *   <li>{@link pl.morgwai.base.guice.scopes.ContextBinder} to {@code contextBinder}</li>
 	 *   <li>Their respective types to {@link #listenerEventContextTracker} and both contexts</li>
-	 *   <li>{@code List<ContextTracker<?>>} to {@link #allTrackers}</li>
-	 *   <li>{@link ContextBinder} to {@link #contextBinder}</li>
 	 * </ul>
 	 */
 	@Override
 	public void configure(Binder binder) {
-		TypeLiteral<ContextTracker<ListenerEventContext>> listenerEventContextTrackerType =
-				new TypeLiteral<>() {};
-		binder.bind(listenerEventContextTrackerType).toInstance(listenerEventContextTracker);
+		binder.bind(allTrackersKey).toInstance(allTrackers);
+		binder.bind(ContextBinder.class).toInstance(contextBinder);
+		binder.bind(listenerEventContextTrackerKey).toInstance(listenerEventContextTracker);
 		binder.bind(ListenerEventContext.class).toProvider(
 				listenerEventContextTracker::getCurrentContext);
 		binder.bind(RpcContext.class).toProvider(
 				() -> listenerEventContextTracker.getCurrentContext().getRpcContext());
-		TypeLiteral<List<ContextTracker<?>>> trackersType = new TypeLiteral<>() {};
-		binder.bind(trackersType).toInstance(allTrackers);
-		binder.bind(ContextBinder.class).toInstance(contextBinder);
 	}
 
+	static final TypeLiteral<ContextTracker<ListenerEventContext>> listenerEventContextTrackerType =
+			new TypeLiteral<>() {};
+	static final TypeLiteral<List<ContextTracker<?>>> allTrackersType = new TypeLiteral<>() {};
+	/** {@code Key} of {@link #listenerEventContextTracker}. */
+	public static final Key<ContextTracker<ListenerEventContext>> listenerEventContextTrackerKey =
+			Key.get(listenerEventContextTrackerType);
+	/** {@code Key} of {@link #allTrackers}. */
+	public static final Key<List<ContextTracker<?>>> allTrackersKey = Key.get(allTrackersType);
 
 
-	/** List of all executors created by this module. */
+
+	/** List of all {@code Executors} created by this {@code Module}. */
 	public List<GrpcContextTrackingExecutor> getExecutors() {
 		return Collections.unmodifiableList(executors);
 	}
