@@ -12,7 +12,6 @@ import org.junit.*;
 import pl.morgwai.base.guice.scopes.ContextBoundRunnable;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 
 

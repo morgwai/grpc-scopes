@@ -6,14 +6,11 @@ import java.util.concurrent.*;
 import io.grpc.*;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-
-import pl.morgwai.base.utils.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.GrpcModule;
-import pl.morgwai.base.grpc.scopes.tests.grpc.Request;
-import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc;
+import pl.morgwai.base.grpc.scopes.tests.grpc.*;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc.ScopedObjectHashStub;
-import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
 import pl.morgwai.base.grpc.utils.GrpcAwaitable;
+import pl.morgwai.base.utils.concurrent.Awaitable;
 
 
 

@@ -3,21 +3,19 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.grpc.stub.StreamObserver;
 import org.junit.*;
-
-import pl.morgwai.base.utils.concurrent.Awaitable;
 import pl.morgwai.base.grpc.scopes.tests.*;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
+import pl.morgwai.base.utils.concurrent.Awaitable;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 
 

@@ -4,14 +4,12 @@ package pl.morgwai.base.grpc.scopes;
 import java.util.*;
 import java.util.concurrent.*;
 
-import com.google.inject.*;
 import com.google.inject.Module;
-
+import com.google.inject.*;
 import io.grpc.*;
-
 import io.grpc.stub.StreamObserver;
-import pl.morgwai.base.utils.concurrent.Awaitable;
 import pl.morgwai.base.guice.scopes.*;
+import pl.morgwai.base.utils.concurrent.Awaitable;
 
 
 

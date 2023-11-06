@@ -13,9 +13,8 @@ import io.grpc.*;
 import io.grpc.Status.Code;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-
-import pl.morgwai.base.grpc.scopes.tests.grpc.*;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc.BackendStub;
+import pl.morgwai.base.grpc.scopes.tests.grpc.*;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc.ScopedObjectHashImplBase;
 
 
