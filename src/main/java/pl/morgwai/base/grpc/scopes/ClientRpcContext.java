@@ -63,11 +63,11 @@ public class ClientRpcContext extends RpcContext {
 
 
 	@Override
-	protected <T> T provideIfAbsent(Key<T> key, Provider<T> provider) {
+	protected <T> T produceIfAbsent(Key<T> key, Provider<T> producer) {
 		if (parentCtx == null) {
-			return super.provideIfAbsent(key, provider);
+			return super.produceIfAbsent(key, producer);
 		} else {
-			return parentCtx.packageProtectedProvideIfAbsent(key, provider);
+			return parentCtx.packageProtectedProduceIfAbsent(key, producer);
 		}
 	}
 

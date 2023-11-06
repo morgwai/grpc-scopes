@@ -24,10 +24,10 @@ public abstract class RpcContext extends InjectionContext {
 
 	/**
 	 * For nested {@link ClientRpcContext}s
-	 * (see {@link ClientRpcContext#provideIfAbsent(Key, Provider)}).
+	 * (see {@link ClientRpcContext#produceIfAbsent(Key, Provider)}).
 	 */
-	<T> T packageProtectedProvideIfAbsent(Key<T> key, Provider<T> provider) {
-		return provideIfAbsent(key, provider);
+	<T> T packageProtectedProduceIfAbsent(Key<T> key, Provider<T> producer) {
+		return produceIfAbsent(key, producer);
 	}
 
 
