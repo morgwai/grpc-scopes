@@ -97,6 +97,17 @@ public class GrpcModule implements Module {
 
 
 
+	static final TypeLiteral<ContextTracker<ListenerEventContext>> listenerEventContextTrackerType =
+			new TypeLiteral<>() {};
+	static final TypeLiteral<List<ContextTracker<?>>> allTrackersType = new TypeLiteral<>() {};
+	/** {@code Key} of {@link #listenerEventContextTracker}. */
+	public static final Key<ContextTracker<ListenerEventContext>> listenerEventContextTrackerKey =
+			Key.get(listenerEventContextTrackerType);
+	/** {@code Key} of {@link #allTrackers}. */
+	public static final Key<List<ContextTracker<?>>> allTrackersKey = Key.get(allTrackersType);
+
+
+
 	/**
 	 * Creates infrastructure bindings.
 	 * Specifically binds the following:
@@ -117,14 +128,9 @@ public class GrpcModule implements Module {
 				() -> listenerEventContextTracker.getCurrentContext().getRpcContext());
 	}
 
-	static final TypeLiteral<ContextTracker<ListenerEventContext>> listenerEventContextTrackerType =
-			new TypeLiteral<>() {};
-	static final TypeLiteral<List<ContextTracker<?>>> allTrackersType = new TypeLiteral<>() {};
-	/** {@code Key} of {@link #listenerEventContextTracker}. */
-	public static final Key<ContextTracker<ListenerEventContext>> listenerEventContextTrackerKey =
-			Key.get(listenerEventContextTrackerType);
-	/** {@code Key} of {@link #allTrackers}. */
-	public static final Key<List<ContextTracker<?>>> allTrackersKey = Key.get(allTrackersType);
+
+
+	final List<GrpcContextTrackingExecutor> executors = new LinkedList<>();
 
 
 
@@ -132,8 +138,6 @@ public class GrpcModule implements Module {
 	public List<GrpcContextTrackingExecutor> getExecutors() {
 		return Collections.unmodifiableList(executors);
 	}
-
-	final List<GrpcContextTrackingExecutor> executors = new LinkedList<>();
 
 
 
@@ -150,6 +154,8 @@ public class GrpcModule implements Module {
 		executors.add(executor);
 		return executor;
 	}
+
+
 
 	/**
 	 * Constructs a fixed size, context tracking executor that uses a {@link LinkedBlockingQueue} of
@@ -170,6 +176,8 @@ public class GrpcModule implements Module {
 		executors.add(executor);
 		return executor;
 	}
+
+
 
 	/**
 	 * Constructs a fixed size, context tracking executor that uses {@code workQueue},
@@ -192,6 +200,8 @@ public class GrpcModule implements Module {
 		executors.add(executor);
 		return executor;
 	}
+
+
 
 	/**
 	 * Constructs a context tracking executor.
@@ -233,6 +243,8 @@ public class GrpcModule implements Module {
 		for (var executor: executors) executor.shutdown();
 	}
 
+
+
 	/**
 	 * {@link GrpcContextTrackingExecutor#toAwaitableOfEnforcedTermination() Enforces termination}
 	 * of all executors obtained from this module.
@@ -249,6 +261,8 @@ public class GrpcModule implements Module {
 			executors
 		);
 	}
+
+
 
 	/**
 	 * {@link GrpcContextTrackingExecutor#toAwaitableOfTermination() Awaits for termination} of all
@@ -267,6 +281,8 @@ public class GrpcModule implements Module {
 		);
 	}
 
+
+
 	/**
 	 * {@link GrpcContextTrackingExecutor#awaitTermination() Awaits for termination} of all
 	 * executors obtained from this module.
@@ -274,6 +290,8 @@ public class GrpcModule implements Module {
 	public void awaitTerminationOfAllExecutors() throws InterruptedException {
 		for (var executor: executors) executor.awaitTermination();
 	}
+
+
 
 	/**
 	 * Creates {@link Awaitable.WithUnit} of
@@ -283,6 +301,8 @@ public class GrpcModule implements Module {
 		shutdownAllExecutors();
 		return (timeout, unit) -> enforceTerminationOfAllExecutors(timeout, unit).isEmpty();
 	}
+
+
 
 	/**
 	 * Creates {@link Awaitable.WithUnit} of
