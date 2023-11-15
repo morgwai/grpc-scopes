@@ -27,8 +27,7 @@ public class ClientRpcContext extends RpcContext {
 	final ClientCall<?, ?> rpc;
 
 	public Metadata getResponseHeaders() { return responseHeaders; }
-	void setResponseHeaders(Metadata responseHeaders) { this.responseHeaders = responseHeaders; }
-	Metadata responseHeaders;
+	private Metadata responseHeaders;
 
 	/**
 	 * Trailing metadata sent by the server upon the RPC completion. This will be {@code empty()}
@@ -41,16 +40,14 @@ public class ClientRpcContext extends RpcContext {
 	 * </ul>
 	 */
 	public Optional<Metadata> getTrailers() { return Optional.ofNullable(trailers); }
-	void setTrailers(Metadata trailers) { this.trailers = trailers; }
-	Metadata trailers;
+	private Metadata trailers;
 
 	/**
 	 * Final status sent by the server upon the RPC completion. This will be {@code empty()} for
 	 * most of the RPC lifetime similarly to {@link #getTrailers()}.
 	 */
 	public Optional<Status> getStatus() { return Optional.ofNullable(status); }
-	void setStatus(Status status) { this.status = status; }
-	Status status;
+	private Status status;
 
 	/**
 	 * If this RPC was issued as a nested child in the context of another RPC and
@@ -80,6 +77,23 @@ public class ClientRpcContext extends RpcContext {
 		} else {
 			parentCtx.removeScopedObject(key);
 		}
+	}
+
+
+
+	/** Called by {@link ClientContextInterceptor.ListenerProxy#onHeaders(Metadata)}. */
+	void setResponseHeaders(Metadata responseHeaders) {
+		if (this.responseHeaders != null) throw new IllegalStateException("headers already set");
+		this.responseHeaders = responseHeaders;
+	}
+
+
+
+	/** Called by {@link ClientContextInterceptor.ListenerProxy#onClose(Status, Metadata)}. */
+	void setStatusAndTrailers(Status status, Metadata trailers) {
+		if (this.status != null) throw new IllegalStateException("status already set");
+		this.status = status;
+		this.trailers = trailers;
 	}
 
 

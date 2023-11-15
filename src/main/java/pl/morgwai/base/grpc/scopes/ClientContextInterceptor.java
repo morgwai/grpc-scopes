@@ -132,8 +132,7 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 		@Override public void onClose(Status status, Metadata trailers) {
-			rpcContext.setStatus(status);
-			rpcContext.setTrailers(trailers);
+			rpcContext.setStatusAndTrailers(status, trailers);
 			executeWithinCtxs(() -> wrappedListener.onClose(status, trailers));
 		}
 	}
