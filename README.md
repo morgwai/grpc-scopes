@@ -9,7 +9,7 @@ RPC and Listener event Guice Scopes for gRPC.<br/>
 ## OVERVIEW
 
 Provides `rpcScope` and `listenerEventScope` Guice Scopes for both client and server apps.<br/>
-Oversimplifying, in case of streaming requests on servers and streaming responses on clients, `listenerEventScope` spans over the processing of a single message from the stream or over a single call to any registered handler (`setOnReadyHandler(...)` etc), while `rpcScope` spans over a whole given RPC.<br/>
+Oversimplifying, in case of streaming requests on servers and streaming responses on clients, `listenerEventScope` spans over the processing of a single message from the stream or over a single call to any registered handler (via `setOnReadyHandler(...)`, `setOnCancelHandler(...)` etc), while `rpcScope` spans over a whole given RPC.<br/>
 Oversimplifying again, in case of unary inbound, these 2 Scopes have roughly the same span.<br/>
 See [this DZone article](https://dzone.com/articles/combining-grpc-with-guice) for extended high-level explanation.<br/>
 <br/>
@@ -82,7 +82,6 @@ public class MyServer {
 
         grpcServer = ServerBuilder
             .forPort(port)
-            .directExecutor()
             .addService(ServerInterceptors.intercept(
                     myService, grpcModule.serverInterceptor /* more interceptors here... */))
             // more services here...
