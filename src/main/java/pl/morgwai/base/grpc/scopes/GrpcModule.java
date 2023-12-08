@@ -257,8 +257,8 @@ public class GrpcModule implements Module {
 		return Awaitable.awaitMultiple(
 			timeout,
 			unit,
-			GrpcContextTrackingExecutor::toAwaitableOfEnforcedTermination,
-			executors
+			executors.stream().map(Awaitable.entryMapper(
+					GrpcContextTrackingExecutor::toAwaitableOfEnforcedTermination))
 		);
 	}
 
@@ -276,8 +276,8 @@ public class GrpcModule implements Module {
 		return Awaitable.awaitMultiple(
 			timeout,
 			unit,
-			GrpcContextTrackingExecutor::toAwaitableOfTermination,
-			executors
+			executors.stream().map(Awaitable.entryMapper(
+					GrpcContextTrackingExecutor::toAwaitableOfTermination))
 		);
 	}
 
