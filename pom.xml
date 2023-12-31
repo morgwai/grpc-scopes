@@ -6,7 +6,7 @@
 
 	<groupId>pl.morgwai.base</groupId>
 	<artifactId>grpc-scopes</artifactId>
-	<version>11.6-SNAPSHOT</version>
+	<version>12.0-SNAPSHOT</version>
 
 	<name>gRPC Guice Scopes</name>
 	<description>RPC and Listener event Guice Scopes for gRPC</description>
@@ -37,7 +37,7 @@
 		<maven.compiler.release>11</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<guice.scopes.version>9.2</guice.scopes.version>
-		<utils.version>3.2</utils.version>
+		<utils.version>4.0</utils.version>
 		<guice.version>6.0.0</guice.version>
 		<grpc.version>1.56.0</grpc.version>
 		<protobuf.version>3.22.3</protobuf.version>
@@ -107,7 +107,7 @@
 		<dependency>
 			<groupId>pl.morgwai.base</groupId>
 			<artifactId>grpc-utils</artifactId>
-			<version>6.2</version>
+			<version>7.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

@@ -180,23 +180,29 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Constructs a fixed size, context tracking executor that uses {@code workQueue},
-	 * {@code rejectionHandler} and a new
-	 * {@link pl.morgwai.base.utils.concurrent.NamingThreadFactory} named after this executor.
-	 * <p>
-	 * {@code rejectionHandler} will receive a task wrapped with a {@link ContextBoundRunnable}.</p>
-	 * <p>
-	 * In order for {@link GrpcContextTrackingExecutor#execute(StreamObserver, Runnable)} to work
-	 * properly, the {@code rejectionHandler} must throw a {@link RejectedExecutionException}.</p>
+	 * Constructs a context tracking executor.
+	 * @see ThreadPoolExecutor#ThreadPoolExecutor(int, int, long, TimeUnit, BlockingQueue,
+	 *     ThreadFactory) ThreadPoolExecutor constructor docs for param details
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,
-		int poolSize,
+		int corePoolSize,
+		int maxPoolSize,
+		long keepAliveTime,
+		TimeUnit unit,
 		BlockingQueue<Runnable> workQueue,
-		RejectedExecutionHandler rejectionHandler
+		ThreadFactory threadFactory
 	) {
 		final var executor = new GrpcContextTrackingExecutor(
-				name, contextBinder, poolSize, workQueue, rejectionHandler);
+			name,
+			contextBinder,
+			corePoolSize,
+			maxPoolSize,
+			keepAliveTime,
+			unit,
+			workQueue,
+			threadFactory
+		);
 		executors.add(executor);
 		return executor;
 	}
@@ -205,11 +211,14 @@ public class GrpcModule implements Module {
 
 	/**
 	 * Constructs a context tracking executor.
+	 * <p>
+	 * {@code rejectionHandler} will receive a task wrapped with a {@link ContextBoundRunnable}.</p>
+	 * <p>
+	 * In order for {@link GrpcContextTrackingExecutor#execute(StreamObserver, Runnable)} to work
+	 * properly, the {@code rejectionHandler} must throw a {@link RejectedExecutionException}.</p>
 	 * @see ThreadPoolExecutor#ThreadPoolExecutor(int, int, long, TimeUnit, BlockingQueue,
 	 *     ThreadFactory, RejectedExecutionHandler) ThreadPoolExecutor constructor docs for param
 	 *     details
-	 * @see #newContextTrackingExecutor(String, int, BlockingQueue, RejectedExecutionHandler)
-	 *     notes on <code>rejectionHandler</code>
 	 */
 	public GrpcContextTrackingExecutor newContextTrackingExecutor(
 		String name,

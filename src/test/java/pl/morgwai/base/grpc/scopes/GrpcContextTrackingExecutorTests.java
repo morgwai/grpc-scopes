@@ -10,6 +10,9 @@ import org.easymock.EasyMockSupport;
 import org.easymock.Mock;
 import org.junit.*;
 import pl.morgwai.base.guice.scopes.ContextBoundRunnable;
+import pl.morgwai.base.utils.concurrent.NamingThreadFactory;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.junit.Assert.*;
 
@@ -35,27 +38,40 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 	GrpcContextTrackingExecutor testSubject;
 	CountDownLatch taskBlockingLatch;
 
+
+
 	@Before
 	public void setup() {
 		taskBlockingLatch = new CountDownLatch(1);
 		testSubject = grpcModule.newContextTrackingExecutor(
 			"testExecutor",
-			1,
+			1, 1,
+			0L, MILLISECONDS,
 			new LinkedBlockingQueue<>(1),
+			new NamingThreadFactory("testExecutor"),
 			rejectionHandler
 		);
 	}
 
-	@After
-	public void tryTerminate() {
-		testSubject.shutdown();
-		taskBlockingLatch.countDown();
-		try {
-			testSubject.awaitTermination(50L, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException ignored) {
-		} finally {
-			if ( !testSubject.isTerminated()) testSubject.shutdownNow();
-		}
+
+
+	@Test
+	public void testContextTracking() throws InterruptedException {
+		final AssertionError[] asyncError = {null};
+		final var taskFinished = new CountDownLatch(1);
+
+		eventContext.executeWithinSelf(() -> testSubject.execute(() -> {
+			try {
+				assertSame("context should be transferred when passing task to executor",
+					eventContext, grpcModule.listenerEventContextTracker.getCurrentContext());
+			} catch (AssertionError e) {
+				asyncError[0] = e;
+			} finally {
+				taskFinished.countDown();
+			}
+		}));
+		assertTrue("task should complete", taskFinished.await(20L, MILLISECONDS));
+		if (asyncError[0] != null) throw asyncError[0];
 	}
 
 
@@ -123,7 +139,7 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 				testSubject.execute(queuedTask);
 			});
 			assertTrue("blocking task should start",
-					blockingTasksStarted.await(50L, TimeUnit.MILLISECONDS));
+					blockingTasksStarted.await(50L, MILLISECONDS));
 
 			testSubject.shutdown();
 			final var aftermath = testSubject.tryForceTerminate();
@@ -148,22 +164,15 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 
 
 
-	@Test
-	public void testContextTracking() throws InterruptedException {
-		final AssertionError[] asyncError = {null};
-		final var taskFinished = new CountDownLatch(1);
-
-		eventContext.executeWithinSelf(() -> testSubject.execute(() -> {
-			try {
-				assertSame("context should be transferred when passing task to executor",
-						eventContext, grpcModule.listenerEventContextTracker.getCurrentContext());
-			} catch (AssertionError e) {
-				asyncError[0] = e;
-			} finally {
-				taskFinished.countDown();
-			}
-		}));
-		assertTrue("task should complete", taskFinished.await(20L, TimeUnit.MILLISECONDS));
-		if (asyncError[0] != null) throw asyncError[0];
+	@After
+	public void tryTerminate() {
+		testSubject.shutdown();
+		taskBlockingLatch.countDown();
+		try {
+			testSubject.awaitTermination(50L, MILLISECONDS);
+		} catch (InterruptedException ignored) {
+		} finally {
+			if ( !testSubject.isTerminated()) testSubject.shutdownNow();
+		}
 	}
 }
