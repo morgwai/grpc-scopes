@@ -86,8 +86,8 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 				capturedError = error;
 			}
 
-			@Override public void onCompleted() { throw new RuntimeException("unexpected call"); }
-			@Override public void onNext(Long l) { throw new RuntimeException("unexpected call"); }
+			@Override public void onCompleted() { fail("unexpected call"); }
+			@Override public void onNext(Long l) { fail("unexpected call"); }
 		};
 		final Runnable overloadingTask = () -> {};
 		try {
@@ -124,42 +124,48 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 
 
 	@Test
-	public void testTryForceTerminateUnwrapsTasks() throws InterruptedException {
+	public void testTryForceTerminatePreservesContext() throws InterruptedException {
 		final var blockingTasksStarted = new CountDownLatch(1);
+		final var blockingTaskFinished = new CountDownLatch(1);
 		final Runnable blockingTask = () -> {
 			blockingTasksStarted.countDown();
 			try {
 				taskBlockingLatch.await();
 			} catch (InterruptedException ignored) {}
+			blockingTaskFinished.countDown();
 		};
 		final Runnable queuedTask = () -> {};
-		try {
-			eventContext.executeWithinSelf(() -> {
-				testSubject.execute(blockingTask);
-				testSubject.execute(queuedTask);
-			});
-			assertTrue("blocking task should start",
-					blockingTasksStarted.await(50L, MILLISECONDS));
+		eventContext.executeWithinSelf(() -> {
+			testSubject.execute(blockingTask);
+			testSubject.execute(queuedTask);
+		});
+		assertTrue("blocking task should start",
+				blockingTasksStarted.await(50L, MILLISECONDS));
 
-			testSubject.shutdown();
-			final var aftermath = testSubject.tryForceTerminate();
-			assertEquals("1 task should be running in the aftermath",
-					1, aftermath.runningTasks.size());
-			assertEquals("1 task should be unexecuted in the aftermath",
-					1, aftermath.unexecutedTasks.size());
-			final var runningTask = aftermath.runningTasks.get(0);
-			final var unexecutedTask = aftermath.unexecutedTasks.get(0);
-			assertTrue("runningTask should be a ContextBoundRunnable",
-					runningTask instanceof ContextBoundRunnable);
-			assertTrue("unexecutedTask should be a ContextBoundRunnable",
-					unexecutedTask instanceof ContextBoundRunnable);
-			assertSame("runningTask should be blockingTask",
-					blockingTask, ((ContextBoundRunnable) runningTask).getBoundClosure());
-			assertSame("unexecutedTask should be queuedTask",
-					queuedTask, ((ContextBoundRunnable) unexecutedTask).getBoundClosure());
-		} finally {
-			taskBlockingLatch.countDown();
-		}
+		testSubject.shutdown();
+		final var aftermath = testSubject.tryForceTerminate();
+		assertTrue("blockingTask should finish after tryForceTerminate()",
+				blockingTaskFinished.await(50L, MILLISECONDS));
+		assertEquals("1 task should be running in the aftermath",
+				1, aftermath.runningTasks.size());
+		assertEquals("1 task should be unexecuted in the aftermath",
+				1, aftermath.unexecutedTasks.size());
+		final var runningTask = aftermath.runningTasks.get(0);
+		final var unexecutedTask = aftermath.unexecutedTasks.get(0);
+		assertTrue("runningTask should be a ContextBoundRunnable",
+				runningTask instanceof ContextBoundRunnable);
+		final var contextBoundRunningTask = (ContextBoundRunnable) runningTask;
+		assertTrue("unexecutedTask should be a ContextBoundRunnable",
+			unexecutedTask instanceof ContextBoundRunnable);
+		final var contextBoundUnexecutedTask = (ContextBoundRunnable) unexecutedTask;
+		assertSame("runningTask should be blockingTask",
+				blockingTask, contextBoundRunningTask.getBoundClosure());
+		assertSame("unexecutedTask should be queuedTask",
+				queuedTask, contextBoundUnexecutedTask.getBoundClosure());
+		assertSame("ctx should be preserved during tryForceTerminate()",
+				eventContext, contextBoundRunningTask.getContexts().get(0));
+		assertSame("ctx should be preserved during tryForceTerminate()",
+				eventContext, contextBoundUnexecutedTask.getContexts().get(0));
 	}
 
 
@@ -169,7 +175,7 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 		testSubject.shutdown();
 		taskBlockingLatch.countDown();
 		try {
-			testSubject.awaitTermination(50L, MILLISECONDS);
+			grpcModule.enforceTerminationOfAllExecutors(50L, MILLISECONDS);
 		} catch (InterruptedException ignored) {
 		} finally {
 			if ( !testSubject.isTerminated()) testSubject.shutdownNow();
