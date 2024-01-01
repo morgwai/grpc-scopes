@@ -3,7 +3,8 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -13,6 +14,8 @@ import org.junit.*;
 import pl.morgwai.base.grpc.scopes.tests.*;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
 import pl.morgwai.base.utils.concurrent.Awaitable;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -161,7 +164,7 @@ public class IntegrationTests {
 			} else {
 				client.unary(callId, responseObserver);
 			}
-			if ( !callBiFinalized[callId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+			if ( !callBiFinalized[callId].await(TIMEOUT_MILLIS, MILLISECONDS)) {
 				throw new TimeoutException();
 			}
 			if ( !serverErrors.isEmpty()) fail(formatError(serverErrors));
@@ -189,7 +192,7 @@ public class IntegrationTests {
 		var warmupResponseObserver = new ResponseObserver(
 				warmupId, callBiFinalized[warmupId], clientGrpcModule);
 		client.unary(warmupId, warmupResponseObserver);
-		if ( !callBiFinalized[warmupId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+		if ( !callBiFinalized[warmupId].await(TIMEOUT_MILLIS, MILLISECONDS)) {
 			throw new TimeoutException();
 		}
 		if ( !serverErrors.isEmpty()) fail(formatError(serverErrors));
@@ -204,7 +207,7 @@ public class IntegrationTests {
 				new ResponseObserver(cancelledId, callBiFinalized[cancelledId], clientGrpcModule);
 		service.setCancelExpected(true);
 		client.streamingAndCancel(cancelledId, 3, cancelResponseObserver);
-		if ( !callBiFinalized[cancelledId].await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+		if ( !callBiFinalized[cancelledId].await(TIMEOUT_MILLIS, MILLISECONDS)) {
 			throw new TimeoutException();
 		}
 		if ( !serverErrors.isEmpty()) fail(formatError(serverErrors));
