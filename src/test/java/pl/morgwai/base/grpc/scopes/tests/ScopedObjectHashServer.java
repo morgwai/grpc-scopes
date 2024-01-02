@@ -2,8 +2,8 @@
 package pl.morgwai.base.grpc.scopes.tests;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Map;
+import java.util.logging.ConsoleHandler;
 
 import com.google.inject.Guice;
 import io.grpc.*;
@@ -13,6 +13,10 @@ import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc;
 import pl.morgwai.base.grpc.scopes.tests.grpc.BackendGrpc.BackendStub;
 import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 import pl.morgwai.base.utils.concurrent.Awaitable;
+
+import static java.util.logging.Level.FINER;
+
+import static pl.morgwai.base.jul.JulConfigurator.*;
 
 
 
@@ -78,8 +82,11 @@ public class ScopedObjectHashServer {
 
 
 	public static void main(String[] args) throws Exception {
-		ScopedObjectHashService.setLogLevel(Level.FINER);
-		for (final var handler: Logger.getLogger("").getHandlers()) handler.setLevel(Level.FINER);
+		addOrReplaceLoggingConfigProperties(Map.of(
+			"pl.morgwai" + LEVEL_SUFFIX , FINER.toString(),
+			ConsoleHandler.class.getName(), FINER.toString()
+		));
+		overrideLogLevelsWithSystemProperties();
 		final var server = new ScopedObjectHashServer(
 				Integer.parseInt(args[0]), "localhost:" + Integer.parseInt(args[1]));
 		Runtime.getRuntime().addShutdownHook(new Thread(

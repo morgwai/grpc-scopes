@@ -1,13 +1,11 @@
 // Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 import io.grpc.stub.StreamObserver;
 import org.junit.*;
@@ -16,9 +14,12 @@ import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
 import pl.morgwai.base.utils.concurrent.Awaitable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.WARNING;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static pl.morgwai.base.jul.JulConfigurator.*;
 
 
 
@@ -241,18 +242,16 @@ public class IntegrationTests {
 
 
 
-	static Level LOG_LEVEL = Level.WARNING;
-
 	static final Logger log = Logger.getLogger(IntegrationTests.class.getName());
+
+
 
 	@BeforeClass
 	public static void setupLogging() {
-		try {
-			LOG_LEVEL = Level.parse(System.getProperty(
-					IntegrationTests.class.getPackageName() + ".level"));
-		} catch (Exception ignored) {}
-		log.setLevel(LOG_LEVEL);
-		ScopedObjectHashService.setLogLevel(LOG_LEVEL);
-		for (final var handler: Logger.getLogger("").getHandlers()) handler.setLevel(LOG_LEVEL);
+		addOrReplaceLoggingConfigProperties(Map.of(
+			LEVEL_SUFFIX, WARNING.toString(),
+			ConsoleHandler.class.getName() + LEVEL_SUFFIX, FINEST.toString()
+		));
+		overrideLogLevelsWithSystemProperties();
 	}
 }

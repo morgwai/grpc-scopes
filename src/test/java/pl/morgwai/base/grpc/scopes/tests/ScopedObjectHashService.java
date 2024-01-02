@@ -325,14 +325,5 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 
 
-	static Level LOG_LEVEL = Level.WARNING;
 	static final Logger log = Logger.getLogger(ScopedObjectHashService.class.getName());
-
-	static {
-		log.setLevel(LOG_LEVEL);
-	}
-
-	public static void setLogLevel(Level logLevel) {
-		log.setLevel(logLevel);
-	}
 }

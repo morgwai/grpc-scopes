@@ -110,6 +110,12 @@
 			<version>7.0</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>pl.morgwai.base</groupId>
+			<artifactId>jul-utils</artifactId>
+			<version>2.3</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<distributionManagement>
