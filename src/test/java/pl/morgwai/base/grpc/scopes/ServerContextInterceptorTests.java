@@ -1,4 +1,4 @@
-// Copyright (c) Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
+// Copyright (c) Piotr Morgwai Kotarbinski, Licensed unLevel.der the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
 import io.grpc.Metadata;
@@ -20,7 +20,6 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 	final GrpcModule grpcModule = new GrpcModule();
 	final ServerContextInterceptor interceptor =
 			(ServerContextInterceptor) grpcModule.serverInterceptor;
-
 	@Mock final ServerCall<Integer, Integer> mockRpc = mock(ServerCall.class);
 
 
@@ -51,9 +50,11 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 			requestHeaders,
 			(rpc, headers) -> {
 				final var eventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
-				assertNotNull("event context should be started", eventCtx);
+				assertNotNull("event context should be started",
+						eventCtx);
 				final var rpcCtx = eventCtx.getRpcContext();
-				assertNotNull("RPC context should be started", rpcCtx);
+				assertNotNull("RPC context should be started",
+						rpcCtx);
 				assertSame("RPC (ServerCall) object should not be modified",
 						mockRpc, ((ServerRpcContext) rpcCtx).getRpc());
 				assertSame("request headers should not be modified",
@@ -69,7 +70,8 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 
 		final Integer message = 69;
 		decoratedListener.onMessage(message);
-		assertSame("messages should not be modified", message, mockListener.capturedMessage);
+		assertSame("messages should not be modified",
+				message, mockListener.capturedMessage);
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
@@ -92,6 +94,7 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 	static class MockListener extends Listener<Integer> {
 
 		ContextVerifier ctxVerifier;
+		Integer capturedMessage;
 
 
 
@@ -99,8 +102,6 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 			capturedMessage = message;
 			ctxVerifier.verifyCtxs();
 		}
-
-		Integer capturedMessage;
 
 
 

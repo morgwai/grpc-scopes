@@ -44,29 +44,21 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 	}
 	BiConsumer<Integer, List<String>> finalizationListener;
 
-
-
-	/**
-	 * Keeps the log of all RPC-scoped instances to check for duplicates.
-	 */
+	/** Log of all seen RPC-scoped instances to check for duplicates. */
 	final Set<RpcScopedService> rpcScopedLog = new HashSet<>();
 
-	/**
-	 * Keeps the log of all event-scoped instances to check for duplicates.
-	 */
+	/** Log of all seen event-scoped instances to check for duplicates. */
 	final Set<EventScopedService> eventScopedLog = new HashSet<>();
 
-	static final String DUPLICATE_ERROR = "duplicated %2$s scoped object in %1$s";
-	static final String SCOPING_ERROR = "scoping failed in %1$s for scope %2$s";
 
-	/**
-	 * Called at each event.
-	 */
+
+	/** Called at each event. */
 	void verifyScoping(
-			List<String> errors,
-			RpcScopedService rpcScoped,
-			EventScopedService eventScoped,
-			String event) {
+		List<String> errors,
+		RpcScopedService rpcScoped,
+		EventScopedService eventScoped,
+		String event
+	) {
 		if (rpcScoped != rpcScopedProvider.get()) {
 			errors.add(String.format(SCOPING_ERROR, event, "RPC"));
 		}
@@ -78,9 +70,12 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 		}
 	}
 
-	/**
-	 * Called once at the beginning of each call.
-	 */
+	static final String DUPLICATE_ERROR = "duplicated %2$s scoped object in %1$s";
+	static final String SCOPING_ERROR = "scoping failed in %1$s for scope %2$s";
+
+
+
+	/** Called once at the beginning of each call. */
 	void verifyRpcScopingDuplication(List<String> errors, RpcScopedService rpcScoped, String event)
 	{
 		if ( !rpcScopedLog.add(rpcScoped)) {
@@ -91,10 +86,10 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 
 	@Override
-	public void unary(Request request, StreamObserver<ScopedObjectsHashes> respObserver) {
+	public void unary(Request request, StreamObserver<ScopedObjectsHashes> basicResponseObserver) {
 		List<String> errors = new ArrayList<>(3);
 		final var responseObserver =
-				(ServerCallStreamObserver<ScopedObjectsHashes>) respObserver;
+				(ServerCallStreamObserver<ScopedObjectsHashes>) basicResponseObserver;
 		final var rpcScoped = rpcScopedProvider.get();
 
 		responseObserver.setOnCloseHandler(() -> {
@@ -117,7 +112,6 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 		responseObserver.onNext(buildResponse("unary", rpcScoped, eventScopedProvider.get()));
 		verifyScoping(errors, rpcScoped, eventScopedProvider.get(), "unary");
 		verifyRpcScopingDuplication(errors, rpcScoped, "unary");
-
 		if ( !errors.isEmpty()) {
 			responseObserver.onError(Status.INTERNAL.asException());
 		} else {
@@ -127,24 +121,21 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 
 
-	/**
-	 * Sends a response message with hashes of scoped objects from every non-final event.
-	 */
+	/** Sends a response message with hashes of scoped objects from every non-final event. */
 	@Override
-	public StreamObserver<Request> streaming(StreamObserver<ScopedObjectsHashes> respObserver) {
+	public StreamObserver<Request> streaming(
+			StreamObserver<ScopedObjectsHashes> basicResponseObserver) {
 		log.fine("client streaming call");
 		final Integer[] requestIdHolder = {null};
 		List<String> errors = new ArrayList<>(5);
 		final var responseObserver =
-				(ServerCallStreamObserver<ScopedObjectsHashes>) respObserver;
-		final var clientResponseObserver = new SynchronizedStreamObserver<>(respObserver);
+				(ServerCallStreamObserver<ScopedObjectsHashes>) basicResponseObserver;
+		final var clientResponseObserver = new SynchronizedStreamObserver<>(basicResponseObserver);
 		final var rpcScoped = rpcScopedProvider.get();
 		final var completionCounter = new AtomicInteger(2);  // 1 for client, 1 for backend
 
 		responseObserver.setOnCloseHandler(() -> {
-			if (log.isLoggable(Level.FINE)) {
-				log.fine("call " + requestIdHolder[0] + " completed");
-			}
+			if (log.isLoggable(Level.FINE)) log.fine("call " + requestIdHolder[0] + " completed");
 			final var eventScoped = eventScopedProvider.get();
 			verifyScoping(errors, rpcScoped, eventScoped, "onClose");
 			if (finalizationListener != null) {
@@ -217,8 +208,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 		return new StreamObserver<>() {  // client request observer
 
-			@Override
-			public void onNext(Request request) {
+			@Override public void onNext(Request request) {
 				if (log.isLoggable(Level.FINER)) {
 					log.finer("client request on call " + request.getCallId());
 				}
@@ -238,8 +228,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 				}
 			}
 
-			@Override
-			public void onError(Throwable error) {
+			@Override public void onError(Throwable error) {
 				final var eventScoped = eventScopedProvider.get();
 				verifyScoping(errors, rpcScoped, eventScoped, "onError");
 				if ( ! (cancelExpected && isCancellation(error))) {
@@ -258,8 +247,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 				}
 			}
 
-			@Override
-			public void onCompleted() {
+			@Override public void onCompleted() {
 				if (log.isLoggable(Level.FINE)) {
 					log.fine("client completion on call " + requestIdHolder[0]);
 				}
@@ -285,7 +273,7 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 
 	public static boolean isCancellation(Throwable t) {
-		Status status;
+		final Status status;
 		if (t instanceof StatusException) {
 			status = ((StatusException) t).getStatus();
 		} else if (t instanceof StatusRuntimeException) {
@@ -299,7 +287,9 @@ public class ScopedObjectHashService extends ScopedObjectHashImplBase {
 
 
 	static ScopedObjectsHashes buildResponse(
-			String eventName, RpcScopedService rpcScoped, EventScopedService eventScoped
+		String eventName,
+		RpcScopedService rpcScoped,
+		EventScopedService eventScoped
 	) {
 		return ScopedObjectsHashes.newBuilder()
 			.setEventName(eventName)

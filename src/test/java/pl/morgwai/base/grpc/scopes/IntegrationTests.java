@@ -3,7 +3,6 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.logging.*;
 
@@ -25,7 +24,7 @@ import static pl.morgwai.base.jul.JulConfigurator.*;
 
 public class IntegrationTests {
 
-	// TODO: test multi-layer nesting
+	// TODO: test client ctx nesting
 
 
 
@@ -108,7 +107,8 @@ public class IntegrationTests {
 
 
 
-		@Override public void onNext(ScopedObjectsHashes response) {
+		@Override
+		public void onNext(ScopedObjectsHashes response) {
 			logHashes(callId, response);
 			if (ctxVerifier == null) {
 				final var eventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
@@ -125,8 +125,9 @@ public class IntegrationTests {
 
 
 
-		@Override public void onError(Throwable t) {
-			error = t;
+		@Override
+		public void onError(Throwable error) {
+			this.error = error;
 			try {
 				ctxVerifier.verifyCtxs();
 			} catch (Throwable scopingError) {
@@ -137,7 +138,8 @@ public class IntegrationTests {
 
 
 
-		@Override public void onCompleted() {
+		@Override
+		public void onCompleted() {
 			try {
 				ctxVerifier.verifyCtxs();
 			} catch (Throwable scopingError) {
@@ -165,9 +167,7 @@ public class IntegrationTests {
 			} else {
 				client.unary(callId, responseObserver);
 			}
-			if ( !callBiFinalized[callId].await(TIMEOUT_MILLIS, MILLISECONDS)) {
-				throw new TimeoutException();
-			}
+			if ( !callBiFinalized[callId].await(TIMEOUT_MILLIS, MILLISECONDS)) fail("timeout");
 			if ( !serverErrors.isEmpty()) fail(formatError(serverErrors));
 			if (responseObserver.error != null) throw responseObserver.error;
 			if ( !responseObserver.clientScopingErrors.isEmpty()) {
@@ -193,9 +193,7 @@ public class IntegrationTests {
 		var warmupResponseObserver = new ResponseObserver(
 				warmupId, callBiFinalized[warmupId], clientGrpcModule);
 		client.unary(warmupId, warmupResponseObserver);
-		if ( !callBiFinalized[warmupId].await(TIMEOUT_MILLIS, MILLISECONDS)) {
-			throw new TimeoutException();
-		}
+		if ( !callBiFinalized[warmupId].await(TIMEOUT_MILLIS, MILLISECONDS)) fail("timeout");
 		if ( !serverErrors.isEmpty()) fail(formatError(serverErrors));
 		if (warmupResponseObserver.error != null) throw warmupResponseObserver.error;
 		if ( !warmupResponseObserver.clientScopingErrors.isEmpty()) {
@@ -208,9 +206,7 @@ public class IntegrationTests {
 				new ResponseObserver(cancelledId, callBiFinalized[cancelledId], clientGrpcModule);
 		service.setCancelExpected(true);
 		client.streamingAndCancel(cancelledId, 3, cancelResponseObserver);
-		if ( !callBiFinalized[cancelledId].await(TIMEOUT_MILLIS, MILLISECONDS)) {
-			throw new TimeoutException();
-		}
+		if ( !callBiFinalized[cancelledId].await(TIMEOUT_MILLIS, MILLISECONDS)) fail("timeout");
 		if ( !serverErrors.isEmpty()) fail(formatError(serverErrors));
 		final var error = cancelResponseObserver.error;
 		if (error == null) fail("cancellation expected");
@@ -233,10 +229,11 @@ public class IntegrationTests {
 	static void logHashes(int callId, ScopedObjectsHashes hashes) {
 		if (log.isLoggable(Level.FINER)) {
 			log.finer(
-					"call: " + callId
-					+ ", event: " + hashes.getEventName()
-					+ ", rpc-scoped hash: " + hashes.getRpcScopedHash()
-					+ ", event-scoped hash: " + hashes.getEventScopedHash());
+				"call: " + callId
+						+ ", event: " + hashes.getEventName()
+						+ ", rpc-scoped hash: " + hashes.getRpcScopedHash()
+						+ ", event-scoped hash: " + hashes.getEventScopedHash()
+			);
 		}
 	}
 
@@ -252,6 +249,6 @@ public class IntegrationTests {
 			LEVEL_SUFFIX, WARNING.toString(),
 			ConsoleHandler.class.getName() + LEVEL_SUFFIX, FINEST.toString()
 		));
-		overrideLogLevelsWithSystemProperties();
+		overrideLogLevelsWithSystemProperties("pl.morgwai");
 	}
 }

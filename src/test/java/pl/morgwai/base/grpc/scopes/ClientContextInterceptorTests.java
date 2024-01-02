@@ -66,7 +66,6 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 
 
 	final GrpcModule grpcModule = new GrpcModule();
-
 	final MockListener<Integer> mockListener = new MockListener<>();
 	final Metadata requestHeaders = new Metadata();
 	final Capture<Listener<Integer>> listenerCapture = newCapture();
@@ -74,7 +73,6 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 	@SuppressWarnings("deprecation")
 	final MethodDescriptor<String, Integer> methodDescriptor = MethodDescriptor.create(
 			MethodType.UNARY, "testMethod", new StubMarshaller<>(), new StubMarshaller<>());
-
 	@Mock final Channel mockChannel = mock(Channel.class);
 	@Mock final ClientCall<String, Integer> mockRpc = mock(ClientCall.class);
 
@@ -100,8 +98,10 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 
 		// basic verifications
 		mockListener.ctxVerifier = new ContextVerifier(grpcModule, rpcCtx);
-		assertSame("RPC should be stored into rpcCtx", mockRpc, rpcCtx.getRpc());
-		assertTrue("there should be no parentCtx", rpcCtx.getParentContext().isEmpty());
+		assertSame("RPC should be stored into rpcCtx",
+				mockRpc, rpcCtx.getRpc());
+		assertTrue("there should be no parentCtx",
+				rpcCtx.getParentContext().isEmpty());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
@@ -123,20 +123,27 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		// verify onMessage(...)
 		final Integer message = 666;
 		decoratedListener.onMessage(message);
-		assertSame("messages should not be modified", message, mockListener.capturedMessage);
+		assertSame("messages should not be modified",
+				message, mockListener.capturedMessage);
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
 		// verify onClose(...)
-		assertTrue("status should be empty before onClose", rpcCtx.getStatus().isEmpty());
-		assertTrue("trailers should be empty before onClose", rpcCtx.getTrailers().isEmpty());
+		assertTrue("status should be empty before onClose",
+				rpcCtx.getStatus().isEmpty());
+		assertTrue("trailers should be empty before onClose",
+				rpcCtx.getTrailers().isEmpty());
 		final var status = Status.OK;
 		final var trailers = new Metadata();
 		decoratedListener.onClose(status, trailers);
-		assertSame("status should not be modified", status, mockListener.capturedStatus);
-		assertSame("status should be stored into rpcCtx", status, rpcCtx.getStatus().get());
-		assertSame("trailers should not be modified", trailers, mockListener.capturedTrailers);
-		assertSame("trailers should be stored into rpcCtx", trailers, rpcCtx.getTrailers().get());
+		assertSame("status should not be modified",
+				status, mockListener.capturedStatus);
+		assertSame("status should be stored into rpcCtx",
+				status, rpcCtx.getStatus().get());
+		assertSame("trailers should not be modified",
+				trailers, mockListener.capturedTrailers);
+		assertSame("trailers should be stored into rpcCtx",
+				trailers, rpcCtx.getTrailers().get());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
 
@@ -184,7 +191,8 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 					rootProvidedObject,
 					childRpcCtx.produceIfAbsent(key, () -> childProvidedObject));
 		} else {
-			assertTrue("parent ctx should NOT be linked", childRpcCtx.getParentContext().isEmpty());
+			assertTrue("parent ctx should NOT be linked",
+					childRpcCtx.getParentContext().isEmpty());
 			assertSame("child RPC should NOT share RPC-scoped objects with the parent",
 					childProvidedObject,
 					childRpcCtx.produceIfAbsent(key, () -> childProvidedObject));

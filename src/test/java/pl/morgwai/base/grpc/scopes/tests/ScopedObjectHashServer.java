@@ -37,23 +37,22 @@ public class ScopedObjectHashServer {
 
 	public ScopedObjectHashServer(int port, String backendTarget) throws IOException {
 		grpcModule = new GrpcModule();
-		backendChannel = ManagedChannelBuilder
-			.forTarget(backendTarget)
+		backendChannel = ManagedChannelBuilder.forTarget(backendTarget)
 			.usePlaintext()
 			.build();
 		final var backendConnector = BackendGrpc.newStub(ClientInterceptors.intercept(
 				backendChannel, grpcModule.nestingClientInterceptor));
-		final var injector = Guice.createInjector(grpcModule, (binder) -> {
-			binder
-				.bind(BackendStub.class)
-				.toInstance(backendConnector);
-			binder
-				.bind(RpcScopedService.class)
-				.in(grpcModule.rpcScope);
-			binder
-				.bind(EventScopedService.class)
-				.in(grpcModule.listenerEventScope);
-		});
+		final var injector = Guice.createInjector(
+			grpcModule,
+			(binder) -> {
+				binder.bind(BackendStub.class)
+					.toInstance(backendConnector);
+				binder.bind(RpcScopedService.class)
+					.in(grpcModule.rpcScope);
+				binder.bind(EventScopedService.class)
+					.in(grpcModule.listenerEventScope);
+			}
+		);
 		service = injector.getInstance(ScopedObjectHashService.class);
 		grpcServer = NettyServerBuilder
 			.forPort(port)
@@ -81,14 +80,18 @@ public class ScopedObjectHashServer {
 
 
 
+	/** @param args 0: port to listen on, 1: backend port to connect to. */
 	public static void main(String[] args) throws Exception {
 		addOrReplaceLoggingConfigProperties(Map.of(
 			"pl.morgwai" + LEVEL_SUFFIX , FINER.toString(),
 			ConsoleHandler.class.getName(), FINER.toString()
 		));
 		overrideLogLevelsWithSystemProperties();
+
 		final var server = new ScopedObjectHashServer(
-				Integer.parseInt(args[0]), "localhost:" + Integer.parseInt(args[1]));
+			Integer.parseInt(args[0]),
+			"localhost:" + Integer.parseInt(args[1])
+		);
 		Runtime.getRuntime().addShutdownHook(new Thread(
 			() -> {
 				try {

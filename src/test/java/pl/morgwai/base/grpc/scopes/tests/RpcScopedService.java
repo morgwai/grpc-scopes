@@ -7,8 +7,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RpcScopedService {
 
+
+
 	static final AtomicInteger idSequence = new AtomicInteger(0);
 	final int id = idSequence.incrementAndGet();
+
+
 
 	@Override
 	public int hashCode() {

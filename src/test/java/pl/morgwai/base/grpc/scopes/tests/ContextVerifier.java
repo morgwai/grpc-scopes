@@ -29,7 +29,8 @@ public class ContextVerifier {
 
 	public void verifyCtxs() {
 		final var eventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
-		assertNotNull("event context should be started", eventCtx);
+		assertNotNull("event context should be started",
+				eventCtx);
 		assertTrue("each listener method should be executed within a new separate eventCtx",
 				seenEventCtxs.add(eventCtx));
 		assertSame("all listener methods should be executed within the same rpcCtx",

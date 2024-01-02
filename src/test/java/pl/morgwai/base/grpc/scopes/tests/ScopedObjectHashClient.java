@@ -12,6 +12,8 @@ import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectHashGrpc.ScopedObjectH
 import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 import pl.morgwai.base.utils.concurrent.Awaitable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 
 
 public class ScopedObjectHashClient {
@@ -42,6 +44,23 @@ public class ScopedObjectHashClient {
 
 
 
+	public void streaming(
+		int callId,
+		int requestCount,
+		StreamObserver<ScopedObjectsHashes> responseObserver
+	) throws TimeoutException {
+		streaming(callId, requestCount, responseObserver, false);
+	}
+
+	/** Cancels at the very end after sending all request messages. */
+	public void streamingAndCancel(
+		int callId,
+		int requestCount,
+		StreamObserver<ScopedObjectsHashes> responseObserver
+	) throws TimeoutException {
+		streaming(callId, requestCount, responseObserver, true);
+	}
+
 	void streaming(
 		int callId,
 		int requestCount,
@@ -67,7 +86,7 @@ public class ScopedObjectHashClient {
 		}
 		boolean messagesReceived = false;
 		try {
-			messagesReceived = messagesReceivedLatch.await(deadlineMillis, TimeUnit.MILLISECONDS);
+			messagesReceived = messagesReceivedLatch.await(deadlineMillis, MILLISECONDS);
 		} catch (InterruptedException ignored) {}
 		if (cancel) {
 			((ClientCallStreamObserver<?>) requestObserver).cancel("requested by caller", null);
@@ -75,18 +94,6 @@ public class ScopedObjectHashClient {
 			requestObserver.onCompleted();
 		}
 		if ( !messagesReceived) throw new TimeoutException();
-	}
-
-	public void streaming(
-			int callId, int requestCount, StreamObserver<ScopedObjectsHashes> responseObserver)
-			throws TimeoutException {
-		streaming(callId, requestCount, responseObserver, false);
-	}
-
-	public void streamingAndCancel(
-			int callId, int requestCount, StreamObserver<ScopedObjectsHashes> responseObserver)
-			throws TimeoutException {
-		streaming(callId, requestCount, responseObserver, true);
 	}
 
 
@@ -97,6 +104,11 @@ public class ScopedObjectHashClient {
 
 
 
+	/**
+	 * @param args 0: server port to connect to, 1: how many streaming calls to issue (optional,
+	 *     default 2), 2: how many messages per call (optional, default 5), 3: timeout in ms
+	 *     (optional, default 500).
+	 */
 	public static void main(String[] args) throws InterruptedException {
 		ScopedObjectHashClient client = null;
 		try {
@@ -107,7 +119,10 @@ public class ScopedObjectHashClient {
 			long timeoutMillis = 500L;
 			if (args.length > 3) timeoutMillis = Long.parseLong(args[3]);
 			client = new ScopedObjectHashClient(
-					"localhost:" + Integer.parseInt(args[0]), timeoutMillis, new GrpcModule());
+				"localhost:" + Integer.parseInt(args[0]),
+				timeoutMillis,
+				new GrpcModule()
+			);
 			for (int callNumber = 0; callNumber < numberOfCalls; callNumber++) {
 				final int callId = callNumber;
 				final var latch = new CountDownLatch(1);
@@ -116,10 +131,11 @@ public class ScopedObjectHashClient {
 
 						@Override public void onNext(ScopedObjectsHashes hashes) {
 							System.out.println(
-									"call: " + callId
-									+ ", event: " + hashes.getEventName()
-									+ ", rpc-scoped hash: " + hashes.getRpcScopedHash()
-									+ ", event-scoped hash: " + hashes.getEventScopedHash());
+								"call: " + callId
+										+ ", event: " + hashes.getEventName()
+										+ ", rpc-scoped hash: " + hashes.getRpcScopedHash()
+										+ ", event-scoped hash: " + hashes.getEventScopedHash()
+							);
 						}
 
 						@Override public void onError(Throwable t) { t.printStackTrace(); }
@@ -132,14 +148,12 @@ public class ScopedObjectHashClient {
 				} catch (TimeoutException e) {
 					System.err.println("timeout waiting for messages, will wait 100ms more");
 				}
-				if ( !latch.await(100L, TimeUnit.MILLISECONDS)) throw new TimeoutException();
+				if ( !latch.await(100L, MILLISECONDS)) throw new TimeoutException();
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();
 		} finally {
-			if (client != null) {
-				client.toAwaitableOfEnforcedTermination().await(200L);
-			}
+			if (client != null) client.toAwaitableOfEnforcedTermination().await(200L);
 		}
 	}
 }
