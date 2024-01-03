@@ -10,7 +10,7 @@ RPC and Listener event Guice Scopes for gRPC.<br/>
 
 Provides `rpcScope` and `listenerEventScope` Guice Scopes for both client and server apps.<br/>
 Oversimplifying, in case of streaming requests on servers and streaming responses on clients, `listenerEventScope` spans over the processing of a single message from the stream or over a single call to any registered handler (via `setOnReadyHandler(...)`, `setOnCancelHandler(...)` etc), while `rpcScope` spans over a whole given RPC.<br/>
-Oversimplifying again, in case of unary inbound, these 2 Scopes have roughly the same span.<br/>
+Oversimplifying again, in case of unary inbound, these 2 Scopes have roughly similar span, although most registered callbacks will have a separate `listenerEventScope`.<br/>
 See [this DZone article](https://dzone.com/articles/combining-grpc-with-guice) for extended high-level explanation.<br/>
 <br/>
 Technically:
@@ -20,7 +20,7 @@ Technically:
     * methods implementing RPC procedures themselves
     * all invocations of callbacks registered via `ServerCallStreamObserver`s
     
-    have "separate `listenerEventScope`s".
+    have "separate `listenerEventScope`s", **EXCEPT** the first call to `onReady()` handler in case of unary requests as it's invoked in the same `Listener` event-handling method as the RPC method (see [the source of gRPC UnaryServerCallListener.onHalfClose()](https://github.com/grpc/grpc-java/blob/v1.60.1/stub/src/main/java/io/grpc/stub/ServerCalls.java#L182-L189) for details).
   * For clients this means that:
     * all callbacks to response `StreamObserver`s supplied as arguments to stub RPC methods
     * all invocations of callbacks registered via `ClientCallStreamObserver`
