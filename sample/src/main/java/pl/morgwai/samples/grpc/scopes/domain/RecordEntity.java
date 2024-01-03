@@ -26,6 +26,16 @@ public class RecordEntity implements Serializable {
 
 
 
+	public RecordEntity(String content) {
+		this.content = content;
+	}
+
+
+
+	public RecordEntity() {}
+
+
+
 	@Override
 	public int hashCode() {
 		return (id == null ? 0 : id.hashCode())
@@ -54,12 +64,6 @@ public class RecordEntity implements Serializable {
 	}
 
 
-
-	public RecordEntity() {}
-
-	public RecordEntity(String content) {
-		this.content = content;
-	}
 
 	static {
 		// unit-test/deploy time check if there are not typos in field names

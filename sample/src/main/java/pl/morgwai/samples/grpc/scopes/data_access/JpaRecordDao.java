@@ -21,10 +21,6 @@ public class JpaRecordDao implements RecordDao {
 
 
 
-	static final String FIND_ALL_QUERY_NAME = JpaRecordDao.class.getName() + ".findAll";
-	static final String FIND_ALL_QUERY =
-			"select r from " + RecordEntity.class.getSimpleName() + " r";
-
 	@Override
 	public List<RecordEntity> findAll() throws DaoException {
 		try {
@@ -35,6 +31,10 @@ public class JpaRecordDao implements RecordDao {
 			throw new DaoException(e);
 		}
 	}
+
+	static final String FIND_ALL_QUERY =
+			"select r from " + RecordEntity.class.getSimpleName() + " r";
+	static final String FIND_ALL_QUERY_NAME = JpaRecordDao.class.getName() + ".findAll";
 
 
 
@@ -59,7 +59,9 @@ public class JpaRecordDao implements RecordDao {
 		// create named queries
 		final var initialEntityManager = persistenceUnit.createEntityManager();
 		persistenceUnit.addNamedQuery(
-				FIND_ALL_QUERY_NAME, initialEntityManager.createQuery(FIND_ALL_QUERY));
+			FIND_ALL_QUERY_NAME,
+			initialEntityManager.createQuery(FIND_ALL_QUERY)
+		);
 		initialEntityManager.close();
 	}
 }

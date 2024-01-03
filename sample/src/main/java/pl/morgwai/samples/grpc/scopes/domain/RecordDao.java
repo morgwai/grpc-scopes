@@ -10,6 +10,8 @@ public interface RecordDao {
 	List<RecordEntity> findAll() throws DaoException;
 	void persist( RecordEntity record) throws DaoException;
 
+
+
 	class DaoException extends Exception {
 		public DaoException(Throwable cause) { super(cause); }
 	}
