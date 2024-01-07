@@ -35,14 +35,21 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 		throw new RejectedExecutionException("rejected " + task);
 	};
 
+	final CountDownLatch taskBlockingLatch = new CountDownLatch(1);
+	final CountDownLatch blockingTasksStarted = new CountDownLatch(1);
+	final Runnable blockingTask = () -> {
+		blockingTasksStarted.countDown();
+		try {
+			taskBlockingLatch.await();
+		} catch (InterruptedException ignored) {}
+	};
+
 	GrpcContextTrackingExecutor testSubject;
-	CountDownLatch taskBlockingLatch;
 
 
 
 	@Before
 	public void setup() {
-		taskBlockingLatch = new CountDownLatch(1);
 		testSubject = grpcModule.newContextTrackingExecutor(
 			"testExecutor",
 			1, 1,
@@ -77,7 +84,7 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 
 
 	@Test
-	public void testExecutionRejection() {
+	public void testExecutionRejection() throws Exception {
 		final var outboundObserver = new StreamObserver<Long>() {
 
 			Throwable capturedError;
@@ -92,14 +99,13 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 		final Runnable overloadingTask = () -> {};
 		try {
 			eventContext.executeWithinSelf(() -> {
-				testSubject.execute(() -> {  // make worker busy
-					try {
-						taskBlockingLatch.await();
-					} catch (InterruptedException ignored) {}
-				});
+				testSubject.execute(blockingTask);
+				assertTrue("blockingTask should start",
+						blockingTasksStarted.await(50L, MILLISECONDS));
 				testSubject.execute(() -> {});  // fill the queue
 
 				testSubject.execute(outboundObserver, overloadingTask);  // method under test
+				return null;  // Callable<Void>
 			});
 		} finally {
 			taskBlockingLatch.countDown();
@@ -124,48 +130,18 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 
 
 	@Test
-	public void testTryForceTerminatePreservesContext() throws InterruptedException {
-		final var blockingTasksStarted = new CountDownLatch(1);
-		final var blockingTaskFinished = new CountDownLatch(1);
-		final Runnable blockingTask = () -> {
-			blockingTasksStarted.countDown();
-			try {
-				taskBlockingLatch.await();
-			} catch (InterruptedException ignored) {}
-			blockingTaskFinished.countDown();
-		};
-		final Runnable queuedTask = () -> {};
-		eventContext.executeWithinSelf(() -> {
-			testSubject.execute(blockingTask);
-			testSubject.execute(queuedTask);
-		});
-		assertTrue("blocking task should start",
+	public void testGetRunningTasksPreservesContext() throws InterruptedException {
+		eventContext.executeWithinSelf(() -> testSubject.execute(blockingTask));
+		assertTrue("blockingTask should start",
 				blockingTasksStarted.await(50L, MILLISECONDS));
-
-		testSubject.shutdown();
-		final var aftermath = testSubject.tryForceTerminate();
-		assertTrue("blockingTask should finish after tryForceTerminate()",
-				blockingTaskFinished.await(50L, MILLISECONDS));
-		assertEquals("1 task should be running in the aftermath",
-				1, aftermath.runningTasks.size());
-		assertEquals("1 task should be unexecuted in the aftermath",
-				1, aftermath.unexecutedTasks.size());
-		final var runningTask = aftermath.runningTasks.get(0);
-		final var unexecutedTask = aftermath.unexecutedTasks.get(0);
+		final var runningTask = testSubject.getRunningTasks().get(0);
 		assertTrue("runningTask should be a ContextBoundRunnable",
 				runningTask instanceof ContextBoundRunnable);
 		final var contextBoundRunningTask = (ContextBoundRunnable) runningTask;
-		assertTrue("unexecutedTask should be a ContextBoundRunnable",
-			unexecutedTask instanceof ContextBoundRunnable);
-		final var contextBoundUnexecutedTask = (ContextBoundRunnable) unexecutedTask;
 		assertSame("runningTask should be blockingTask",
 				blockingTask, contextBoundRunningTask.getBoundClosure());
-		assertSame("unexecutedTask should be queuedTask",
-				queuedTask, contextBoundUnexecutedTask.getBoundClosure());
 		assertSame("ctx should be preserved during tryForceTerminate()",
 				eventContext, contextBoundRunningTask.getContexts().get(0));
-		assertSame("ctx should be preserved during tryForceTerminate()",
-				eventContext, contextBoundUnexecutedTask.getContexts().get(0));
 	}
 
 
