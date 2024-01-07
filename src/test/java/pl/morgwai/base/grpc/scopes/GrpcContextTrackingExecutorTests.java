@@ -44,21 +44,14 @@ public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
 		} catch (InterruptedException ignored) {}
 	};
 
-	GrpcContextTrackingExecutor testSubject;
-
-
-
-	@Before
-	public void setup() {
-		testSubject = grpcModule.newContextTrackingExecutor(
-			"testExecutor",
-			1, 1,
-			0L, MILLISECONDS,
-			new LinkedBlockingQueue<>(1),
-			new NamingThreadFactory("testExecutor"),
-			rejectionHandler
-		);
-	}
+	final GrpcContextTrackingExecutor testSubject = grpcModule.newContextTrackingExecutor(
+		"testExecutor",
+		1, 1,
+		0L, MILLISECONDS,
+		new LinkedBlockingQueue<>(1),
+		new NamingThreadFactory("testExecutor"),
+		rejectionHandler
+	);
 
 
 
