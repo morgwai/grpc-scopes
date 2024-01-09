@@ -5,8 +5,7 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
 import org.easymock.EasyMockSupport;
-import org.easymock.Mock;
-import org.junit.Test;
+import org.junit.*;
 import pl.morgwai.base.grpc.scopes.tests.ContextVerifier;
 
 import static org.junit.Assert.*;
@@ -20,7 +19,21 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 	final GrpcModule grpcModule = new GrpcModule();
 	final ServerContextInterceptor interceptor =
 			(ServerContextInterceptor) grpcModule.serverInterceptor;
-	@Mock final ServerCall<Integer, Integer> mockRpc = mock(ServerCall.class);
+	final ServerCall<Integer, Integer> mockRpc = mock(ServerCall.class);
+
+
+
+	@Before
+	public void setupMocks() {
+		replayAll();
+	}
+
+
+
+	@After
+	public void verifyMocks() {
+		verifyAll();
+	}
 
 
 
@@ -57,8 +70,12 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 						rpcCtx);
 				assertSame("RPC (ServerCall) object should not be modified",
 						mockRpc, ((ServerRpcContext) rpcCtx).getRpc());
+				assertSame("RPC (ServerCall) object should not be modified",
+						mockRpc, rpc);
 				assertSame("request headers should not be modified",
 						requestHeaders, rpcCtx.getRequestHeaders());
+				assertSame("request headers should not be modified",
+						requestHeaders, headers);
 				final var ctxVerifier = new ContextVerifier(grpcModule, rpcCtx);
 				ctxVerifier.add(eventCtx);
 				mockListener.ctxVerifier = ctxVerifier;

@@ -6,9 +6,8 @@ import java.util.concurrent.*;
 import io.grpc.*;
 import io.grpc.Status.Code;
 import io.grpc.stub.StreamObserver;
-import org.easymock.EasyMockSupport;
-import org.easymock.Mock;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Test;
 import pl.morgwai.base.guice.scopes.ContextBoundRunnable;
 import pl.morgwai.base.utils.concurrent.NamingThreadFactory;
 
@@ -18,13 +17,12 @@ import static org.junit.Assert.*;
 
 
 
-public class GrpcContextTrackingExecutorTests extends EasyMockSupport {
+public class GrpcContextTrackingExecutorTests {
 
 
 
 	final GrpcModule grpcModule = new GrpcModule();
-	@Mock final ServerCall<Integer, Integer> mockRpc = mock(ServerCall.class);
-	final ServerRpcContext rpcContext = new ServerRpcContext(mockRpc, new Metadata());
+	final ServerRpcContext rpcContext = new ServerRpcContext(null, null);
 	final ListenerEventContext eventContext = grpcModule.newListenerEventContext(rpcContext);
 
 	Runnable rejectedTask;

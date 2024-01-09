@@ -9,8 +9,7 @@ import io.grpc.*;
 import io.grpc.ClientCall.Listener;
 import io.grpc.MethodDescriptor.MethodType;
 import org.easymock.*;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import pl.morgwai.base.grpc.scopes.ClientContextInterceptor.ListenerProxy;
 import pl.morgwai.base.grpc.scopes.tests.ContextVerifier;
 
@@ -73,17 +72,27 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 	@SuppressWarnings("deprecation")
 	final MethodDescriptor<String, Integer> methodDescriptor = MethodDescriptor.create(
 			MethodType.UNARY, "testMethod", new StubMarshaller<>(), new StubMarshaller<>());
-	@Mock final Channel mockChannel = mock(Channel.class);
-	@Mock final ClientCall<String, Integer> mockRpc = mock(ClientCall.class);
+	@Mock Channel mockChannel;
+	@Mock ClientCall<String, Integer> mockRpc;
 
 
 
 	@Before
-	public void recordMockExpectations() {
+	public void setupMocks() {
+		injectMocks(this);
 		expect(mockChannel.newCall(same(methodDescriptor), same(options)))
-			.andReturn(mockRpc);
+			.andReturn(mockRpc)
+			.times(1);
 		mockRpc.start(capture(listenerCapture), same(requestHeaders));
+		expectLastCall().times(1);
 		replayAll();
+	}
+
+
+
+	@After
+	public void verifyMocks() {
+		verifyAll();
 	}
 
 
@@ -146,8 +155,6 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 				trailers, rpcCtx.getTrailers().get());
 		assertNull("event context should not be leaked",
 				grpcModule.listenerEventContextTracker.getCurrentContext());
-
-		verifyAll();
 	}
 
 	@Test public void testBasicInterceptingWithNestingInterceptor() {
@@ -219,8 +226,6 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 					childProvidedObject,
 					childRpcCtx.produceIfAbsent(key, () -> yetAnotherObject));
 		}
-
-		verifyAll();
 	}
 
 	final ServerRpcContext serverRpcContext = new ServerRpcContext(null, null);
