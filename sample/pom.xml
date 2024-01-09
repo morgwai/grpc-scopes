@@ -13,8 +13,8 @@
 	<properties>
 		<maven.compiler.release>11</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<grpc.version>1.56.0</grpc.version>
-		<protobuf.version>3.22.3</protobuf.version>
+		<grpc.version>1.60.1</grpc.version>
+		<protobuf.version>3.24.0</protobuf.version>
 	</properties>
 
 	<dependencyManagement>
@@ -30,7 +30,14 @@
 	</dependencyManagement>
 
 	<dependencies>
+
 		<!-- order of these deps is important for enforcer -->
+		<dependency>
+			<!-- for enforcer -->
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>33.0.0-jre</version>
+		</dependency>
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-protobuf</artifactId>
@@ -48,12 +55,6 @@
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-netty-shaded</artifactId>
-		</dependency>
-		<dependency>
-			<!-- for enforcer -->
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>31.1-jre</version>
 		</dependency>
 
 		<dependency>
