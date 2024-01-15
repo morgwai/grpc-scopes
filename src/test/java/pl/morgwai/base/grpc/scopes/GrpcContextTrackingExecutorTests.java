@@ -61,14 +61,15 @@ public class GrpcContextTrackingExecutorTests {
 		eventContext.executeWithinSelf(() -> testSubject.execute(() -> {
 			try {
 				assertSame("context should be transferred when passing task to executor",
-					eventContext, grpcModule.listenerEventContextTracker.getCurrentContext());
+						eventContext, grpcModule.listenerEventContextTracker.getCurrentContext());
 			} catch (AssertionError e) {
 				asyncError[0] = e;
 			} finally {
 				taskFinished.countDown();
 			}
 		}));
-		assertTrue("task should complete", taskFinished.await(20L, MILLISECONDS));
+		assertTrue("task should complete",
+				taskFinished.await(20L, MILLISECONDS));
 		if (asyncError[0] != null) throw asyncError[0];
 	}
 
