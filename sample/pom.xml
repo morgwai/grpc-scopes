@@ -65,12 +65,12 @@
 		<dependency>
 			<groupId>pl.morgwai.base</groupId>
 			<artifactId>grpc-utils</artifactId>
-			<version>7.0</version>
+			<version>7.1</version>
 		</dependency>
 		<dependency>
 			<groupId>pl.morgwai.base</groupId>
 			<artifactId>jul-utils</artifactId>
-			<version>3.0</version>
+			<version>[4.0,)</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.inject</groupId>
