@@ -3,8 +3,8 @@
 RPC and Listener event Guice Scopes for gRPC.<br/>
 Copyright 2021 Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0<br/>
 <br/>
-**latest release: [12.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/12.0/jar)**
-([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/12.0))
+**latest release: [12.1](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/12.1/jar)**
+([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/12.1))
 
 
 ## OVERVIEW
