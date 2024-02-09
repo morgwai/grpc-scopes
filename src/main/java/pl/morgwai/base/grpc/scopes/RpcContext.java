@@ -10,6 +10,7 @@ import pl.morgwai.base.guice.scopes.InjectionContext;
 
 /**
  * Context of either a client or a server RPC.
+ * {@link GrpcModule#rpcScope Induced} by {@link ListenerEventContext}.
  * @see ClientRpcContext
  * @see ServerRpcContext
  */

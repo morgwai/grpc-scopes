@@ -10,8 +10,8 @@ import pl.morgwai.base.guice.scopes.TrackableContext;
  * Context of a single call to one of the methods of {@link io.grpc.ClientCall.Listener},
  * {@link io.grpc.ServerCall.Listener} and a server listener creation in
  * {@link io.grpc.ServerCallHandler#startCall(io.grpc.ServerCall, io.grpc.Metadata)
- * ServerCallHandler.startCall(...)}. Each such event is executed within a separate new
- * {@code ListenerEventContext} instance.
+ * ServerCallHandler.startCall(...)}.
+ * Each such event is executed within a separate new {@code ListenerEventContext} instance.
  *
  * @see GrpcModule#listenerEventScope corresponding Scope
  * @see <a href="https://javadoc.io/doc/pl.morgwai.base/grpc-utils/latest/pl/morgwai/base/grpc/
