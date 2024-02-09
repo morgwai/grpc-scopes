@@ -61,10 +61,10 @@ public class ClientRpcContext extends RpcContext {
 
 	@Override
 	protected <T> T produceIfAbsent(Key<T> key, Provider<T> producer) {
-		if (parentCtx == null) {
-			return super.produceIfAbsent(key, producer);
-		} else {
+		if (parentCtx != null) {
 			return parentCtx.packageProtectedProduceIfAbsent(key, producer);
+		} else {
+			return super.produceIfAbsent(key, producer);
 		}
 	}
 
@@ -72,10 +72,10 @@ public class ClientRpcContext extends RpcContext {
 
 	@Override
 	public void removeScopedObject(Key<?> key) {
-		if (parentCtx == null) {
-			super.removeScopedObject(key);
-		} else {
+		if (parentCtx != null) {
 			parentCtx.removeScopedObject(key);
+		} else {
+			super.removeScopedObject(key);
 		}
 	}
 
