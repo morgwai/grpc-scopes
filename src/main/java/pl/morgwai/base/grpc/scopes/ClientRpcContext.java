@@ -24,7 +24,7 @@ public class ClientRpcContext extends RpcContext {
 
 
 	public ClientCall<?, ?> getRpc() { return rpc; }
-	final ClientCall<?, ?> rpc;
+	public final ClientCall<?, ?> rpc;
 
 	public Metadata getResponseHeaders() { return responseHeaders; }
 	private Metadata responseHeaders;

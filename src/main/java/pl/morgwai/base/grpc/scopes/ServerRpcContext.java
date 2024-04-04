@@ -26,7 +26,7 @@ public class ServerRpcContext extends RpcContext {
 
 
 	public ServerCall<?, ?> getRpc() { return rpc; }
-	final ServerCall<?, ?> rpc;
+	public final ServerCall<?, ?> rpc;
 
 
 

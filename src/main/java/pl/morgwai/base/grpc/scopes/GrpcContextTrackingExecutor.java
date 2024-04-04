@@ -24,7 +24,7 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 
 
 	public String getName() { return name; }
-	final String name;
+	public final String name;
 
 	final ContextBinder ctxBinder;
 

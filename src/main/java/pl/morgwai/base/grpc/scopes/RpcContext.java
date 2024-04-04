@@ -18,8 +18,8 @@ public abstract class RpcContext extends InjectionContext {
 
 
 
-	final Metadata requestHeaders;
 	public Metadata getRequestHeaders() { return requestHeaders; }
+	public final Metadata requestHeaders;
 
 
 

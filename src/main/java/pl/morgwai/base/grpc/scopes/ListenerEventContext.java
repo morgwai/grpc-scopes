@@ -27,7 +27,7 @@ public class ListenerEventContext extends TrackableContext<ListenerEventContext>
 
 
 	public RpcContext getRpcContext() { return  rpcContext; }
-	final RpcContext rpcContext;
+	public final RpcContext rpcContext;
 
 
 
