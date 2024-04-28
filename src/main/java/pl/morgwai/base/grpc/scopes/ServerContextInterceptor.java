@@ -31,7 +31,7 @@ public class ServerContextInterceptor implements ServerInterceptor {
 		Metadata headers,
 		ServerCallHandler<RequestT, ResponseT> handler
 	) {
-		final ServerRpcContext rpcContext = new ServerRpcContext(rpc, headers);
+		final var rpcContext = new ServerRpcContext(rpc, headers);
 		try {
 			final var listener = grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
 				// in case of streaming requests this is where the user RPC method will be invoked:
