@@ -3,6 +3,7 @@ package pl.morgwai.base.grpc.scopes;
 
 import io.grpc.*;
 import io.grpc.ClientCall.Listener;
+import pl.morgwai.base.guice.scopes.ContextTracker;
 
 
 
@@ -16,13 +17,13 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 
-	final GrpcModule grpcModule;
+	final ContextTracker<ListenerEventContext> ctxTracker;
 	final boolean nesting;
 
 
 
-	ClientContextInterceptor(GrpcModule grpcModule, boolean nesting) {
-		this.grpcModule = grpcModule;
+	ClientContextInterceptor(ContextTracker<ListenerEventContext> ctxTracker, boolean nesting) {
+		this.ctxTracker = ctxTracker;
 		this.nesting = nesting;
 	}
 
@@ -57,7 +58,7 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 		@Override
 		public void start(Listener<ResponseT> listener, Metadata requestHeaders) {
-			final var parentEventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
+			final var parentEventCtx = ctxTracker.getCurrentContext();
 			final var rpcCtx  = (nesting && parentEventCtx != null)
 					? new ClientRpcContext(
 							wrappedRpc, requestHeaders, parentEventCtx.getRpcContext())
@@ -107,7 +108,7 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 
 		private void executeWithinCtxs(Runnable wrappedListenerCall) {
-			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(wrappedListenerCall);
+			new ListenerEventContext(rpcContext, ctxTracker).executeWithinSelf(wrappedListenerCall);
 		}
 
 

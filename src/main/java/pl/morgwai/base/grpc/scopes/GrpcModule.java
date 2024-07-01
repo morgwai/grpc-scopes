@@ -75,7 +75,8 @@ public class GrpcModule implements Module {
 	 * {@link ServerInterceptors#intercept(BindableService, ServerInterceptor...) intercepted} by
 	 * this {@code Interceptor}.
 	 */
-	public final ServerInterceptor serverInterceptor = new ServerContextInterceptor(this);
+	public final ServerInterceptor serverInterceptor =
+			new ServerContextInterceptor(listenerEventContextTracker);
 
 	/**
 	 * All {@link Channel client Channels} must be
@@ -87,7 +88,7 @@ public class GrpcModule implements Module {
 	 * they will share all {@link #rpcScope RPC-scoped} objects.
 	 */
 	public final ClientInterceptor nestingClientInterceptor =
-			new ClientContextInterceptor(this, true);
+			new ClientContextInterceptor(listenerEventContextTracker, true);
 
 	/**
 	 * All {@link Channel client Channels} must be
@@ -96,7 +97,8 @@ public class GrpcModule implements Module {
 	 * will keep {@link ClientRpcContext}s separate even if they were made within some enclosing
 	 * {@link RpcContext}s.
 	 */
-	public final ClientInterceptor clientInterceptor = new ClientContextInterceptor(this, false);
+	public final ClientInterceptor clientInterceptor =
+			new ClientContextInterceptor(listenerEventContextTracker, false);
 
 
 
@@ -321,12 +323,5 @@ public class GrpcModule implements Module {
 	 */
 	public Awaitable.WithUnit toAwaitableOfTerminationOfAllExecutors() {
 		return (timeout, unit) -> awaitTerminationOfAllExecutors(timeout, unit).isEmpty();
-	}
-
-
-
-	/** For internal use by interceptors. */
-	ListenerEventContext newListenerEventContext(RpcContext rpcContext) {
-		return new ListenerEventContext(rpcContext, listenerEventContextTracker);
 	}
 }

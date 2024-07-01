@@ -181,7 +181,8 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		rootRpcCtx.packageProtectedProduceIfAbsent(key, () -> rootProvidedObject);
 
 		// create and start a child RPC within the parent RPC ctx, capture the created child RPC ctx
-		grpcModule.newListenerEventContext(parentRpcCtx).executeWithinSelf(
+		new ListenerEventContext(parentRpcCtx, grpcModule.listenerEventContextTracker)
+				.executeWithinSelf(
 			() -> {
 				final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
 				rpc.start(mockListener, requestHeaders);

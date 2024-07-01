@@ -23,7 +23,8 @@ public class GrpcContextTrackingExecutorTests {
 
 	final GrpcModule grpcModule = new GrpcModule();
 	final ServerRpcContext rpcContext = new ServerRpcContext(null, null);
-	final ListenerEventContext eventContext = grpcModule.newListenerEventContext(rpcContext);
+	final ListenerEventContext eventContext =
+			new ListenerEventContext(rpcContext, grpcModule.listenerEventContextTracker);
 
 	Runnable rejectedTask;
 	Executor rejectingExecutor;

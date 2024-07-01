@@ -3,6 +3,7 @@ package pl.morgwai.base.grpc.scopes;
 
 import io.grpc.*;
 import io.grpc.ServerCall.Listener;
+import pl.morgwai.base.guice.scopes.ContextTracker;
 
 
 
@@ -15,12 +16,12 @@ public class ServerContextInterceptor implements ServerInterceptor {
 
 
 
-	final GrpcModule grpcModule;
+	final ContextTracker<ListenerEventContext> ctxTracker;
 
 
 
-	ServerContextInterceptor(GrpcModule grpcModule) {
-		this.grpcModule = grpcModule;
+	ServerContextInterceptor(ContextTracker<ListenerEventContext> ctxTracker) {
+		this.ctxTracker = ctxTracker;
 	}
 
 
@@ -33,7 +34,7 @@ public class ServerContextInterceptor implements ServerInterceptor {
 	) {
 		final var rpcContext = new ServerRpcContext(rpc, headers);
 		try {
-			final var listener = grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(
+			final var listener = new ListenerEventContext(rpcContext, ctxTracker).executeWithinSelf(
 				// in case of streaming requests this is where the user RPC method will be invoked:
 				() -> handler.startCall(rpc, headers)
 			);
@@ -66,7 +67,7 @@ public class ServerContextInterceptor implements ServerInterceptor {
 
 
 		private void executeWithinCtxs(Runnable wrappedListenerCall) {
-			grpcModule.newListenerEventContext(rpcContext).executeWithinSelf(wrappedListenerCall);
+			new ListenerEventContext(rpcContext, ctxTracker).executeWithinSelf(wrappedListenerCall);
 		}
 
 
