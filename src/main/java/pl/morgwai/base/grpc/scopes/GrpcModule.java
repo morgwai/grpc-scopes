@@ -310,7 +310,6 @@ public class GrpcModule implements Module {
 	 * {@link #enforceTerminationOfAllExecutors(long, TimeUnit)}.
 	 */
 	public Awaitable.WithUnit toAwaitableOfEnforcedTerminationOfAllExecutors() {
-		shutdownAllExecutors();
 		return (timeout, unit) -> enforceTerminationOfAllExecutors(timeout, unit).isEmpty();
 	}
 
@@ -321,7 +320,6 @@ public class GrpcModule implements Module {
 	 * {@link #awaitTerminationOfAllExecutors(long, TimeUnit)}.
 	 */
 	public Awaitable.WithUnit toAwaitableOfTerminationOfAllExecutors() {
-		shutdownAllExecutors();
 		return (timeout, unit) -> awaitTerminationOfAllExecutors(timeout, unit).isEmpty();
 	}
 
