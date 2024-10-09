@@ -73,7 +73,6 @@ public class ScopedObjectHashServer {
 		return Awaitable.awaitMultiple(
 			timeoutMillis,
 			GrpcAwaitable.ofEnforcedTermination(grpcServer),
-			grpcModule.toAwaitableOfEnforcedTerminationOfAllExecutors(),
 			GrpcAwaitable.ofEnforcedTermination(backendChannel)
 		);
 	}

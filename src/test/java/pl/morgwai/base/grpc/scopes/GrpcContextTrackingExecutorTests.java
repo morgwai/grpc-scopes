@@ -22,6 +22,7 @@ public class GrpcContextTrackingExecutorTests {
 
 
 	final GrpcModule grpcModule = new GrpcModule();
+	final ExecutorManager executorManager = new ExecutorManager(grpcModule.contextBinder);
 	final ServerRpcContext rpcContext = new ServerRpcContext(null, null);
 	final ListenerEventContext eventContext =
 			new ListenerEventContext(rpcContext, grpcModule.listenerEventContextTracker);
@@ -43,7 +44,7 @@ public class GrpcContextTrackingExecutorTests {
 		} catch (InterruptedException ignored) {}
 	};
 
-	final GrpcContextTrackingExecutor testSubject = grpcModule.newContextTrackingExecutor(
+	final GrpcContextTrackingExecutor testSubject = executorManager.newContextTrackingExecutor(
 		"testExecutor",
 		1, 1,
 		0L, MILLISECONDS,
@@ -144,7 +145,7 @@ public class GrpcContextTrackingExecutorTests {
 		testSubject.shutdown();
 		taskBlockingLatch.countDown();
 		try {
-			grpcModule.enforceTerminationOfAllExecutors(50L, MILLISECONDS);
+			executorManager.enforceTermination(50L, MILLISECONDS);
 		} catch (InterruptedException ignored) {
 		} finally {
 			if ( !testSubject.isTerminated()) testSubject.shutdownNow();

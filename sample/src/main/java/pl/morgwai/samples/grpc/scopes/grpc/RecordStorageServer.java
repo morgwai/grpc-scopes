@@ -12,8 +12,7 @@ import com.google.inject.Module;
 import com.google.inject.*;
 import com.google.inject.name.Names;
 import io.grpc.*;
-import pl.morgwai.base.grpc.scopes.GrpcContextTrackingExecutor;
-import pl.morgwai.base.grpc.scopes.GrpcModule;
+import pl.morgwai.base.grpc.scopes.*;
 import pl.morgwai.base.grpc.utils.GrpcAwaitable;
 import pl.morgwai.base.jul.JulManualResetLogManager;
 import pl.morgwai.base.utils.concurrent.Awaitable;
@@ -82,9 +81,10 @@ public class RecordStorageServer {
 		int jpaExecutorThreadpoolSize
 	) throws Exception {
 		final var grpcModule = new GrpcModule();
+		final var exeuctorManager = new ExecutorManager(grpcModule.contextBinder);
 
 		entityManagerFactory = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
-		jpaExecutor = grpcModule.newContextTrackingExecutor(
+		jpaExecutor = exeuctorManager.newContextTrackingExecutor(
 			PERSISTENCE_UNIT_NAME + JPA_EXECUTOR_NAME,
 			jpaExecutorThreadpoolSize
 		);
@@ -127,11 +127,13 @@ public class RecordStorageServer {
 			() -> {
 				try {
 					log.info("shutting down");
-					Awaitable.awaitMultiple(
-						5000L,
+					if ( !Awaitable.awaitMultiple(
+						2000L,
 						GrpcAwaitable.ofEnforcedTermination(recordStorageServer),
-						grpcModule.toAwaitableOfEnforcedTerminationOfAllExecutors()
-					);
+						exeuctorManager.toAwaitableOfEnforcedTermination()
+					)) {
+						log.warning("some stuff failed to shutdown cleanly :/");
+					}
 				} catch (InterruptedException ignored) {}
 				entityManagerFactory.close();
 				log.info("exiting, bye!");

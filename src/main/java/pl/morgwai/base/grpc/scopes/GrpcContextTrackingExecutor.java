@@ -16,8 +16,8 @@ import pl.morgwai.base.utils.concurrent.TaskTrackingThreadPoolExecutor;
  * {@code Threads} using {@link ContextBinder}.
  * <p>
  * Instances should usually be created using
- * {@link GrpcModule#newContextTrackingExecutor(String, int)
- * GrpcModule.newContextTrackingExecutor(...)} helper methods family.</p>
+ * {@link ExecutorManager#newContextTrackingExecutor(String, int)
+ * ExecutorManager.newContextTrackingExecutor(...)} helper methods family.</p>
  */
 public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor {
 
@@ -30,7 +30,7 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 
 
 
-	/** See {@link GrpcModule#newContextTrackingExecutor(String, int)}. */
+	/** See {@link ExecutorManager#newContextTrackingExecutor(String, int)}. */
 	public GrpcContextTrackingExecutor(String name, ContextBinder ctxBinder, int poolSize) {
 		this(
 			name,
@@ -79,7 +79,7 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 
 
 	/**
-	 * See {@link GrpcModule#newContextTrackingExecutor(String, int, int, long, TimeUnit,
+	 * See {@link ExecutorManager#newContextTrackingExecutor(String, int, int, long, TimeUnit,
 	 * BlockingQueue, ThreadFactory, RejectedExecutionHandler)}.
 	 */
 	public GrpcContextTrackingExecutor(
@@ -101,7 +101,7 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 
 
 	/**
-	 * See {@link GrpcModule#newContextTrackingExecutor(String, int, int, long, TimeUnit,
+	 * See {@link ExecutorManager#newContextTrackingExecutor(String, int, int, long, TimeUnit,
 	 * BlockingQueue, ThreadFactory)}.
 	 */
 	public GrpcContextTrackingExecutor(
@@ -121,7 +121,7 @@ public class GrpcContextTrackingExecutor extends TaskTrackingThreadPoolExecutor 
 
 
 
-	/** See {@link GrpcModule#newContextTrackingExecutor(String, int, int)}. */
+	/** See {@link ExecutorManager#newContextTrackingExecutor(String, int, int)}. */
 	public GrpcContextTrackingExecutor(
 		String name,
 		ContextBinder ctxBinder,
