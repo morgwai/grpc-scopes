@@ -81,7 +81,7 @@ public class RecordStorageServer {
 		int jpaExecutorThreadpoolSize
 	) throws Exception {
 		final var grpcModule = new GrpcModule();
-		final var exeuctorManager = new ExecutorManager(grpcModule.contextBinder);
+		final var exeuctorManager = new ExecutorManager(grpcModule.ctxBinder);
 
 		entityManagerFactory = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
 		jpaExecutor = exeuctorManager.newContextTrackingExecutor(

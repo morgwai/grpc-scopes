@@ -29,8 +29,7 @@ public class GrpcModule implements Module {
 	 * Allows tracking of {@link ListenerEventContext Contexts of a Listener events}.
 	 * @see #listenerEventScope
 	 */
-	public final ContextTracker<ListenerEventContext> listenerEventContextTracker =
-			new ContextTracker<>();
+	public final ContextTracker<ListenerEventContext> ctxTracker = new ContextTracker<>();
 
 	/**
 	 * Scopes objects to the {@link ListenerEventContext Context of a Listener event} (either
@@ -39,7 +38,7 @@ public class GrpcModule implements Module {
 	 * {@link io.grpc.stub.StreamObserver} call.
 	 */
 	public final Scope listenerEventScope =
-			new ContextScope<>("GrpcModule.listenerEventScope", listenerEventContextTracker);
+			new ContextScope<>("GrpcModule.listenerEventScope", ctxTracker);
 
 	/**
 	 * Scopes objects to the {@code Context} of an RPC (either {@link ServerRpcContext} or
@@ -47,23 +46,9 @@ public class GrpcModule implements Module {
 	 */
 	public final Scope rpcScope = new InducedContextScope<>(
 		"GrpcModule.rpcScope",
-		listenerEventContextTracker,
+		ctxTracker,
 		ListenerEventContext::getRpcContext
 	);
-
-	/**
-	 * Singleton of {@link #listenerEventContextTracker}.
-	 * Type {@code List<ContextTracker<?>>} is bound to it in {@link #configure(Binder)} method.
-	 */
-	public final List<ContextTracker<?>> allTrackers = List.of(listenerEventContextTracker);
-
-	/** {@code ContextBinder} created with {@link #allTrackers}. */
-	public final ContextBinder contextBinder = new ContextBinder(allTrackers);
-
-	/** Calls {@link ContextTracker#getActiveContexts(List) getActiveContexts(allTrackers)}. */
-	public List<TrackableContext<?>> getActiveContexts() {
-		return ContextTracker.getActiveContexts(allTrackers);
-	}
 
 
 
@@ -73,7 +58,7 @@ public class GrpcModule implements Module {
 	 * this {@code Interceptor}.
 	 */
 	public final ServerInterceptor serverInterceptor =
-			new ServerContextInterceptor(listenerEventContextTracker);
+			new ServerContextInterceptor(ctxTracker);
 
 	/**
 	 * All {@link Channel client Channels} must be
@@ -85,7 +70,7 @@ public class GrpcModule implements Module {
 	 * they will share all {@link #rpcScope RPC-scoped} objects.
 	 */
 	public final ClientInterceptor nestingClientInterceptor =
-			new ClientContextInterceptor(listenerEventContextTracker, true);
+			new ClientContextInterceptor(ctxTracker, true);
 
 	/**
 	 * All {@link Channel client Channels} must be
@@ -95,38 +80,53 @@ public class GrpcModule implements Module {
 	 * {@link RpcContext}s.
 	 */
 	public final ClientInterceptor clientInterceptor =
-			new ClientContextInterceptor(listenerEventContextTracker, false);
+			new ClientContextInterceptor(ctxTracker, false);
 
 
 
-	static final TypeLiteral<ContextTracker<ListenerEventContext>> listenerEventContextTrackerType =
+	/** Singleton of {@link #ctxTracker}. */
+	public final List<ContextTracker<?>> allTrackers = List.of(ctxTracker);
+
+	/** {@code ContextBinder} created with {@link #allTrackers}. */
+	public final ContextBinder ctxBinder = new ContextBinder(allTrackers);
+
+	/** Calls {@link ContextTracker#getActiveContexts(List) getActiveContexts(allTrackers)}. */
+	public List<TrackableContext<?>> getActiveContexts() {
+		return ContextTracker.getActiveContexts(allTrackers);
+	}
+
+
+
+	static final TypeLiteral<ContextTracker<ListenerEventContext>> CTX_TRACKER_TYPE =
 			new TypeLiteral<>() {};
-	static final TypeLiteral<List<ContextTracker<?>>> allTrackersType = new TypeLiteral<>() {};
-	/** {@code Key} of {@link #listenerEventContextTracker}. */
-	public static final Key<ContextTracker<ListenerEventContext>> listenerEventContextTrackerKey =
-			Key.get(listenerEventContextTrackerType);
-	/** {@code Key} of {@link #allTrackers}. */
-	public static final Key<List<ContextTracker<?>>> allTrackersKey = Key.get(allTrackersType);
+	static final TypeLiteral<List<ContextTracker<?>>> ALL_TRACKERS_TYPE = new TypeLiteral<>() {};
+	/** {@code Key} of {@link #ctxTracker} bound in {@link #configure(Binder)}. */
+	public static final Key<ContextTracker<ListenerEventContext>> CTX_TRACKER_KEY =
+			Key.get(CTX_TRACKER_TYPE);
+	/** {@code Key} of {@link #allTrackers} bound in {@link #configure(Binder)}. */
+	public static final Key<List<ContextTracker<?>>> ALL_TRACKERS_KEY = Key.get(ALL_TRACKERS_TYPE);
 
 
 
 	/**
-	 * Creates infrastructure bindings.
+	 * Creates infrastructure {@link Binder#bind(Key) bindings}.
 	 * Specifically binds the following:
 	 * <ul>
-	 *   <li>{@code List<ContextTracker<?>>} to {@code  allTrackers}</li>
-	 *   <li>{@link pl.morgwai.base.guice.scopes.ContextBinder} to {@code contextBinder}</li>
-	 *   <li>Their respective types to {@link #listenerEventContextTracker} and both contexts</li>
+	 *   <li>{@link #ALL_TRACKERS_KEY} to {@link #allTrackers}</li>
+	 *   <li>{@link ContextBinder} to {@link #ctxBinder}</li>
+	 *   <li>{@link #CTX_TRACKER_KEY} to {@link #ctxTracker}</li>
+	 *   <li>{@link ListenerEventContext} and {@link RpcContext}  to
+	 * 	     {@link Provider}s returning instances current for the calling {@code Thread}</li>
 	 * </ul>
 	 */
 	@Override
 	public void configure(Binder binder) {
-		binder.bind(allTrackersKey).toInstance(allTrackers);
-		binder.bind(ContextBinder.class).toInstance(contextBinder);
-		binder.bind(listenerEventContextTrackerKey).toInstance(listenerEventContextTracker);
-		binder.bind(ListenerEventContext.class).toProvider(
-				listenerEventContextTracker::getCurrentContext);
-		binder.bind(RpcContext.class).toProvider(
-				() -> listenerEventContextTracker.getCurrentContext().getRpcContext());
+		binder.bind(ALL_TRACKERS_KEY).toInstance(allTrackers);
+		binder.bind(ContextBinder.class).toInstance(ctxBinder);
+		binder.bind(CTX_TRACKER_KEY).toInstance(ctxTracker);
+		binder.bind(ListenerEventContext.class)
+			.toProvider(ctxTracker::getCurrentContext);
+		binder.bind(RpcContext.class)
+			.toProvider(() -> ctxTracker.getCurrentContext().getRpcContext());
 	}
 }

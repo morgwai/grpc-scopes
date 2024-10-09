@@ -112,7 +112,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		assertTrue("there should be no parentCtx",
 				rpcCtx.getParentContext().isEmpty());
 		assertNull("event context should not be leaked",
-				grpcModule.listenerEventContextTracker.getCurrentContext());
+				grpcModule.ctxTracker.getCurrentContext());
 
 		// verify onHeaders(...)
 		final var responseHeaders = new Metadata();
@@ -122,12 +122,12 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		assertSame("response headers should be stored into rpcCtx",
 				responseHeaders, rpcCtx.getResponseHeaders());
 		assertNull("event context should not be leaked",
-				grpcModule.listenerEventContextTracker.getCurrentContext());
+				grpcModule.ctxTracker.getCurrentContext());
 
 		// verify onReady()
 		decoratedListener.onReady();
 		assertNull("event context should not be leaked",
-				grpcModule.listenerEventContextTracker.getCurrentContext());
+				grpcModule.ctxTracker.getCurrentContext());
 
 		// verify onMessage(...)
 		final Integer message = 666;
@@ -135,7 +135,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		assertSame("messages should not be modified",
 				message, mockListener.capturedMessage);
 		assertNull("event context should not be leaked",
-				grpcModule.listenerEventContextTracker.getCurrentContext());
+				grpcModule.ctxTracker.getCurrentContext());
 
 		// verify onClose(...)
 		assertTrue("status should be empty before onClose",
@@ -154,7 +154,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		assertSame("trailers should be stored into rpcCtx",
 				trailers, rpcCtx.getTrailers().get());
 		assertNull("event context should not be leaked",
-				grpcModule.listenerEventContextTracker.getCurrentContext());
+				grpcModule.ctxTracker.getCurrentContext());
 	}
 
 	@Test public void testBasicInterceptingWithNestingInterceptor() {
@@ -181,13 +181,11 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		rootRpcCtx.packageProtectedProduceIfAbsent(key, () -> rootProvidedObject);
 
 		// create and start a child RPC within the parent RPC ctx, capture the created child RPC ctx
-		new ListenerEventContext(parentRpcCtx, grpcModule.listenerEventContextTracker)
-				.executeWithinSelf(
-			() -> {
+		new ListenerEventContext(parentRpcCtx, grpcModule.ctxTracker)
+			.executeWithinSelf(() -> {
 				final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
 				rpc.start(mockListener, requestHeaders);
-			}
-		);
+			});
 		final var childRpcCtx = ((ListenerProxy<Integer>) listenerCapture.getValue()).rpcContext;
 
 		// verify sharing/isolation of an RPC-scoped object between a child and its parent

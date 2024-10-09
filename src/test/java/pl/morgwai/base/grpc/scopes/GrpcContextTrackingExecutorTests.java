@@ -22,10 +22,10 @@ public class GrpcContextTrackingExecutorTests {
 
 
 	final GrpcModule grpcModule = new GrpcModule();
-	final ExecutorManager executorManager = new ExecutorManager(grpcModule.contextBinder);
+	final ExecutorManager executorManager = new ExecutorManager(grpcModule.ctxBinder);
 	final ServerRpcContext rpcContext = new ServerRpcContext(null, null);
 	final ListenerEventContext eventContext =
-			new ListenerEventContext(rpcContext, grpcModule.listenerEventContextTracker);
+			new ListenerEventContext(rpcContext, grpcModule.ctxTracker);
 
 	Runnable rejectedTask;
 	Executor rejectingExecutor;
@@ -63,7 +63,7 @@ public class GrpcContextTrackingExecutorTests {
 		eventContext.executeWithinSelf(() -> testSubject.execute(() -> {
 			try {
 				assertSame("context should be transferred when passing task to executor",
-						eventContext, grpcModule.listenerEventContextTracker.getCurrentContext());
+						eventContext, grpcModule.ctxTracker.getCurrentContext());
 			} catch (AssertionError e) {
 				asyncError[0] = e;
 			} finally {

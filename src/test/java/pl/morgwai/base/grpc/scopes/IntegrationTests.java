@@ -111,7 +111,7 @@ public class IntegrationTests {
 		public void onNext(ScopedObjectsHashes response) {
 			logHashes(callId, response);
 			if (ctxVerifier == null) {
-				final var eventCtx = grpcModule.listenerEventContextTracker.getCurrentContext();
+				final var eventCtx = grpcModule.ctxTracker.getCurrentContext();
 				ctxVerifier = new ContextVerifier(grpcModule, eventCtx.getRpcContext());
 				ctxVerifier.add(eventCtx);
 			} else {
