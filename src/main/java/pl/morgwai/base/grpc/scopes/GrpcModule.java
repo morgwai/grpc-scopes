@@ -99,12 +99,9 @@ public class GrpcModule implements Module {
 
 	static final TypeLiteral<ContextTracker<ListenerEventContext>> CTX_TRACKER_TYPE =
 			new TypeLiteral<>() {};
-	static final TypeLiteral<List<ContextTracker<?>>> ALL_TRACKERS_TYPE = new TypeLiteral<>() {};
 	/** {@code Key} of {@link #ctxTracker} bound in {@link #configure(Binder)}. */
 	public static final Key<ContextTracker<ListenerEventContext>> CTX_TRACKER_KEY =
 			Key.get(CTX_TRACKER_TYPE);
-	/** {@code Key} of {@link #allTrackers} bound in {@link #configure(Binder)}. */
-	public static final Key<List<ContextTracker<?>>> ALL_TRACKERS_KEY = Key.get(ALL_TRACKERS_TYPE);
 
 
 
@@ -112,8 +109,7 @@ public class GrpcModule implements Module {
 	 * Creates infrastructure {@link Binder#bind(Key) bindings}.
 	 * Specifically binds the following:
 	 * <ul>
-	 *   <li>{@link #ALL_TRACKERS_KEY} to {@link #allTrackers}</li>
-	 *   <li>{@link ContextBinder} to {@link #ctxBinder}</li>
+	 *   <li>{@link ContextTracker#ALL_TRACKERS_KEY} to {@link #allTrackers}</li>
 	 *   <li>{@link #CTX_TRACKER_KEY} to {@link #ctxTracker}</li>
 	 *   <li>{@link ListenerEventContext} and {@link RpcContext}  to
 	 * 	     {@link Provider}s returning instances current for the calling {@code Thread}</li>
@@ -121,8 +117,7 @@ public class GrpcModule implements Module {
 	 */
 	@Override
 	public void configure(Binder binder) {
-		binder.bind(ALL_TRACKERS_KEY).toInstance(allTrackers);
-		binder.bind(ContextBinder.class).toInstance(ctxBinder);
+		binder.bind(ContextTracker.ALL_TRACKERS_KEY).toInstance(allTrackers);
 		binder.bind(CTX_TRACKER_KEY).toInstance(ctxTracker);
 		binder.bind(ListenerEventContext.class)
 			.toProvider(ctxTracker::getCurrentContext);
