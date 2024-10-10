@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import pl.morgwai.base.grpc.scopes.*;
+import pl.morgwai.base.guice.scopes.ContextTracker;
 
 import static org.junit.Assert.*;
 
@@ -14,21 +15,24 @@ public class ContextVerifier {
 
 
 
-	final GrpcModule grpcModule;
+	final ContextTracker<ListenerEventContext> ctxTracker;
 	final RpcContext rpcCtx;
 	final Set<ListenerEventContext> seenEventCtxs = new HashSet<>();
 
 
 
-	public ContextVerifier(GrpcModule grpcModule, RpcContext rpcCtx) {
-		this.grpcModule = grpcModule;
+	public ContextVerifier(
+		ContextTracker<ListenerEventContext> ctxTracker,
+		RpcContext rpcCtx
+	) {
+		this.ctxTracker = ctxTracker;
 		this.rpcCtx = rpcCtx;
 	}
 
 
 
 	public void verifyCtxs() {
-		final var eventCtx = grpcModule.ctxTracker.getCurrentContext();
+		final var eventCtx = ctxTracker.getCurrentContext();
 		assertNotNull("event context should be started",
 				eventCtx);
 		assertTrue("each listener method should be executed within a new separate eventCtx",

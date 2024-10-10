@@ -76,7 +76,7 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 						requestHeaders, rpcCtx.getRequestHeaders());
 				assertSame("request headers should not be modified",
 						requestHeaders, headers);
-				final var ctxVerifier = new ContextVerifier(grpcModule, rpcCtx);
+				final var ctxVerifier = new ContextVerifier(grpcModule.ctxTracker, rpcCtx);
 				ctxVerifier.add(eventCtx);
 				mockListener.ctxVerifier = ctxVerifier;
 				return mockListener;

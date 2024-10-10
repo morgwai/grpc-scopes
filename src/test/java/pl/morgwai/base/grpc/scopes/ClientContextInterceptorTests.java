@@ -106,7 +106,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		final var rpcCtx = decoratedListener.rpcContext;
 
 		// basic verifications
-		mockListener.ctxVerifier = new ContextVerifier(grpcModule, rpcCtx);
+		mockListener.ctxVerifier = new ContextVerifier(grpcModule.ctxTracker, rpcCtx);
 		assertSame("RPC should be stored into rpcCtx",
 				mockRpc, rpcCtx.getRpc());
 		assertTrue("there should be no parentCtx",
