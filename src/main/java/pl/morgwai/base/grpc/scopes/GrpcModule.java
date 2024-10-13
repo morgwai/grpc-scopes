@@ -13,8 +13,8 @@ import pl.morgwai.base.guice.scopes.*;
 /**
  * gRPC Guice {@link Scope}s, {@link ContextTracker}s, {@code Interceptor}s and some helper methods.
  * <p>
- * Usually a single app-wide instance is created at the app startup.<br/>
- * In case of servers, gRPC {@link BindableService services} should be
+ * Usually a single app-wide instance is created at an app startup.<br/>
+ * In case of servers, gRPC {@link BindableService Services} should be
  * {@link ServerInterceptors#intercept(BindableService, ServerInterceptor...) intercepted} with
  * {@link #serverInterceptor}.<br/>
  * In case of clients, gRPC {@link Channel}s should be
@@ -26,23 +26,24 @@ public class GrpcModule implements Module {
 
 
 	/**
-	 * Allows tracking of {@link ListenerEventContext Contexts of a Listener events}.
+	 * Tracks {@link ListenerEventContext Contexts of Listener events}
+	 * (both {@link ServerCall.Listener server} and {@link ClientCall.Listener client}).
 	 * @see #listenerEventScope
 	 */
 	public final ContextTracker<ListenerEventContext> ctxTracker = new ContextTracker<>();
 
 	/**
-	 * Scopes objects to the {@link ListenerEventContext Context of a Listener event} (either
-	 * {@link io.grpc.ServerCall.Listener server} or {@link io.grpc.ClientCall.Listener client}) and
-	 * as a consequence also to the context of the corresponding user inbound
-	 * {@link io.grpc.stub.StreamObserver} call.
+	 * Scopes {@code Object}s to {@link ListenerEventContext the Contexts of Listener events}
+	 * (either {@link ServerCall.Listener server} or {@link ClientCall.Listener client}) and as a
+	 * consequence also to the {@code Context}s of the corresponding user inbound
+	 * {@link io.grpc.stub.StreamObserver} calls.
 	 */
 	public final Scope listenerEventScope =
 			new ContextScope<>("GrpcModule.listenerEventScope", ctxTracker);
 
 	/**
-	 * Scopes objects to the {@code Context} of an RPC (either {@link ServerRpcContext} or
-	 * {@link ClientRpcContext}).
+	 * Scopes {@code Object}s to the {@code Context}s of RPCs (either a {@link ServerRpcContext} or
+	 * a {@link ClientRpcContext}).
 	 */
 	public final Scope rpcScope = new InducedContextScope<>(
 		"GrpcModule.rpcScope",
@@ -63,11 +64,11 @@ public class GrpcModule implements Module {
 	/**
 	 * All {@link Channel client Channels} must be
 	 * {@link ClientInterceptors#intercept(Channel, ClientInterceptor...) intercepted} either by
-	 * this {@code Interceptor} or by {@link #clientInterceptor}. If a client call was made within
-	 * a {@link RpcContext Context} of some enclosing "parent" call (server call or a previous
-	 * chained client call), this {@code Interceptor} will join together
-	 * {@link ClientRpcContext Context of such call} with its parent {@link RpcContext}, so that
-	 * they will share all {@link #rpcScope RPC-scoped} objects.
+	 * this {@code Interceptor} or by {@link #clientInterceptor}.
+	 * If a client call was made within a {@link RpcContext Context} of some enclosing "parent" call
+	 * (server call or a previous chained client call), this {@code Interceptor} will join together
+	 * {@link ClientRpcContext the Context of such call} with its parent {@link RpcContext}, so that
+	 * they will share all {@link #rpcScope RPC-scoped} {@code Object}s.
 	 */
 	public final ClientInterceptor nestingClientInterceptor =
 			new ClientContextInterceptor(ctxTracker, true);
@@ -75,9 +76,9 @@ public class GrpcModule implements Module {
 	/**
 	 * All {@link Channel client Channels} must be
 	 * {@link ClientInterceptors#intercept(Channel, ClientInterceptor...) intercepted} either by
-	 * this {@code Interceptor} or by {@link #nestingClientInterceptor}. This {@code Interceptor}
-	 * will keep {@link ClientRpcContext}s separate even if they were made within some enclosing
-	 * {@link RpcContext}s.
+	 * this {@code Interceptor} or by {@link #nestingClientInterceptor}.
+	 * This {@code Interceptor} will keep {@link ClientRpcContext}s separate even if they were made
+	 * within some enclosing {@link RpcContext}s.
 	 */
 	public final ClientInterceptor clientInterceptor =
 			new ClientContextInterceptor(ctxTracker, false);
@@ -99,7 +100,7 @@ public class GrpcModule implements Module {
 
 	static final TypeLiteral<ContextTracker<ListenerEventContext>> CTX_TRACKER_TYPE =
 			new TypeLiteral<>() {};
-	/** {@code Key} of {@link #ctxTracker} bound in {@link #configure(Binder)}. */
+	/** {@code Key} of {@link #ctxTracker}. */
 	public static final Key<ContextTracker<ListenerEventContext>> CTX_TRACKER_KEY =
 			Key.get(CTX_TRACKER_TYPE);
 
