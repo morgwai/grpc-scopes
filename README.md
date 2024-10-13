@@ -9,7 +9,7 @@ Copyright 2021 Piotr Morgwai Kotarbinski, Licensed under the Apache License, Ver
 
 ## OVERVIEW
 
-Provides `rpcScope` and `listenerEventScope` Guice Scopes for both client and server apps.<br/>
+Provides `rpcScope` and `listenerEventScope` Guice `Scope`s for both client and server apps.<br/>
 Oversimplifying, in case of streaming requests on servers and streaming responses on clients, `listenerEventScope` spans over the processing of a single message from the stream or over a single call to any registered handler (via `setOnReadyHandler(...)`, `setOnCancelHandler(...)` etc), while `rpcScope` spans over a whole given RPC.<br/>
 Oversimplifying again, in case of unary inbound, these 2 Scopes have roughly similar span, although most registered callbacks will have a separate `listenerEventScope`.<br/>
 See [this DZone article](https://dzone.com/articles/combining-grpc-with-guice) for extended high-level explanation.<br/>
@@ -21,42 +21,42 @@ Technically:
     * methods implementing RPC procedures themselves
     * all invocations of callbacks registered via `ServerCallStreamObserver`s
     
-    have "separate `listenerEventScope`s", **EXCEPT** the first call to `onReady()` handler in case of unary requests as it's invoked in the same `Listener` event-handling method as the RPC method (see [the source of gRPC UnaryServerCallListener.onHalfClose()](https://github.com/grpc/grpc-java/blob/v1.60.1/stub/src/main/java/io/grpc/stub/ServerCalls.java#L182-L189) for details).
+    have separate `listenerEventScope`s, **EXCEPT** the first call to `onReady()` handler in case of unary requests as it's invoked in the same `Listener` event-handling method as the RPC method (see [the source of gRPC UnaryServerCallListener.onHalfClose()](https://github.com/grpc/grpc-java/blob/v1.60.1/stub/src/main/java/io/grpc/stub/ServerCalls.java#L182-L189) for details).
   * For clients this means that:
     * all callbacks to response `StreamObserver`s supplied as arguments to stub RPC methods
     * all invocations of callbacks registered via `ClientCallStreamObserver`
     
-    have "separate `listenerEventScope`s".
+    have separate `listenerEventScope`s.
 * `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within **the same instance** of [ServerRpcContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ServerRpcContext.html). This means that:
   * a single given call to a method implementing RPC procedure
   * all callbacks to the request `StreamObserver` returned by this given call
   * all callbacks to handlers registered via this call's `ServerCallStreamObserver`
   
-  all share "the same `rpcScope`".
+  all share the same `rpcScope`.
 * Each method call to a single given instance of `ClientCall.Listener` run within **the same instance** of [ClientRpcContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ClientRpcContext.html). This means that:
   * all callbacks to the response `StreamObserver` supplied as an argument to this given call of the stub sRPC method
   * all callbacks to handlers registered via this call's `ClientCallStreamObserver`
   
-  all share "the same `rpcScope`".
+  all share the same `rpcScope`.
 
 
 ## MAIN USER CLASSES
 
 ### [GrpcModule](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/GrpcModule.html)
-Contains the above `Scope`s, `ContextTracker`s, some helper methods and gRPC interceptors that start the above contexts.
+Contains the above `Scope`s, `ContextTracker`s, some helper methods and gRPC interceptors that start the above `Context`s.
 
 ### [GrpcContextTrackingExecutor](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/GrpcContextTrackingExecutor.html)
 A `ThreadPoolExecutor` that upon dispatching a task, automatically transfers the current `RpcContext` and `ListenerEventContext` to the worker thread.<br/>
-Instances should usually be created using helper methods from the above `GrpcModule` and configured for named instance injection in user modules.
+Instances should usually be created using helper methods from the above [ExecutorManager](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ExecutorManager.html) and configured for named instance injection in user modules.
 
 ### [ContextBinder](https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/latest/pl/morgwai/base/guice/scopes/ContextBinder.html)
-Binds tasks and callbacks (`Runnable`s, `Consumer`s and `BiConsumer`s) to contexts that were active at the time of binding. This can be used to transfer `Context`s **almost** fully automatically when it's not possible to use `GrpcContextTrackingExecutor` when switching threads (for example when providing callbacks as arguments to async functions). See a usage sample below.
+Binds tasks and callbacks (`Runnable`s, `Callable`s, `Consumer`s etc) to `Context`s that were active at the time of binding. This can be used to transfer `Context`s **almost** fully automatically when it's not possible to use `GrpcContextTrackingExecutor` when switching `Thread`s (for example when providing callbacks as arguments to async functions). See a usage sample below.
 
 
 ## USAGE
 
-1. Create an instance of `GrpcModule` and pass it to other modules.
-1. Other modules can use `GrpcModule.rpcScope` and `GrpcModule.listenerEventScope` to scope their bindings: `bind(MyComponent.class).to(MyComponentImpl.class).in(grpcModule.rpcScope);`
+1. Create an instance of `GrpcModule` and pass to other `Module`s its `rpcScope` and `listenerEventScope` as `longTermScope` and `shortTermScope` respectively.
+1. Other `Module`s may use the passed `Scope`s in their bindings: `bind(MyComponent.class).to(MyComponentImpl.class).in(longTermScope);`
 1. All gRPC service instances added to server must be intercepted with `GrpcModule.serverInterceptor` like the following: `.addService(ServerInterceptors.intercept(myService, grpcModule.contextInterceptor /* more interceptors here... */))`
 1. All client `Channel`s must be intercepted with `GrpcModule.clientInterceptor` or `GrpcModule.nestingClientInterceptor` like the following: `ClientInterceptors.intercept(channel, grpcModule.clientInterceptor)`
 
@@ -105,18 +105,13 @@ public class MyServer {
 public class MyClient {
 
     public static void main(String[] args) throws Exception {
-        final var entityManagerFactory = createEntityManagerFactory(args[0]);
-        final ManagedChannel managedChannel;
+        final var managedChannel = ManagedChannelBuilder
+            .forTarget(args[1])
+            .usePlaintext()
+            .build();
+        EntityManagerFactory entityManagerFactory;
         try {
-            managedChannel = ManagedChannelBuilder
-                .forTarget(args[1])
-                .usePlaintext()
-                .build();
-        } catch (Throwable t) {
-            entityManagerFactory.close();
-            throw t;
-        }
-        try {
+            entityManagerFactory = createEntityManagerFactory(args[0]);
             final var grpcModule = new GrpcModule();
             final var channel = ClientInterceptors.intercept(
                     managedChannel, grpcModule.nestingClientInterceptor);
@@ -141,14 +136,14 @@ public class MyClient {
                     // myResponseObserver will get MyDao injected
 
             stub.myUnaryRequestStreamingResponseProcedure(args[2], myResponseObserver);
-            myResponseObserver.awaitCompletion(30, TimeUnit.MINUTES);
+            myResponseObserver.awaitCompletion(5, MINUTES);
         } finally {
-            entityManagerFactory.close();
-            managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+            managedChannel.shutdown().awaitTermination(5, SECONDS);
             if ( !managedChannel.isTerminated()) {
                 System.err.println("channel has NOT shutdown cleanly");
                 managedChannel.shutdownNow();
             }
+            if (entityManagerFactory != null) entityManagerFactory.close();
         }
     }
 
@@ -156,7 +151,7 @@ public class MyClient {
 }
 ```
 
-### Transferring contexts to callbacks with `ContextBinder`
+### Transferring `Context`s to callbacks with `ContextBinder`
 ```java
 class MyComponent {
 

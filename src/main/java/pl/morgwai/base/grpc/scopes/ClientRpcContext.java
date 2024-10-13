@@ -50,7 +50,7 @@ public class ClientRpcContext extends RpcContext {
 	private Status status;
 
 	/**
-	 * If this RPC was issued as a nested child in the context of another RPC and
+	 * If this RPC was issued as a nested child in the {@link RpcContext} of another RPC and
 	 * {@link GrpcModule#nestingClientInterceptor} was used to intercept the given {@link Channel},
 	 * then this method will return the context of the parent RPC. Otherwise {@code empty()}.
 	 */
@@ -107,7 +107,7 @@ public class ClientRpcContext extends RpcContext {
 
 
 
-	/** Constructor for NON-nested ctxs (see {@link GrpcModule#clientInterceptor}). */
+	/** Constructor for non-nested ctxs (see {@link GrpcModule#clientInterceptor}). */
 	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders) {
 		this(rpc, requestHeaders, null);
 	}
