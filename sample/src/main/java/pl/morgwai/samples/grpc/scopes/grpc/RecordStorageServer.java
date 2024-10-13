@@ -126,7 +126,7 @@ public class RecordStorageServer {
 		Runtime.getRuntime().addShutdownHook(new Thread(
 			() -> {
 				try {
-					log.info("shutting down");
+					log.info("shutting down...");
 					if ( !Awaitable.awaitMultiple(
 						2000L,
 						GrpcAwaitable.ofEnforcedTermination(recordStorageServer),
@@ -134,10 +134,12 @@ public class RecordStorageServer {
 					)) {
 						log.warning("some stuff failed to shutdown cleanly :/");
 					}
-				} catch (InterruptedException ignored) {}
-				entityManagerFactory.close();
-				log.info("exiting, bye!");
-				((JulManualResetLogManager) JulManualResetLogManager.getLogManager()).manualReset();
+					entityManagerFactory.close();
+				} catch (InterruptedException ignored) {
+				} finally {
+					log.info("exiting now, bye!");
+					JulManualResetLogManager.staticReset();
+				}
 			}
 		));
 	}
