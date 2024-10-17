@@ -45,12 +45,11 @@ Technically:
 ### [GrpcModule](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/GrpcModule.html)
 Contains the above `Scope`s, `ContextTracker`s, some helper methods and gRPC interceptors that start the above `Context`s.
 
-### [GrpcContextTrackingExecutor](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/GrpcContextTrackingExecutor.html)
-A `ThreadPoolExecutor` that upon dispatching a task, automatically transfers the current `RpcContext` and `ListenerEventContext` to the worker thread.<br/>
-Instances should usually be created using helper methods from the above [ExecutorManager](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ExecutorManager.html) and configured for named instance injection in user modules.
+### [ContextTrackingExecutorDecorator](https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/latest/pl/morgwai/base/guice/scopes/ContextTrackingExecutorDecorator.html)
+Decorator for `ExecutorService` that automatically transfers active `Context`s when dispatching task to its worker `Thread`s.
 
 ### [ContextBinder](https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/latest/pl/morgwai/base/guice/scopes/ContextBinder.html)
-Binds tasks and callbacks (`Runnable`s, `Callable`s, `Consumer`s etc) to `Context`s that were active at the time of binding. This can be used to transfer `Context`s **almost** fully automatically when it's not possible to use `GrpcContextTrackingExecutor` when switching `Thread`s (for example when providing callbacks as arguments to async functions). See a usage sample below.
+Binds tasks and callbacks (`Runnable`s, `Callable`s, `Consumer`s etc) to `Context`s that were active at the time of a given binding. This can be used to transfer `Context`s semi-automatically when switching `Thread`s, for example when passing callbacks to async functions.
 
 
 ## USAGE

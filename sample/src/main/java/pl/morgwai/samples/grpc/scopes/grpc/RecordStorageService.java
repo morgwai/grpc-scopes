@@ -1,9 +1,9 @@
 // Copyright 2021 Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.samples.grpc.scopes.grpc;
 
+import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.persistence.*;
 
 import com.google.inject.Inject;
@@ -13,7 +13,6 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import pl.morgwai.base.grpc.scopes.GrpcContextTrackingExecutor;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordEntity;
 import pl.morgwai.samples.grpc.scopes.grpc.RecordStorageGrpc.RecordStorageImplBase;
@@ -27,7 +26,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 
 
-	@Inject @Named(JPA_EXECUTOR_NAME) GrpcContextTrackingExecutor jpaExecutor;
+	@Inject @Named(JPA_EXECUTOR_NAME) Executor jpaExecutor;
 	static final String JPA_EXECUTOR_NAME = "JpaExecutor";
 
 	@Inject @Named(CONCURRENCY_LEVEL) int concurrencyLevel;
@@ -41,7 +40,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 
 	@Override
 	public void store(Record message, StreamObserver<NewRecordId> responseObserver) {
-		jpaExecutor.execute(responseObserver, () -> {
+		jpaExecutor.execute(() -> {
 			try {
 				executeWithinTx(() -> {
 					// EntityManager is message scoped and this is the first time an instance is
@@ -93,7 +92,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 		return newSimpleConcurrentServerRequestObserver(
 			(ServerCallStreamObserver<StoreRecordResponse>) responseObserver,
 			concurrencyLevel,
-			(request, responseSubstreamObserver) -> jpaExecutor.execute(responseObserver, () -> {
+			(request, responseSubstreamObserver) -> jpaExecutor.execute(() -> {
 				try {
 					executeWithinTx(() -> {
 						final RecordEntity entity = process(request);
@@ -132,7 +131,7 @@ public class RecordStorageService extends RecordStorageImplBase {
 			}
 		});
 
-		jpaExecutor.execute(responseObserver, () -> {
+		jpaExecutor.execute(() -> {
 			try {
 				// read-only operation: no need for a TX
 				final var recordCursor = dao.findAll().iterator();

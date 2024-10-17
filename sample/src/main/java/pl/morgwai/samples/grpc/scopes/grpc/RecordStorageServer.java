@@ -2,10 +2,9 @@
 package pl.morgwai.samples.grpc.scopes.grpc;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Logger;
-
 import javax.persistence.*;
 
 import com.google.inject.Module;
@@ -14,13 +13,13 @@ import com.google.inject.name.Names;
 import io.grpc.*;
 import pl.morgwai.base.grpc.scopes.*;
 import pl.morgwai.base.grpc.utils.GrpcAwaitable;
+import pl.morgwai.base.guice.scopes.ContextTrackingExecutorDecorator;
 import pl.morgwai.base.jul.JulManualResetLogManager;
-import pl.morgwai.base.utils.concurrent.Awaitable;
+import pl.morgwai.base.utils.concurrent.*;
 import pl.morgwai.samples.grpc.scopes.data_access.JpaRecordDao;
 import pl.morgwai.samples.grpc.scopes.domain.RecordDao;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static pl.morgwai.base.jul.JulConfigurator.*;
 import static pl.morgwai.samples.grpc.scopes.grpc.RecordStorageService.CONCURRENCY_LEVEL;
 import static pl.morgwai.samples.grpc.scopes.grpc.RecordStorageService.JPA_EXECUTOR_NAME;
@@ -47,7 +46,7 @@ public class RecordStorageServer {
 	static final String MAX_CONNECTION_AGE_GRACE_ENVVAR = "MAX_CONNECTION_AGE_GRACE_SECONDS";
 	static final int DEFAULT_MAX_CONNECTION_AGE_GRACE = 180;
 
-	/** Threadpool size for {@link #jpaExecutor}. */
+	/** Threadpool size for {@link #ctxTrackingJpaExecutor}. */
 	static final String JPA_EXECUTOR_THREADPOOL_SIZE_ENVVAR = "JPA_EXECUTOR_THREADPOOL_SIZE";
 	static final int DEFAULT_JPA_EXECUTOR_THREADPOOL_SIZE = 10;
 
@@ -60,8 +59,8 @@ public class RecordStorageServer {
 	final EntityManagerFactory entityManagerFactory;
 
 	/**
-	 * JPA operations will be executed on this executor.
-	 * Its thread pool size is obtained from {@value #JPA_EXECUTOR_THREADPOOL_SIZE_ENVVAR} env var
+	 * JPA operations will be executed on this {@code Executor}.
+	 * Its thread-pool size is obtained from {@value #JPA_EXECUTOR_THREADPOOL_SIZE_ENVVAR} env var
 	 * and should be at least the size of DB-connection pool size defined in {@code persistence.xml}
 	 * ({@code hibernate.c3p0.maxPoolSize} in this case). Note that most JPA implementations are
 	 * able to perform many operation in cache and deffer or even completely bypass actual
@@ -69,7 +68,7 @@ public class RecordStorageServer {
 	 * connection pool. The exact number should be determined either by load tests or even better by
 	 * real usage data.
 	 */
-	final GrpcContextTrackingExecutor jpaExecutor;
+	final Executor ctxTrackingJpaExecutor;
 
 
 
@@ -81,15 +80,16 @@ public class RecordStorageServer {
 		int jpaExecutorThreadpoolSize
 	) throws Exception {
 		final var grpcModule = new GrpcModule();
-		final var exeuctorManager = new ExecutorManager(grpcModule.ctxBinder);
 
 		entityManagerFactory = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
-		jpaExecutor = exeuctorManager.newContextTrackingExecutor(
-			PERSISTENCE_UNIT_NAME + JPA_EXECUTOR_NAME,
-			jpaExecutorThreadpoolSize
+		final var jpaExecutor = new TaskTrackingThreadPoolExecutor(
+			jpaExecutorThreadpoolSize,
+			new NamingThreadFactory(PERSISTENCE_UNIT_NAME + JPA_EXECUTOR_NAME)
 		);
-		log.info("entity manager factory " + PERSISTENCE_UNIT_NAME + " and its associated "
-				+ jpaExecutor.getName() + " created successfully");
+		ctxTrackingJpaExecutor = new ContextTrackingExecutorDecorator(
+				jpaExecutor, grpcModule.ctxBinder);
+		log.info("entity manager factory " + PERSISTENCE_UNIT_NAME + " and its associated Executor "
+				+ " created successfully");
 
 		final Module jpaModule = (binder) -> {
 			binder.bind(EntityManager.class)
@@ -97,9 +97,9 @@ public class RecordStorageServer {
 				.in(grpcModule.listenerEventScope);
 			binder.bind(EntityManagerFactory.class)
 				.toInstance(entityManagerFactory);
-			binder.bind(GrpcContextTrackingExecutor.class)
+			binder.bind(Executor.class)
 				.annotatedWith(Names.named(JPA_EXECUTOR_NAME))
-				.toInstance(jpaExecutor);
+				.toInstance(ctxTrackingJpaExecutor);
 			binder.bind(RecordDao.class)
 				.to(JpaRecordDao.class)
 				.in(Scopes.SINGLETON);
@@ -130,7 +130,7 @@ public class RecordStorageServer {
 					if ( !Awaitable.awaitMultiple(
 						2000L,
 						GrpcAwaitable.ofEnforcedTermination(recordStorageServer),
-						exeuctorManager.toAwaitableOfEnforcedTermination()
+						jpaExecutor.toAwaitableOfEnforcedTermination()
 					)) {
 						log.warning("some stuff failed to shutdown cleanly :/");
 					}
