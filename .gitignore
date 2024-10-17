@@ -6,7 +6,7 @@ build
 .gradle
 build.gradle
 settings.gradle
-gradle/libs.versions.toml
+libs.versions.toml
 
 # ide
 .idea
