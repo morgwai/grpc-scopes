@@ -178,7 +178,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 				: parentRpcCtx;
 		final Integer rootProvidedObject = 666;
 		final var key = Key.get(Integer.class, Names.named("testKey"));
-		rootRpcCtx.packageProtectedProduceIfAbsent(key, () -> rootProvidedObject);
+		rootRpcCtx.packageExposedProduceIfAbsent(key, () -> rootProvidedObject);
 
 		// create and start a child RPC within the parent RPC ctx, capture the created child RPC ctx
 		new ListenerEventContext(parentRpcCtx, grpcModule.ctxTracker)
@@ -210,17 +210,17 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		if (nesting) {
 			assertNotSame("RPC-scoped object should be removed from the parent ctx",
 					rootProvidedObject,
-					parentRpcCtx.packageProtectedProduceIfAbsent(key, () -> yetAnotherObject));
+					parentRpcCtx.packageExposedProduceIfAbsent(key, () -> yetAnotherObject));
 			assertNotSame("RPC-scoped object should be removed from the root ctx",
 					rootProvidedObject,
-					rootRpcCtx.packageProtectedProduceIfAbsent(key, () -> yetAnotherObject));
+					rootRpcCtx.packageExposedProduceIfAbsent(key, () -> yetAnotherObject));
 		} else {
 			assertSame("object scoped to the root RPC should NOT be removed",
 					rootProvidedObject,
-					rootRpcCtx.packageProtectedProduceIfAbsent(key, () -> yetAnotherObject));
+					rootRpcCtx.packageExposedProduceIfAbsent(key, () -> yetAnotherObject));
 			assertSame("object scoped to the parent RPC should NOT be removed",
 					rootProvidedObject,
-					parentRpcCtx.packageProtectedProduceIfAbsent(key, () -> yetAnotherObject));
+					parentRpcCtx.packageExposedProduceIfAbsent(key, () -> yetAnotherObject));
 			assertNotSame("object scoped to the child RPC should be removed",
 					childProvidedObject,
 					childRpcCtx.produceIfAbsent(key, () -> yetAnotherObject));
