@@ -10,6 +10,7 @@ import io.grpc.stub.StreamObserver;
 import org.junit.*;
 import pl.morgwai.base.grpc.scopes.tests.*;
 import pl.morgwai.base.grpc.scopes.tests.grpc.ScopedObjectsHashes;
+import pl.morgwai.base.guice.scopes.ContextTracker;
 import pl.morgwai.base.utils.concurrent.Awaitable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -92,6 +93,7 @@ public class IntegrationTests {
 		final int callId;
 		final CountDownLatch finalizationLatch;
 		final GrpcModule grpcModule;
+		final ContextTracker<ListenerEventContext> ctxTracker;
 		final List<Throwable> clientScopingErrors = new ArrayList<>(10);
 		Throwable error = null;
 		ContextVerifier ctxVerifier;
@@ -103,6 +105,7 @@ public class IntegrationTests {
 			this.callId = callId;
 			this.finalizationLatch = finalizationLatch;
 			this.grpcModule = grpcModule;
+			ctxTracker = grpcModule.listenerEventScope.tracker;
 		}
 
 
@@ -111,8 +114,8 @@ public class IntegrationTests {
 		public void onNext(ScopedObjectsHashes response) {
 			logHashes(callId, response);
 			if (ctxVerifier == null) {
-				final var eventCtx = grpcModule.ctxTracker.getCurrentContext();
-				ctxVerifier = new ContextVerifier(grpcModule.ctxTracker, eventCtx.getRpcContext());
+				final var eventCtx = ctxTracker.getCurrentContext();
+				ctxVerifier = new ContextVerifier(ctxTracker, eventCtx.getRpcContext());
 				ctxVerifier.add(eventCtx);
 			} else {
 				try {

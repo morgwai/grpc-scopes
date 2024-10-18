@@ -43,7 +43,7 @@ Technically:
 ## MAIN USER CLASSES
 
 ### [GrpcModule](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/GrpcModule.html)
-Contains the above `Scope`s, `ContextTracker`s, some helper methods and gRPC interceptors that start the above `Context`s.
+Contains the above `Scope`s and gRPC `Interceptor`s that start the above `Context`s.
 
 ### [ContextTrackingExecutorDecorator](https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/latest/pl/morgwai/base/guice/scopes/ContextTrackingExecutorDecorator.html)
 Decorator for `ExecutorService` that automatically transfers active `Context`s when dispatching task to its worker `Thread`s.
@@ -54,7 +54,7 @@ Binds tasks and callbacks (`Runnable`s, `Callable`s, `Consumer`s etc) to `Contex
 
 ## USAGE
 
-1. Create an instance of `GrpcModule` and pass to other `Module`s its `rpcScope` and `listenerEventScope` as `longTermScope` and `shortTermScope` respectively.
+1. Create a `GrpcModule` instance and pass its `listenerEventScope` and `rpcScope` to other `Module`s as `shortTermScope` and  `longTermScope` respectively (see [DEVELOPING PORTABLE MODULES](https://github.com/morgwai/guice-context-scopes#developing-portable-modules)).
 1. Other `Module`s may use the passed `Scope`s in their bindings: `bind(MyComponent.class).to(MyComponentImpl.class).in(longTermScope);`
 1. All gRPC `Service`s added to `Server`s must be intercepted with `GrpcModule.serverInterceptor` similarly to the following: `.addService(ServerInterceptors.intercept(myService, grpcModule.serverInterceptor /* more interceptors here... */))`
 1. All client `Channel`s must be intercepted with `GrpcModule.clientInterceptor` or `GrpcModule.nestingClientInterceptor` similarly to the following: `ClientInterceptors.intercept(channel, grpcModule.clientInterceptor)`
