@@ -7,6 +7,7 @@ import io.grpc.ServerCall.Listener;
 import org.easymock.EasyMockSupport;
 import org.junit.*;
 import pl.morgwai.base.grpc.scopes.tests.ContextVerifier;
+import pl.morgwai.base.guice.scopes.ContextTracker;
 
 import static org.junit.Assert.*;
 
@@ -17,6 +18,7 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 
 
 	final GrpcModule grpcModule = new GrpcModule();
+	final ContextTracker<ListenerEventContext> ctxTracker = grpcModule.listenerEventScope.tracker;
 	final ServerContextInterceptor interceptor =
 			(ServerContextInterceptor) grpcModule.serverInterceptor;
 	final ServerCall<Integer, Integer> mockRpc = mock(ServerCall.class);
@@ -62,7 +64,7 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 			mockRpc,
 			requestHeaders,
 			(rpc, headers) -> {
-				final var eventCtx = grpcModule.ctxTracker.getCurrentContext();
+				final var eventCtx = ctxTracker.getCurrentContext();
 				assertNotNull("event context should be started",
 						eventCtx);
 				final var rpcCtx = eventCtx.getRpcContext();
@@ -76,34 +78,34 @@ public class ServerContextInterceptorTests extends EasyMockSupport {
 						requestHeaders, rpcCtx.getRequestHeaders());
 				assertSame("request headers should not be modified",
 						requestHeaders, headers);
-				final var ctxVerifier = new ContextVerifier(grpcModule.ctxTracker, rpcCtx);
+				final var ctxVerifier = new ContextVerifier(ctxTracker, rpcCtx);
 				ctxVerifier.add(eventCtx);
 				mockListener.ctxVerifier = ctxVerifier;
 				return mockListener;
 			}
 		);
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 
 		final Integer message = 69;
 		decoratedListener.onMessage(message);
 		assertSame("messages should not be modified",
 				message, mockListener.capturedMessage);
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 
 		decoratedListener.onHalfClose();
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 		decoratedListener.onCancel();
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 		decoratedListener.onComplete();
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 		decoratedListener.onReady();
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 	}
 
 

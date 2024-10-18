@@ -12,6 +12,7 @@ import org.easymock.*;
 import org.junit.*;
 import pl.morgwai.base.grpc.scopes.ClientContextInterceptor.ListenerProxy;
 import pl.morgwai.base.grpc.scopes.tests.ContextVerifier;
+import pl.morgwai.base.guice.scopes.ContextTracker;
 
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
@@ -65,6 +66,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 
 
 	final GrpcModule grpcModule = new GrpcModule();
+	final ContextTracker<ListenerEventContext> ctxTracker = grpcModule.listenerEventScope.tracker;
 	final MockListener<Integer> mockListener = new MockListener<>();
 	final Metadata requestHeaders = new Metadata();
 	final Capture<Listener<Integer>> listenerCapture = newCapture();
@@ -106,13 +108,13 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		final var rpcCtx = decoratedListener.rpcContext;
 
 		// basic verifications
-		mockListener.ctxVerifier = new ContextVerifier(grpcModule.ctxTracker, rpcCtx);
+		mockListener.ctxVerifier = new ContextVerifier(ctxTracker, rpcCtx);
 		assertSame("RPC should be stored into rpcCtx",
 				mockRpc, rpcCtx.getRpc());
 		assertTrue("there should be no parentCtx",
 				rpcCtx.getParentContext().isEmpty());
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 
 		// verify onHeaders(...)
 		final var responseHeaders = new Metadata();
@@ -122,12 +124,12 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		assertSame("response headers should be stored into rpcCtx",
 				responseHeaders, rpcCtx.getResponseHeaders());
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 
 		// verify onReady()
 		decoratedListener.onReady();
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 
 		// verify onMessage(...)
 		final Integer message = 666;
@@ -135,7 +137,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		assertSame("messages should not be modified",
 				message, mockListener.capturedMessage);
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 
 		// verify onClose(...)
 		assertTrue("status should be empty before onClose",
@@ -154,7 +156,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		assertSame("trailers should be stored into rpcCtx",
 				trailers, rpcCtx.getTrailers().get());
 		assertNull("event context should not be leaked",
-				grpcModule.ctxTracker.getCurrentContext());
+				ctxTracker.getCurrentContext());
 	}
 
 	@Test public void testBasicInterceptingWithNestingInterceptor() {
@@ -181,7 +183,7 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		rootRpcCtx.packageExposedProduceIfAbsent(key, () -> rootProvidedObject);
 
 		// create and start a child RPC within the parent RPC ctx, capture the created child RPC ctx
-		new ListenerEventContext(parentRpcCtx, grpcModule.ctxTracker)
+		new ListenerEventContext(parentRpcCtx, ctxTracker)
 			.executeWithinSelf(() -> {
 				final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
 				rpc.start(mockListener, requestHeaders);
