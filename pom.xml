@@ -37,7 +37,6 @@
 		<maven.compiler.release>11</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<guice.scopes.version>10.3</guice.scopes.version>
-		<utils.version>5.1</utils.version>
 		<guice.version>6.0.0</guice.version>
 		<grpc.version>1.60.1</grpc.version>
 		<protobuf.version>3.24.0</protobuf.version>
@@ -60,11 +59,6 @@
 			<groupId>pl.morgwai.base</groupId>
 			<artifactId>guice-context-scopes</artifactId>
 			<version>${guice.scopes.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>pl.morgwai.base</groupId>
-			<artifactId>java-utils</artifactId>
-			<version>${utils.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.inject</groupId>
@@ -112,6 +106,12 @@
 		</dependency>
 		<dependency>
 			<groupId>pl.morgwai.base</groupId>
+			<artifactId>java-utils</artifactId>
+			<version>5.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>pl.morgwai.base</groupId>
 			<artifactId>jul-utils</artifactId>
 			<version>[4.0,)</version>
 			<scope>test</scope>
@@ -150,7 +150,6 @@
 					<javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
 					<links>
 						<link>https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/${guice.scopes.version}</link>
-						<link>https://javadoc.io/doc/pl.morgwai.base/java-utils/${utils.version}</link>
 						<link>https://google.github.io/guice/api-docs/${guice.version}/javadoc</link>
 						<link>https://javadoc.io/doc/io.grpc/grpc-all/${grpc.version}</link>
 					</links>
@@ -159,10 +158,6 @@
 						<offlineLink>
 							<url>https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/${guice.scopes.version}</url>
 							<location>${settings.localRepository}/pl/morgwai/base/guice-context-scopes/${guice.scopes.version}</location>
-						</offlineLink>
-						<offlineLink>
-							<url>https://javadoc.io/doc/pl.morgwai.base/java-utils/${utils.version}</url>
-							<location>${settings.localRepository}/pl/morgwai/base/java-utils/${utils.version}</location>
 						</offlineLink>
 						<offlineLink>
 							<url>https://google.github.io/guice/api-docs/${guice.version}/javadoc</url>
