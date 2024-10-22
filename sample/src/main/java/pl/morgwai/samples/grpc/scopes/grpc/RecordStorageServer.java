@@ -127,6 +127,8 @@ public class RecordStorageServer {
 			() -> {
 				try {
 					log.info("shutting down...");
+					recordStorageServer.shutdown();
+					jpaExecutor.shutdown();
 					if ( !Awaitable.awaitMultiple(
 						2000L,
 						GrpcAwaitable.ofEnforcedTermination(recordStorageServer),
@@ -134,11 +136,11 @@ public class RecordStorageServer {
 					)) {
 						log.warning("some stuff failed to shutdown cleanly :/");
 					}
-					entityManagerFactory.close();
 				} catch (InterruptedException ignored) {
 				} finally {
 					log.info("exiting now, bye!");
 					JulManualResetLogManager.staticReset();
+					entityManagerFactory.close();
 				}
 			}
 		));
