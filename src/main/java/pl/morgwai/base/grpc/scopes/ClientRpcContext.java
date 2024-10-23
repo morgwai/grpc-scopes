@@ -9,13 +9,22 @@ import io.grpc.*;
 
 /**
  * Context of a client RPC ({@link ClientCall}).
- * A single instance spans over the lifetime of the response stream.
- * Specifically all methods of {@link io.grpc.ClientCall.Listener} are executed within the same
+ * A single instance spans over the lifetime of the corresponding response stream.
+ * Specifically, all methods of a single {@link ClientCall.Listener} are executed within the same
  * {@code ClientRpcContext}.
- *
- * @see GrpcModule#rpcScope corresponding Scope
+ * <p>
+ * This means that:</p>
+ * <ul>
+ *     <li>all callbacks to the response {@link io.grpc.stub.StreamObserver} supplied as an argument
+ *         to this given call of the stub gRPC method,</li>
+ *     <li>all invocations of this call's
+ *         {@link io.grpc.stub.ClientCallStreamObserver#setOnReadyHandler(Runnable)
+ *         registered onReady() handler}</li>
+ * </ul>
+ * <p>
+ * ...all share the same {@link GrpcModule#rpcScope rpcScope}.</p>
  * @see <a href="https://github.com/grpc/grpc-java/blob/master/stub/src/main/java/io/grpc/stub/
-ClientCalls.java">ClientCalls source for detailed info</a>
+ClientCalls.java">ClientCalls source</a>
  */
 public class ClientRpcContext extends RpcContext {
 

@@ -8,15 +8,18 @@ import pl.morgwai.base.guice.scopes.*;
 
 
 /**
- * gRPC Guice {@link Scope}s, {@code Interceptor}s, {@link ContextBinder} and some helper methods.
+ * gRPC Guice {@link Scope}s, {@code Interceptor}s and a {@link ContextBinder}.
+ * Usually at the startup of an app a single app-wide instance is created and its members
+ * {@link #listenerEventScope} and {@link #rpcScope} are passed to other
+ * {@link com.google.inject.Module}s to scope their bindings.
  * <p>
- * Usually a single app-wide instance is created at an app startup.<br/>
- * In case of servers, gRPC {@link BindableService Services} should be
+ * In order for the above {@link Scope}s to work, gRPC {@link BindableService Services} must be
  * {@link ServerInterceptors#intercept(BindableService, ServerInterceptor...) intercepted} with
- * {@link #serverInterceptor}.<br/>
- * In case of clients, gRPC {@link Channel}s should be
+ * {@link #serverInterceptor}, in case of servers. In case of clients, gRPC {@link Channel}s must be
  * {@link ClientInterceptors#intercept(Channel, ClientInterceptor...) intercepted} with either
  * {@link #clientInterceptor} or {@link #nestingClientInterceptor}.</p>
+ * @see <a href="https://github.com/morgwai/guice-context-scopes#developing-portable-modules">
+ *     Developing portable Modules</a>
  */
 public class GrpcModule extends ScopeModule {
 
