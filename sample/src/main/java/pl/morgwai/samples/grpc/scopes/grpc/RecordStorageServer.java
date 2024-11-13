@@ -13,7 +13,7 @@ import com.google.inject.name.Names;
 import io.grpc.*;
 import pl.morgwai.base.grpc.scopes.*;
 import pl.morgwai.base.grpc.utils.GrpcAwaitable;
-import pl.morgwai.base.guice.scopes.ContextTrackingExecutorDecorator;
+import pl.morgwai.base.guice.scopes.ContextTrackingExecutor;
 import pl.morgwai.base.jul.JulManualResetLogManager;
 import pl.morgwai.base.utils.concurrent.*;
 import pl.morgwai.samples.grpc.scopes.data_access.JpaRecordDao;
@@ -86,8 +86,7 @@ public class RecordStorageServer {
 			jpaExecutorThreadpoolSize,
 			new NamingThreadFactory(PERSISTENCE_UNIT_NAME + JPA_EXECUTOR_NAME)
 		);
-		ctxTrackingJpaExecutor = new ContextTrackingExecutorDecorator(
-				jpaExecutor, grpcModule.ctxBinder);
+		ctxTrackingJpaExecutor = ContextTrackingExecutor.of(jpaExecutor, grpcModule.ctxBinder);
 		log.info("entity manager factory " + PERSISTENCE_UNIT_NAME + " and its associated Executor "
 				+ " created successfully");
 

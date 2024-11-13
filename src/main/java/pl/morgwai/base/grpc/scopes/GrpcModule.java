@@ -18,7 +18,7 @@ import pl.morgwai.base.guice.scopes.*;
  * {@link ClientInterceptors#intercept(Channel, ClientInterceptor...) intercepted} with either
  * {@link #clientInterceptor} or {@link #nestingClientInterceptor}.</p>
  */
-public class GrpcModule extends ContextScopesModule {
+public class GrpcModule extends ScopeModule {
 
 
 
@@ -38,7 +38,7 @@ public class GrpcModule extends ContextScopesModule {
 	public final Scope rpcScope = newInducedContextScope(
 		"GrpcModule.rpcScope",
 		RpcContext.class,
-		listenerEventScope.tracker,
+		listenerEventScope,
 		ListenerEventContext::getRpcContext
 	);
 

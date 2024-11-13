@@ -33,17 +33,11 @@ public class ServerContextInterceptor implements ServerInterceptor {
 		ServerCallHandler<RequestT, ResponseT> handler
 	) {
 		final var rpcContext = new ServerRpcContext(rpc, headers);
-		try {
-			final var listener = new ListenerEventContext(rpcContext, ctxTracker).executeWithinSelf(
-				// in case of streaming requests this is where the user RPC method will be invoked:
-				() -> handler.startCall(rpc, headers)
-			);
-			return new ListenerProxy<>(listener, rpcContext);
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception neverHappens) {  // result of wrapping startCall(...) with a Callable
-			throw new RuntimeException(neverHappens);
-		}
+		final var listener = new ListenerEventContext(rpcContext, ctxTracker).executeWithinSelf(
+			// in case of streaming requests this is where the user RPC method will be invoked:
+			() -> handler.startCall(rpc, headers)
+		);
+		return new ListenerProxy<>(listener, rpcContext);
 	}
 
 

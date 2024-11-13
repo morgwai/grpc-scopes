@@ -3,8 +3,6 @@ package pl.morgwai.base.grpc.scopes;
 
 import java.util.Optional;
 
-import com.google.inject.Key;
-import com.google.inject.Provider;
 import io.grpc.*;
 
 
@@ -49,36 +47,6 @@ public class ClientRpcContext extends RpcContext {
 	public Optional<Status> getStatus() { return Optional.ofNullable(status); }
 	private Status status;
 
-	/**
-	 * If this RPC was issued as a nested child in the {@link RpcContext} of another RPC and
-	 * {@link GrpcModule#nestingClientInterceptor} was used to intercept the given {@link Channel},
-	 * then this method will return the context of the parent RPC. Otherwise {@code empty()}.
-	 */
-	public Optional<RpcContext> getParentContext() { return Optional.ofNullable(parentCtx); }
-	final RpcContext parentCtx;
-
-
-
-	@Override
-	protected <T> T produceIfAbsent(Key<T> key, Provider<T> producer) {
-		if (parentCtx != null) {
-			return parentCtx.packageExposedProduceIfAbsent(key, producer);
-		} else {
-			return super.produceIfAbsent(key, producer);
-		}
-	}
-
-
-
-	@Override
-	public void removeScopedObject(Key<?> key) {
-		if (parentCtx != null) {
-			parentCtx.removeScopedObject(key);
-		} else {
-			super.removeScopedObject(key);
-		}
-	}
-
 
 
 	/** Called by {@link ClientContextInterceptor.ListenerProxy#onHeaders(Metadata)}. */
@@ -99,13 +67,10 @@ public class ClientRpcContext extends RpcContext {
 
 
 	/** Constructor for nested ctxs (see {@link GrpcModule#nestingClientInterceptor}). */
-	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders, RpcContext parentCtx) {
-		super(requestHeaders);
+	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders, RpcContext enclosingCtx) {
+		super(requestHeaders, enclosingCtx);
 		this.rpc = rpc;
-		this.parentCtx = parentCtx;
 	}
-
-
 
 	/** Constructor for non-nested ctxs (see {@link GrpcModule#clientInterceptor}). */
 	ClientRpcContext(ClientCall<?, ?> rpc, Metadata requestHeaders) {

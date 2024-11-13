@@ -1,8 +1,6 @@
 // Copyright 2021 Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0
 package pl.morgwai.base.grpc.scopes;
 
-import com.google.inject.Key;
-import com.google.inject.Provider;
 import io.grpc.Metadata;
 import pl.morgwai.base.guice.scopes.InjectionContext;
 
@@ -23,17 +21,12 @@ public abstract class RpcContext extends InjectionContext {
 
 
 
-	/**
-	 * For nesting {@link ClientRpcContext}s,
-	 * see {@link ClientRpcContext#produceIfAbsent(Key, Provider)}.
-	 */
-	<T> T packageExposedProduceIfAbsent(Key<T> key, Provider<T> producer) {
-		return produceIfAbsent(key, producer);
+	RpcContext(Metadata requestHeaders) {
+		this(requestHeaders, null);
 	}
 
-
-
-	RpcContext(Metadata requestHeaders) {
+	RpcContext(Metadata requestHeaders, RpcContext enclosingCtx) {
+		super(enclosingCtx);
 		this.requestHeaders = requestHeaders;
 	}
 }

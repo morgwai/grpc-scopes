@@ -2,20 +2,20 @@
 package pl.morgwai.base.grpc.scopes;
 
 import java.io.InputStream;
+import org.junit.*;
+import org.easymock.*;
 
 import com.google.inject.Key;
-import com.google.inject.name.Names;
 import io.grpc.*;
 import io.grpc.ClientCall.Listener;
 import io.grpc.MethodDescriptor.MethodType;
-import org.easymock.*;
-import org.junit.*;
 import pl.morgwai.base.grpc.scopes.ClientContextInterceptor.ListenerProxy;
 import pl.morgwai.base.grpc.scopes.tests.ContextVerifier;
 import pl.morgwai.base.guice.scopes.ContextTracker;
 
-import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
+import static org.easymock.EasyMock.*;
+import static pl.morgwai.base.guice.scopes.ContextHelpers.produceIfAbsent;
 
 
 
@@ -111,8 +111,6 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 		mockListener.ctxVerifier = new ContextVerifier(ctxTracker, rpcCtx);
 		assertSame("RPC should be stored into rpcCtx",
 				mockRpc, rpcCtx.getRpc());
-		assertTrue("there should be no parentCtx",
-				rpcCtx.getParentContext().isEmpty());
 		assertNull("event context should not be leaked",
 				ctxTracker.getCurrentContext());
 
@@ -169,95 +167,80 @@ public class ClientContextInterceptorTests extends EasyMockSupport {
 
 
 
-	void testCtxNesting(boolean nesting, RpcContext parentRpcCtx) {
-		final var interceptor = nesting
-				? grpcModule.nestingClientInterceptor
-				: grpcModule.clientInterceptor;
-		final var rootRpcCtx =  // parent of the parent if exists, otherwise just the parent itself
-				(parentRpcCtx instanceof ClientRpcContext
-						&& ((ClientRpcContext) parentRpcCtx).getParentContext().isPresent())
-				? ((ClientRpcContext) parentRpcCtx).getParentContext().get()
-				: parentRpcCtx;
-		final Integer rootProvidedObject = 666;
-		final var key = Key.get(Integer.class, Names.named("testKey"));
-		rootRpcCtx.packageExposedProduceIfAbsent(key, () -> rootProvidedObject);
+	static final Key<Integer> INT_KEY = Key.get(Integer.class);
+	static final Key<String> STRING_KEY = Key.get(String.class);
+	static final String stringFromEnclosing = "from enclosing";
+	static final String stringFromInner = "from nested";
+	static final String anotherString = "another";
+	static final Integer intFromEnclosing = 1;
+	static final Integer intFromInner = 2;
+	static final Integer anotherInt = 3;
+	static final ServerRpcContext enclosingCtx = new ServerRpcContext(null, null);
 
-		// create and start a child RPC within the parent RPC ctx, capture the created child RPC ctx
-		new ListenerEventContext(parentRpcCtx, ctxTracker)
+
+
+	@Test
+	public void testCtxNesting() {
+		final var interceptor = grpcModule.nestingClientInterceptor;
+
+		// create and start a client RPC within enclosingCtx, capture the created client ctx
+		new ListenerEventContext(enclosingCtx, ctxTracker)
 			.executeWithinSelf(() -> {
 				final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
 				rpc.start(mockListener, requestHeaders);
 			});
-		final var childRpcCtx = ((ListenerProxy<Integer>) listenerCapture.getValue()).rpcContext;
+		final var innerCtx = ((ListenerProxy<Integer>) listenerCapture.getValue()).rpcContext;
 
-		// verify sharing/isolation of an RPC-scoped object between a child and its parent
-		final Integer childProvidedObject = 69;
-		if (nesting) {
-			assertSame("parent ctx should be properly linked",
-					childRpcCtx.getParentContext().get(), parentRpcCtx);
-			assertSame("child RPC should share RPC-scoped objects with the parent",
-					rootProvidedObject,
-					childRpcCtx.produceIfAbsent(key, () -> childProvidedObject));
-		} else {
-			assertTrue("parent ctx should NOT be linked",
-					childRpcCtx.getParentContext().isEmpty());
-			assertSame("child RPC should NOT share RPC-scoped objects with the parent",
-					childProvidedObject,
-					childRpcCtx.produceIfAbsent(key, () -> childProvidedObject));
-		}
+		produceIfAbsent(enclosingCtx, STRING_KEY, () -> stringFromEnclosing);
+		assertSame("innerCtx should obtain String from enclosingCtx",
+				stringFromEnclosing,
+				produceIfAbsent(innerCtx, STRING_KEY, () -> stringFromInner));
+		innerCtx.removeScopedObject(STRING_KEY);
+		assertSame("removing String from innerCtx should remove it from enclosingCtx as well",
+				anotherString,
+				produceIfAbsent(enclosingCtx, STRING_KEY, () -> anotherString));
 
-		// remove an RPC-scoped object from ctx via the child and verify the parent and root ctx
-		childRpcCtx.removeScopedObject(key);
-		final var yetAnotherObject = 3;
-		if (nesting) {
-			assertNotSame("RPC-scoped object should be removed from the parent ctx",
-					rootProvidedObject,
-					parentRpcCtx.packageExposedProduceIfAbsent(key, () -> yetAnotherObject));
-			assertNotSame("RPC-scoped object should be removed from the root ctx",
-					rootProvidedObject,
-					rootRpcCtx.packageExposedProduceIfAbsent(key, () -> yetAnotherObject));
-		} else {
-			assertSame("object scoped to the root RPC should NOT be removed",
-					rootProvidedObject,
-					rootRpcCtx.packageExposedProduceIfAbsent(key, () -> yetAnotherObject));
-			assertSame("object scoped to the parent RPC should NOT be removed",
-					rootProvidedObject,
-					parentRpcCtx.packageExposedProduceIfAbsent(key, () -> yetAnotherObject));
-			assertNotSame("object scoped to the child RPC should be removed",
-					childProvidedObject,
-					childRpcCtx.produceIfAbsent(key, () -> yetAnotherObject));
-		}
+		produceIfAbsent(innerCtx, INT_KEY, () -> intFromInner);
+		assertSame("enclosingCtx should obtain Integer from innerCtx",
+				intFromInner,
+				produceIfAbsent(enclosingCtx, INT_KEY, () -> intFromEnclosing));
+		enclosingCtx.removeScopedObject(INT_KEY);
+		assertSame("removing String from enclosingCtx should remove it from innerCtx as well",
+				anotherInt,
+				produceIfAbsent(innerCtx, INT_KEY, () -> anotherInt));
 	}
 
-	final ServerRpcContext serverRpcContext = new ServerRpcContext(null, null);
 
-	@Test public void testCallNestedInServerCallWithNestingInterceptor() {
-		testCtxNesting(true, serverRpcContext);
-	}
 
-	@Test public void testCallNestedInServerCallWithStandardInterceptor() {
-		testCtxNesting(false, serverRpcContext);
-	}
+	@Test
+	public void testCtxIsolation() {
+		final var interceptor = grpcModule.clientInterceptor;
 
-	final ClientRpcContext standAloneClientRpcContext = new ClientRpcContext(null, null);
+		// create and start a client RPC within enclosingCtx, capture the created client ctx
+		new ListenerEventContext(enclosingCtx, ctxTracker)
+			.executeWithinSelf(() -> {
+				final var rpc = interceptor.interceptCall(methodDescriptor, options, mockChannel);
+				rpc.start(mockListener, requestHeaders);
+			});
+		final var innerCtx = ((ListenerProxy<Integer>) listenerCapture.getValue()).rpcContext;
 
-	@Test public void testChainedCallWithNestingInterceptor() {
-		testCtxNesting(true, standAloneClientRpcContext);
-	}
+		produceIfAbsent(enclosingCtx, STRING_KEY, () -> stringFromEnclosing);
+		assertSame("innerCtx should obtain String from itself",
+				stringFromInner,
+				produceIfAbsent(innerCtx, STRING_KEY, () -> stringFromInner));
+		innerCtx.removeScopedObject(STRING_KEY);
+		assertSame("removing String from innerCtx should not affect enclosingCtx",
+				stringFromEnclosing,
+				produceIfAbsent(enclosingCtx, STRING_KEY, () -> anotherString));
 
-	@Test public void testChainedCallWithStandardInterceptor() {
-		testCtxNesting(false, standAloneClientRpcContext);
-	}
-
-	final ClientRpcContext nestedClientRpcContext =
-			new ClientRpcContext(null, null, serverRpcContext);
-
-	@Test public void testChainedCallNestedInServerCallWithNestingInterceptor() {
-		testCtxNesting(true, nestedClientRpcContext);
-	}
-
-	@Test public void testChainedCallNestedInServerCallWithStandardInterceptor() {
-		testCtxNesting(false, nestedClientRpcContext);
+		produceIfAbsent(innerCtx, INT_KEY, () -> intFromInner);
+		assertSame("enclosingCtx should obtain Integer from itself",
+				intFromEnclosing,
+				produceIfAbsent(enclosingCtx, INT_KEY, () -> intFromEnclosing));
+		enclosingCtx.removeScopedObject(INT_KEY);
+		assertSame("removing String from enclosingCtx should not affect innerCtx",
+				intFromInner,
+				produceIfAbsent(innerCtx, INT_KEY, () -> anotherInt));
 	}
 
 

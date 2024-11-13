@@ -58,11 +58,10 @@ public class ClientContextInterceptor implements ClientInterceptor {
 
 		@Override
 		public void start(Listener<ResponseT> listener, Metadata requestHeaders) {
-			final var parentEventCtx = ctxTracker.getCurrentContext();
-			final var rpcCtx  = (nesting && parentEventCtx != null)
-					? new ClientRpcContext(
-							wrappedRpc, requestHeaders, parentEventCtx.getRpcContext())
-					: new ClientRpcContext(wrappedRpc, requestHeaders);
+			final var enclosingEventCtx = ctxTracker.getCurrentContext();
+			final var rpcCtx  = (nesting && enclosingEventCtx != null)
+				? new ClientRpcContext(wrappedRpc, requestHeaders, enclosingEventCtx.rpcContext)
+				: new ClientRpcContext(wrappedRpc, requestHeaders);
 			wrappedRpc.start(new ListenerProxy<>(listener, rpcCtx), requestHeaders);
 		}
 
