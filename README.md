@@ -47,8 +47,8 @@ Technically:
 ### [GrpcModule](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/GrpcModule.html)
 Contains the above `Scope`s and gRPC `Interceptor`s that start the above `Context`s.
 
-### [ContextTrackingExecutorDecorator](https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/latest/pl/morgwai/base/guice/scopes/ContextTrackingExecutorDecorator.html)
-Decorator for `ExecutorService` that automatically transfers active `Context`s when dispatching task to its worker `Thread`s.
+### [ContextTrackingExecutor](https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/latest/pl/morgwai/base/guice/scopes/ContextTrackingExecutor.html)
+Decorated `ExecutorService` that automatically transfers active `Context`s when dispatching task to its worker `Thread`s.
 
 ### [ContextBinder](https://javadoc.io/doc/pl.morgwai.base/guice-context-scopes/latest/pl/morgwai/base/guice/scopes/ContextBinder.html)
 Binds tasks and callbacks (`Runnable`s, `Callable`s, `Consumer`s etc) to `Context`s that were active at the time of a given binding. This can be used to transfer `Context`s semi-automatically when switching `Thread`s, for example when passing callbacks to async functions.
