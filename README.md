@@ -3,8 +3,8 @@
 RPC and Listener event Guice Scopes for gRPC.<br/>
 Copyright 2021 Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0<br/>
 <br/>
-**latest release: [14.1](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/14.1/jar)**
-([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/14.1))<br/>
+**latest release: [15.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/15.0/jar)**
+([javadoc](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/15.0))<br/>
 <br/>
 See [CHANGES](CHANGES.md) for the summary of changes between releases. If the major version of a subsequent release remains unchanged, it is supposed to be backwards compatible in terms of API and behaviour with previous ones with the same major version (meaning that it should be safe to just blindly update in dependent projects and things should not break under normal circumstances).
 
