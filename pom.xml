@@ -9,7 +9,7 @@
 	<version>15.1-SNAPSHOT</version>
 
 	<name>gRPC Guice Scopes</name>
-	<description>RPC and Listener event Guice Scopes for gRPC</description>
+	<description>RPC Scope and Listener-event Scope (a single message or a handler call) for gRPC client and server apps</description>
 	<url>https://github.com/morgwai/grpc-scopes</url>
 
 	<licenses>

@@ -8,18 +8,20 @@ import io.grpc.ServerCall;
 
 /**
  * Context of a server RPC ({@link io.grpc.ServerCall}).
- * A single instance spans over the whole processing of a given RPC: from the invocation of a given
- * gRPC procedure, across all its messages, until the RPC is
- * {@link io.grpc.stub.ServerCallStreamObserver#setOnCloseHandler(Runnable) closed}.
- * Specifically {@link io.grpc.ServerCallHandler#startCall(ServerCall, io.grpc.Metadata)
- * ServerCallHandler.startCall(...)} and all methods of the returned
- * {@link io.grpc.ServerCall.Listener} are executed within the same {@code ServerRpcContext}.
+ * A single instance spans over the whole processing of its RPC: from the invocation of the gRPC
+ * procedure, across all its messages, until the RPC is
+ * {@link io.grpc.stub.ServerCallStreamObserver#setOnCloseHandler(Runnable) closed} or
+ * {@link io.grpc.stub.ServerCallStreamObserver#setOnCancelHandler(Runnable) canceled}.
  * <p>
- * This means that:</p>
+ * Specifically, the call to
+ * {@link io.grpc.ServerCallHandler#startCall(ServerCall, io.grpc.Metadata)
+ * ServerCallHandler.startCall(...)} and all calls to methods of the returned
+ * {@link io.grpc.ServerCall.Listener} are executed within the same {@code ServerRpcContext}. This
+ * means that:</p>
  * <ul>
- *     <li>a single given call to a method implementing RPC procedure,</li>
- *     <li>all callbacks to the request {@link io.grpc.stub.StreamObserver} returned by this given
- *         call,</li>
+ *     <li>the call to the method implementing the gRPC procedure,</li>
+ *     <li>all callbacks to the request {@link io.grpc.stub.StreamObserver} returned by this call,
+ *         </li>
  *     <li>all invocations of handlers registered via this call's
  *         {@link io.grpc.stub.ServerCallStreamObserver}
  *         ({@link io.grpc.stub.ServerCallStreamObserver#setOnReadyHandler(Runnable) onReady()},

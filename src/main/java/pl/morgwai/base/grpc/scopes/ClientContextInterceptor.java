@@ -9,7 +9,7 @@ import pl.morgwai.base.guice.scopes.ContextTracker;
 
 /**
  * Creates a new {@link ClientRpcContext} for each new RPC ({@link ClientCall}) and a new
- * {@link ListenerEventContext} for each {@link Listener Listener} call.
+ * {@link ListenerEventContext} for each {@link ClientCall.Listener} call.
  * An Instance can be obtained from {@link GrpcModule#clientInterceptor} or
  * {@link GrpcModule#nestingClientInterceptor}.
  */

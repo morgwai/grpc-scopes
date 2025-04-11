@@ -1,6 +1,6 @@
 # gRPC Guice Scopes
 
-RPC and Listener event Guice Scopes for gRPC.<br/>
+RPC `Scope` and Listener-event `Scope` (a single message or a handler call) for gRPC client and server apps.<br/>
 Copyright 2021 Piotr Morgwai Kotarbinski, Licensed under the Apache License, Version 2.0<br/>
 <br/>
 **latest release: [15.0](https://search.maven.org/artifact/pl.morgwai.base/grpc-scopes/15.0/jar)**
@@ -12,34 +12,9 @@ See [CHANGES](CHANGES.md) for the summary of changes between releases. If the ma
 ## OVERVIEW
 
 Provides `rpcScope` and `listenerEventScope` Guice `Scope`s for both client and server apps.<br/>
-Oversimplifying, in case of streaming requests on servers and streaming responses on clients, `listenerEventScope` spans over the processing of a single message from the stream or over a single call to any registered handler (via `setOnReadyHandler(...)`, `setOnCancelHandler(...)` etc), while `rpcScope` spans over a whole given RPC.<br/>
-Oversimplifying again, in case of unary inbound, these 2 Scopes have roughly similar span, although most registered callbacks will have a separate `listenerEventScope`.<br/>
-See [this DZone article](https://dzone.com/articles/combining-grpc-with-guice) for extended high-level explanation.<br/>
-<br/>
-Technically:
-* A `ServerCall.Listener` creation in `ServerCallHandler.startCall(...)`, a call to any of `ServerCall.Listener`'s methods, a call to any of `ClientCall.Listener`'s methods, each run within **a separate instance** of [ListenerEventContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ListenerEventContext.html).
-  * For servers this means that:
-    * all callbacks to request `StreamObserver`s returned by methods implementing RPC procedures,
-    * methods implementing RPC procedures themselves,
-    * all invocations of handlers registered via `ServerCallStreamObserver`s
-    
-    have separate `listenerEventScope`s, **EXCEPT** the first call to `onReady()` handler in case of unary requests as it's invoked in the same `Listener` event-handling method as the RPC method (see [the source of gRPC UnaryServerCallListener.onHalfClose()](https://github.com/grpc/grpc-java/blob/v1.60.1/stub/src/main/java/io/grpc/stub/ServerCalls.java#L182-L189) for details).
-  * For clients this means that:
-    * all callbacks to response `StreamObserver`s supplied as arguments to stub RPC methods,
-    * all invocations of `onReady()` handlers registered via `ClientCallStreamObserver`s
-    
-    have separate `listenerEventScope`s.
-* `ServerCallHandler.startCall(...)` and each call to any of the returned `ServerCall.Listener`'s methods run within **the same instance** of [ServerRpcContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ServerRpcContext.html). This means that:
-  * a single given call to a method implementing RPC procedure,
-  * all callbacks to the request `StreamObserver` returned by this given call,
-  * all invocations of handlers registered via this call's `ServerCallStreamObserver`
-  
-  all share the same `rpcScope`.
-* Each method call to a single given instance of `ClientCall.Listener` run within **the same instance** of [ClientRpcContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ClientRpcContext.html). This means that:
-  * all callbacks to the response `StreamObserver` supplied as an argument to this given call of the stub gRPC method,
-  * all invocations of `onReady()` handler registered via this call's `ClientCallStreamObserver`
-  
-  all share the same `rpcScope`.
+Oversimplifying, in case of streaming inbound (streaming requests to servers and streaming responses to clients), `listenerEventScope` spans over the processing of a single message from the stream or over a single call to any registered handler (eg with `setOnReadyHandler(...)`, `setOnCancelHandler(...)` etc), while `rpcScope` spans over a whole given RPC.<br/>
+Oversimplifying again, in case of unary inbound, these 2 `Scope`s have roughly similar span (although if any handlers are registered, they will have a separate `listenerEventScope`).<br/>
+See [this DZone article](https://dzone.com/articles/combining-grpc-with-guice) for an extended high-level explanation and the javadocs of [ListenerEventContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ListenerEventContext.html), [ServerRpcContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ServerRpcContext.html), [ClientRpcContext](https://javadoc.io/doc/pl.morgwai.base/grpc-scopes/latest/pl/morgwai/base/grpc/scopes/ClientRpcContext.html) for technical details.
 
 
 ## MAIN USER CLASSES

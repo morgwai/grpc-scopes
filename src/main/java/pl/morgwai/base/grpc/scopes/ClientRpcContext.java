@@ -9,14 +9,13 @@ import io.grpc.*;
 
 /**
  * Context of a client RPC ({@link ClientCall}).
- * A single instance spans over the lifetime of the corresponding response stream.
- * Specifically, all methods of a single {@link ClientCall.Listener} are executed within the same
- * {@code ClientRpcContext}.
+ * A single instance spans over the lifetime of its call's response stream.
  * <p>
- * This means that:</p>
+ * Specifically, all methods of a single {@link ClientCall.Listener} are executed within the same
+ * {@code ClientRpcContext}. This means that:</p>
  * <ul>
- *     <li>all callbacks to the response {@link io.grpc.stub.StreamObserver} supplied as an argument
- *         to this given call of the stub gRPC method,</li>
+ *     <li>all callbacks to the response {@link io.grpc.stub.StreamObserver} supplied as the
+ *         argument to this given call to the stub gRPC method,</li>
  *     <li>all invocations of this call's
  *         {@link io.grpc.stub.ClientCallStreamObserver#setOnReadyHandler(Runnable)
  *         registered onReady() handler}</li>
