@@ -248,7 +248,7 @@ public class IntegrationTests {
 
 	@BeforeClass
 	public static void setupLogging() {
-		addOrReplaceLoggingConfigProperties(Map.of(
+		addOrReplaceLogConfigProperties(Map.of(
 			LEVEL_SUFFIX, WARNING.toString(),
 			ConsoleHandler.class.getName() + LEVEL_SUFFIX, FINEST.toString()
 		));

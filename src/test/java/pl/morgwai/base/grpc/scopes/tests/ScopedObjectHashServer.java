@@ -81,7 +81,7 @@ public class ScopedObjectHashServer {
 
 	/** @param args 0: port to listen on, 1: backend port to connect to. */
 	public static void main(String[] args) throws Exception {
-		addOrReplaceLoggingConfigProperties(Map.of(
+		addOrReplaceLogConfigProperties(Map.of(
 			"pl.morgwai" + LEVEL_SUFFIX , FINER.toString(),
 			ConsoleHandler.class.getName(), FINER.toString()
 		));
